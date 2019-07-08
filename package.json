@@ -1,0 +1,27 @@
+{
+  "name": "@investorid/solidity",
+  "version": "0.1.0",
+  "description": "Ethereum solidity smart contracts for Blockchain InvestorID identities.",
+  "scripts": {
+    "test": "echo \"Error: no compilation script\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/investorid/solidity.git"
+  },
+  "keywords": [
+    "investorid",
+    "identity",
+    "erc734",
+    "erc735",
+    "ethereum",
+    "solidity",
+    "smart contracts"
+  ],
+  "author": "InvestorID",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/investorid/solidity/issues"
+  },
+  "homepage": "https://github.com/investorid/solidity#readme"
+}
