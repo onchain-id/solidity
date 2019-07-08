@@ -23,5 +23,11 @@
   "bugs": {
     "url": "https://github.com/investorid/solidity/issues"
   },
-  "homepage": "https://github.com/investorid/solidity#readme"
+  "homepage": "https://github.com/investorid/solidity#readme",
+  "dependencies": {
+    "solhint": "^2.1.0",
+    "solidity-coverage": "^0.5.11",
+    "solidity-docgen": "^0.1.1",
+    "truffle": "^5.0.26"
+  }
 }
