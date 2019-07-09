@@ -14,7 +14,8 @@
     "coverage": "scripts/coverage.sh",
     "docgen": "solidity-docgen ./ contracts/ docs/api",
     "lint": "npm run lint:sol",
-    "lint:sol": "solhint --max-warnings 0 \"contracts/**/*.sol\""
+    "lint:sol": "solhint --max-warnings 0 \"contracts/**/*.sol\"",
+    "test": "truffle test"
   },
   "repository": {
     "type": "git",

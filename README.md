@@ -21,3 +21,8 @@ Learn more about InvestorID and Blockchain Identities on the official InvestorID
 - Update interfaces and contracts code.
 - Run lint `npm run lint`
 - Compile code `npm run compile`
+
+### Testing
+
+- Install [Ganache](https://www.trufflesuite.com/ganache) or run another blockchain network.
+- Run `npm test`
