@@ -5,12 +5,14 @@
   "files": [
     "build",
     "contracts",
-    "!contracts/examples"
+    "!contracts/examples",
+    "index.js"
   ],
   "scripts": {
     "compile": "truffle compile",
     "console": "truffle console",
     "coverage": "scripts/coverage.sh",
+    "docgen": "solidity-docgen ./ contracts/ docs/api",
     "lint:sol": "solhint --max-warnings 0 \"contracts/**/*.sol\""
   },
   "repository": {
@@ -32,7 +34,7 @@
     "url": "https://github.com/investorid/solidity/issues"
   },
   "homepage": "https://github.com/investorid/solidity#readme",
-  "dependencies": {
+  "devDependencies": {
     "solhint": "^2.1.0",
     "solidity-coverage": "^0.5.11",
     "solidity-docgen": "^0.1.1",
