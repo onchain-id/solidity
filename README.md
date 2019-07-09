@@ -15,3 +15,9 @@ Learn more about InvestorID and Blockchain Identities on the official InvestorID
   ```
 - Access contract ABI `ERC734.abi` and ByteCode `ERC734.bytecode`.
 
+## Development
+
+- Install dev dependencies `npm i`
+- Update interfaces and contracts code.
+- Run lint `npm run lint`
+- Compile code `npm run compile`
