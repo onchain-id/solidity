@@ -37,6 +37,8 @@
   },
   "homepage": "https://github.com/investorid/solidity#readme",
   "devDependencies": {
+    "chai": "^4.2.0",
+    "chai-as-promised": "^7.1.1",
     "solhint": "^2.1.0",
     "solidity-coverage": "^0.5.11",
     "solidity-docgen": "^0.1.1",
