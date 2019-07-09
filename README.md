@@ -25,4 +25,7 @@ Learn more about InvestorID and Blockchain Identities on the official InvestorID
 ### Testing
 
 - Install [Ganache](https://www.trufflesuite.com/ganache) or run another blockchain network.
+  
+  > The contracts WILL NOT WORK without at least version 2 of Ganache!
+  
 - Run `npm test`
