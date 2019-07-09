@@ -2,8 +2,16 @@
   "name": "@investorid/solidity",
   "version": "0.1.0",
   "description": "Ethereum solidity smart contracts for Blockchain InvestorID identities.",
+  "files": [
+    "build",
+    "contracts",
+    "!contracts/examples"
+  ],
   "scripts": {
-    "test": "echo \"Error: no compilation script\" && exit 1"
+    "compile": "truffle compile",
+    "console": "truffle console",
+    "coverage": "scripts/coverage.sh",
+    "lint:sol": "solhint --max-warnings 0 \"contracts/**/*.sol\""
   },
   "repository": {
     "type": "git",
