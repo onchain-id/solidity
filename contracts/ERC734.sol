@@ -1,4 +1,4 @@
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.10;
 
 import "./IERC734.sol";
 
@@ -28,11 +28,14 @@ contract ERC734 is IERC734 {
     event ExecutionFailed(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data);
 
     constructor() public {
-        bytes32 _key = keccak256(abi.encodePacked(msg.sender));
+        bytes32 _key = keccak256(abi.encode(msg.sender));
+
         keys[_key].key = _key;
         keys[_key].purposes = [1];
         keys[_key].keyType = 1;
+
         keysByPurpose[1].push(_key);
+
         emit KeyAdded(_key, 1, 1);
     }
 
@@ -221,14 +224,23 @@ contract ERC734 is IERC734 {
     */
     function changeKeysRequired(uint256 purpose, uint256 number) external
     {
+        if (purpose == 0) {
+            revert();
+        }
+
+        if (number == 0) {
+            revert();
+        }
+        return;
     }
 
     /**
     * @notice implementation of the getKeysRequired from ERC-734 standard
     * Dilip TODO : complete the code for this function
     */
-    function getKeysRequired(uint256 purpose) external view returns(uint256)
+    function getKeysRequired(uint256 purpose) external view returns(uint256 number)
     {
+        return purpose;
     }
 
     function keyHasPurpose(bytes32 _key, uint256 _purpose)
