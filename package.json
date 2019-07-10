@@ -1,6 +1,6 @@
 {
   "name": "@investorid/solidity",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Ethereum solidity smart contracts for Blockchain InvestorID identities.",
   "files": [
     "build",
