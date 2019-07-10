@@ -2,7 +2,7 @@
 
 # InvestorID Smart Contracts
 
-Smart Contracts for secured Blockchain Identities, implementation of the ERC734 and ERC735 proposal standards.
+Smart Contracts for secure Blockchain Identities, implementation of the ERC734 and ERC735 proposal standards.
 
 Learn more about InvestorID and Blockchain Identities on the official InvestorID website: [https://investorid.org](https://investorid.org). 
 
