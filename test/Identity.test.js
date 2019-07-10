@@ -1,5 +1,6 @@
 const { expect } = require('chai');
 const { shouldBehaveLikeERC734 } = require('./ERC734.behavior');
+const { shouldBehaveLikeERC735 } = require('./ERC735.behavior');
 
 const Identity = artifacts.require('Identity');
 
@@ -13,6 +14,14 @@ contract('Identity', function ([identityIssuer, identityOwner, claimIssuer, anot
       errorPrefix: 'ERC734',
       identityIssuer,
       identityOwner,
+      anotherAccount,
+    });
+
+    shouldBehaveLikeERC735({
+      errorPrefix: 'ERC735',
+      identityIssuer,
+      identityOwner,
+      claimIssuer,
       anotherAccount,
     });
   });
