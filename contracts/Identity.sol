@@ -39,32 +39,48 @@ contract Identity is ERC734, IERC735 {
     public
     returns (bytes32 claimRequestId)
     {
-        bytes32 claimId = keccak256(abi.encodePacked(_issuer, _topic));
+        bytes32 claimId = keccak256(abi.encode(_issuer, _topic));
 
         if (msg.sender != address(this)) {
-            require(keyHasPurpose(keccak256(abi.encodePacked(msg.sender)), 3), "Sender does not have claim signer key");
+            require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 3), "Permissions: Sender does not have claim signer key");
         }
 
         if (claims[claimId].issuer != _issuer) {
             claimsByTopic[_topic].push(claimId);
+            claims[claimId].topic = _topic;
+            claims[claimId].scheme = _scheme;
+            claims[claimId].issuer = _issuer;
+            claims[claimId].signature = _signature;
+            claims[claimId].data = _data;
+            claims[claimId].uri = _uri;
+
+            emit ClaimAdded(
+                claimId,
+                _topic,
+                _scheme,
+                _issuer,
+                _signature,
+                _data,
+                _uri
+            );
+        } else {
+            claims[claimId].topic = _topic;
+            claims[claimId].scheme = _scheme;
+            claims[claimId].issuer = _issuer;
+            claims[claimId].signature = _signature;
+            claims[claimId].data = _data;
+            claims[claimId].uri = _uri;
+
+            emit ClaimChanged(
+                claimId,
+                _topic,
+                _scheme,
+                _issuer,
+                _signature,
+                _data,
+                _uri
+            );
         }
-
-        claims[claimId].topic = _topic;
-        claims[claimId].scheme = _scheme;
-        claims[claimId].issuer = _issuer;
-        claims[claimId].signature = _signature;
-        claims[claimId].data = _data;
-        claims[claimId].uri = _uri;
-
-        emit ClaimAdded(
-            claimId,
-            _topic,
-            _scheme,
-            _issuer,
-            _signature,
-            _data,
-            _uri
-        );
 
         return claimId;
     }
@@ -82,8 +98,23 @@ contract Identity is ERC734, IERC735 {
 
     function removeClaim(bytes32 _claimId) public returns (bool success) {
         if (msg.sender != address(this)) {
-            require(keyHasPurpose(keccak256(abi.encodePacked(msg.sender)), 1), "Sender does not have management key");
+            require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 1), "Permissions: Sender does not have CLAIM key");
         }
+
+        if (claims[_claimId].topic == 0) {
+            revert("NonExisting: There is no claim with this ID");
+        }
+
+        uint claimIndex = 0;
+        while (claimsByTopic[claims[_claimId].topic][claimIndex] != _claimId) {
+            claimIndex++;
+        }
+
+        while (claimIndex < claimsByTopic[claims[_claimId].topic].length - 1) {
+            claimsByTopic[claims[_claimId].topic][claimIndex] = claimsByTopic[claims[_claimId].topic][claimIndex+1];
+            claimIndex++;
+        }
+        claimsByTopic[claims[_claimId].topic].pop();
 
         emit ClaimRemoved(
             _claimId,
@@ -94,19 +125,6 @@ contract Identity is ERC734, IERC735 {
             claims[_claimId].data,
             claims[_claimId].uri
         );
-
-        bytes32[] memory claimList = claimsByTopic[claims[_claimId].topic];
-
-        uint claimIndex = 0;
-
-        while (claimList[claimIndex] != _claimId) {
-            claimIndex++;
-        }
-
-        while (claimIndex < claimList.length - 1) {
-            claimList[claimIndex] = claimList[claimIndex+1];
-            claimIndex++;
-        }
 
         delete claims[_claimId];
 
@@ -134,12 +152,12 @@ contract Identity is ERC734, IERC735 {
     )
     {
         return (
-        claims[_claimId].topic,
-        claims[_claimId].scheme,
-        claims[_claimId].issuer,
-        claims[_claimId].signature,
-        claims[_claimId].data,
-        claims[_claimId].uri
+            claims[_claimId].topic,
+            claims[_claimId].scheme,
+            claims[_claimId].issuer,
+            claims[_claimId].signature,
+            claims[_claimId].data,
+            claims[_claimId].uri
         );
     }
 
