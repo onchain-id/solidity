@@ -93,11 +93,17 @@ contract ERC734 is IERC734 {
     returns (bool success)
     {
         if (msg.sender != address(this)) {
-            require(keyHasPurpose(keccak256(abi.encodePacked(msg.sender)), 1), "Sender does not have management key"); // Sender has MANAGEMENT_KEY
+            require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 1), "Permissions: Sender does not have management key");
         }
 
         if (keys[_key].key == _key) {
-            require(!keyHasPurpose(_key, _purpose), "Key already has purpose");
+            for (uint keyPurposeIndex = 0; keyPurposeIndex < keys[_key].purposes.length; keyPurposeIndex++) {
+                uint256 purpose = keys[_key].purposes[keyPurposeIndex];
+
+                if (purpose == _purpose) {
+                    revert("Conflict: Key already has purpose");
+                }
+            }
 
             keys[_key].purposes.push(_purpose);
         } else {
@@ -177,30 +183,36 @@ contract ERC734 is IERC734 {
     public
     returns (bool success)
     {
-        Key memory key = keys[_key];
-        require(key.key == _key, "No such key");
+        require(keys[_key].key == _key, "NonExisting: Key isn't registered");
 
         if (msg.sender != address(this)) {
-            require(keyHasPurpose(keccak256(abi.encodePacked(msg.sender)), 1), "Sender does not have management key"); // Sender has MANAGEMENT_KEY
+            require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 1), "Permissions: Sender does not have management key"); // Sender has MANAGEMENT_KEY
         }
+
+        require(keys[_key].purposes.length > 0, "NonExisting: Key doesn't have such purpose");
 
         uint purposeIndex = 0;
-        while (key.purposes[purposeIndex] != _purpose) {
+        while (keys[_key].purposes[purposeIndex] != _purpose) {
             purposeIndex++;
+
+            if (purposeIndex >= keys[_key].purposes.length) {
+                break;
+            }
         }
 
-        require(purposeIndex > 0, "Key dosn't have such purpose.");
+        require(purposeIndex < keys[_key].purposes.length, "NonExisting: Key doesn't have such purpose");
 
-        while (purposeIndex < key.purposes.length - 1) {
-            key.purposes[purposeIndex] = key.purposes[purposeIndex+1];
+        while (purposeIndex < keys[_key].purposes.length - 1) {
+            keys[_key].purposes[purposeIndex] = keys[_key].purposes[purposeIndex+1];
             purposeIndex++;
         }
+        keys[_key].purposes.pop();
 
         bytes32[] memory keyList = keysByPurpose[_purpose];
 
         uint keyIndex = 0;
 
-        while (keyList[keyIndex] != key.key) {
+        while (keyList[keyIndex] != _key) {
             keyIndex++;
         }
 
@@ -209,11 +221,13 @@ contract ERC734 is IERC734 {
             keyIndex++;
         }
 
-        if (key.purposes.length == 0) {
+        uint keyType = keys[_key].keyType;
+
+        if (keys[_key].purposes.length == 0) {
             delete keys[_key];
         }
 
-        emit KeyRemoved(keys[_key].key, _purpose, keys[_key].keyType);
+        emit KeyRemoved(_key, _purpose, keyType);
 
         return true;
     }
