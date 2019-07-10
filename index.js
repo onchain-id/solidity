@@ -7,7 +7,9 @@ module.exports = {
   contracts: {
     ERC734,
     Identity,
+  },
+  interfaces: {
     IERC734,
-    IERC735,
+    IERC735
   },
 };

@@ -9,9 +9,13 @@ Learn more about InvestorID and Blockchain Identities on the official InvestorID
 ## Usage
 
 - Install contracts package to use in your repository `npm i @investorid/solidity`
-- Require desired contracts in-code:
+- Require desired contracts in-code (should you need to deploy them):
   ```javascript
-  const { contracts: { ERC734 } } = require('@investorid/solidity');
+  const { contracts: { ERC734, Identity } } = require('@investorid/solidity');
+  ```
+- Require desired interfaces in-code (should you need to interact with deployed contracts):
+  ```javascript
+  const { interfaces: { IERC734, IERC735 } } = require('@investorid/solidity');
   ```
 - Access contract ABI `ERC734.abi` and ByteCode `ERC734.bytecode`.
 
