@@ -238,14 +238,7 @@ contract ERC734 is IERC734 {
     */
     function changeKeysRequired(uint256 purpose, uint256 number) external
     {
-        if (purpose == 0) {
-            revert();
-        }
-
-        if (number == 0) {
-            revert();
-        }
-        return;
+        revert();
     }
 
     /**
@@ -254,7 +247,7 @@ contract ERC734 is IERC734 {
     */
     function getKeysRequired(uint256 purpose) external view returns(uint256 number)
     {
-        return purpose;
+        revert();
     }
 
     function keyHasPurpose(bytes32 _key, uint256 _purpose)
