@@ -1,21 +1,21 @@
-![InvestorID Smart Contracts](./investorid_logo-small.png)
+![OnchainID Smart Contracts](./onchainid_logo_small.png)
 
-# InvestorID Smart Contracts
+# OnchainID Smart Contracts
 
 Smart Contracts for secure Blockchain Identities, implementation of the ERC734 and ERC735 proposal standards.
 
-Learn more about InvestorID and Blockchain Identities on the official InvestorID website: [https://investorid.org](https://investorid.org). 
+Learn more about OnchainID and Blockchain Identities on the official OnchainID website: [https://onchainid.com](https://onchainid.com). 
 
 ## Usage
 
-- Install contracts package to use in your repository `npm i @investorid/solidity`
+- Install contracts package to use in your repository `yarn add @onchain-id/solidity`
 - Require desired contracts in-code (should you need to deploy them):
   ```javascript
-  const { contracts: { ERC734, Identity } } = require('@investorid/solidity');
+  const { contracts: { ERC734, Identity } } = require('@onchain-id/solidity');
   ```
 - Require desired interfaces in-code (should you need to interact with deployed contracts):
   ```javascript
-  const { interfaces: { IERC734, IERC735 } } = require('@investorid/solidity');
+  const { interfaces: { IERC734, IERC735 } } = require('@onchain-id/solidity');
   ```
 - Access contract ABI `ERC734.abi` and ByteCode `ERC734.bytecode`.
 
