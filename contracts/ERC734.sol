@@ -46,7 +46,6 @@ contract ERC734 is IERC734 {
        *
        * @return Returns the full key data, if present in the identity.
        */
-
     function getKey(bytes32 _key)
     public
     view
@@ -56,13 +55,27 @@ contract ERC734 is IERC734 {
     }
 
     /**
+    * @notice gets the purposes of a key
+    *
+    * @param _key The public key.  for non-hex and long keys, its the Keccak256 hash of the key
+    *
+    * @return Returns the purposes of the specified key
+    */
+    function getKeyPurposes(bytes32 _key)
+    public
+    view
+    returns(uint256[] memory _purposes)
+    {
+        return (keys[_key].purposes);
+    }
+
+    /**
         * @notice gets all the keys with a specific purpose from an identity
         *
         * @param _purpose a uint256[] Array of the key types, like 1 = MANAGEMENT, 2 = ACTION, 3 = CLAIM, 4 = ENCRYPTION
         *
         * @return Returns an array of public key bytes32 hold by this identity and having the specified purpose
         */
-
     function getKeysByPurpose(uint256 _purpose)
     public
     view
@@ -234,7 +247,6 @@ contract ERC734 is IERC734 {
 
     /**
     * @notice implementation of the changeKeysRequired from ERC-734 standard
-    * Dilip TODO : complete the code for this function
     */
     function changeKeysRequired(uint256 purpose, uint256 number) external
     {
@@ -243,13 +255,15 @@ contract ERC734 is IERC734 {
 
     /**
     * @notice implementation of the getKeysRequired from ERC-734 standard
-    * Dilip TODO : complete the code for this function
     */
     function getKeysRequired(uint256 purpose) external view returns(uint256 number)
     {
         revert();
     }
 
+    /**
+    * @notice Returns true if the key has MANAGEMENT purpose or the specified purpose.
+    */
     function keyHasPurpose(bytes32 _key, uint256 _purpose)
     public
     view
