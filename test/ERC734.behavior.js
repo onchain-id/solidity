@@ -268,6 +268,9 @@ function shouldBehaveLikeERC734 ({ errorPrefix, identityIssuer, identityOwner, a
         });
 
         it('removes the purpose from the key and emits a KeyRemoved event', async function () {
+          await expect(this.identity.keyHasPurpose(bufferToHex(keccak256(abi.rawEncode(['address'], [identityOwner]))), 3)).to.eventually.be.true;
+          await expect(this.identity.keyHasPurpose(bufferToHex(keccak256(abi.rawEncode(['address'], [identityOwner]))), 4)).to.eventually.be.true;
+
           const { logs } = await this.identity.removeKey(
             bufferToHex(keccak256(abi.rawEncode(['address'], [identityOwner]))),
             3,
@@ -279,6 +282,13 @@ function shouldBehaveLikeERC734 ({ errorPrefix, identityIssuer, identityOwner, a
             purpose: '3',
             keyType: '1',
           });
+
+          await expect(this.identity.keyHasPurpose(bufferToHex(keccak256(abi.rawEncode(['address'], [identityOwner]))), 3)).to.eventually.be.false;
+          await expect(this.identity.keyHasPurpose(bufferToHex(keccak256(abi.rawEncode(['address'], [identityOwner]))), 4)).to.eventually.be.true;
+
+          await expect(this.identity.getKeyPurposes(bufferToHex(keccak256(abi.rawEncode(['address'], [identityOwner]))))).to.eventually.be.an('array').of.length(1);
+
+          console.log(await this.identity.getKeysByPurpose(3));
         });
       });
 

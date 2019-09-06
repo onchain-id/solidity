@@ -10,9 +10,9 @@ interface IERC734 {
      * Specification: Keys are cryptographic public keys, or contract addresses associated with this identity.
      * The structure should be as follows:
      *   - key: A public key owned by this identity
-     *      - purpose: uint256[] Array of the key types, like 1 = MANAGEMENT, 2 = EXECUTION
+     *      - purposes: uint256[] Array of the key purposes, like 1 = MANAGEMENT, 2 = EXECUTION
      *      - keyType: The type of key used, which would be a uint256 for different key types. e.g. 1 = ECDSA, 2 = RSA, etc.
-     *      - key: bytes32 The public key. // for non-hex and long keys, its the Keccak256 hash of the key
+     *      - key: bytes32 The public key. // Its the Keccak256 hash of the key
      */
     struct Key {
         uint256[] purposes;
