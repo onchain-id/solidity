@@ -215,10 +215,7 @@ contract ERC734 is IERC734 {
 
         require(purposeIndex < keys[_key].purposes.length, "NonExisting: Key doesn't have such purpose");
 
-        while (purposeIndex < keys[_key].purposes.length - 1) {
-            keys[_key].purposes[purposeIndex] = keys[_key].purposes[purposeIndex+1];
-            purposeIndex++;
-        }
+        keys[_key].purposes[purposeIndex] = keys[_key].purposes[keys[_key].purposes.length - 1];
         keys[_key].purposes.pop();
 
         bytes32[] memory keyList = keysByPurpose[_purpose];
