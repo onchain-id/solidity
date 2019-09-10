@@ -110,10 +110,7 @@ contract Identity is ERC734, IERC735 {
             claimIndex++;
         }
 
-        while (claimIndex < claimsByTopic[claims[_claimId].topic].length - 1) {
-            claimsByTopic[claims[_claimId].topic][claimIndex] = claimsByTopic[claims[_claimId].topic][claimIndex+1];
-            claimIndex++;
-        }
+        claimsByTopic[claims[_claimId].topic][claimIndex] = claimsByTopic[claims[_claimId].topic][claimsByTopic[claims[_claimId].topic].length - 1];
         claimsByTopic[claims[_claimId].topic].pop();
 
         emit ClaimRemoved(
