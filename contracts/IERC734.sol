@@ -111,7 +111,7 @@ interface IERC734 {
     /**
      * @dev Returns the list of purposes associated with a key.
      */
-    function getKeyPurposes(bytes32 _key) public view returns(uint256[] memory _purposes);
+    function getKeyPurposes(bytes32 _key) external view returns(uint256[] memory _purposes);
 
     /**
      * @dev Returns an array of public key bytes32 held by this identity.

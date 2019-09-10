@@ -288,7 +288,8 @@ function shouldBehaveLikeERC734 ({ errorPrefix, identityIssuer, identityOwner, a
 
           await expect(this.identity.getKeyPurposes(bufferToHex(keccak256(abi.rawEncode(['address'], [identityOwner]))))).to.eventually.be.an('array').of.length(1);
 
-          console.log(await this.identity.getKeysByPurpose(3));
+          await expect(this.identity.getKeysByPurpose(3)).to.eventually.an('array').of.length(0);
+          await expect(this.identity.getKeysByPurpose(4)).to.eventually.an('array').of.length(1);
         });
       });
 
