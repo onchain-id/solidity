@@ -42,7 +42,7 @@ interface IERC735 {
      *      - topic: A uint256 number which represents the topic of the claim. (e.g. 1 biometric, 2 residence (ToBeDefined: number schemes, sub topics based on number ranges??))
      *      - scheme : The scheme with which this claim SHOULD be verified or how it should be processed. Its a uint256 for different schemes. E.g. could 3 mean contract verification, where the data will be call data, and the issuer a contract address to call (ToBeDefined). Those can also mean different key types e.g. 1 = ECDSA, 2 = RSA, etc. (ToBeDefined)
      *      - issuer: The issuers identity contract address, or the address used to sign the above signature. If an identity contract, it should hold the key with which the above message was signed, if the key is not present anymore, the claim SHOULD be treated as invalid. The issuer can also be a contract address itself, at which the claim can be verified using the call data.
-     *      - signature: Signature which is the proof that the claim issuer issued a claim of topic for this identity. it MUST be a signed message of the following structure: `keccak256(abi.encodePacked(identityHolder_address, topic, data))`
+     *      - signature: Signature which is the proof that the claim issuer issued a claim of topic for this identity. it MUST be a signed message of the following structure: `keccak256(abi.encode(identityHolder_address, topic, data))`
      *      - data: The hash of the claim data, sitting in another location, a bit-mask, call data, or actual data based on the claim scheme.
      *      - uri: The location of the claim, this can be HTTP links, swarm hashes, IPFS hashes, and such.
      */
@@ -58,7 +58,7 @@ interface IERC735 {
     /**
      * @dev Get a claim by its ID.
      *
-     * Claim IDs are generated using `keccak256(abi.encodePacked(address issuer_address + uint256 topic))`.
+     * Claim IDs are generated using `keccak256(abi.encode(address issuer_address + uint256 topic))`.
      */
     function getClaim(bytes32 _claimId) external view returns(uint256 topic, uint256 scheme, address issuer, bytes memory signature, bytes memory data, string memory uri);
 
@@ -75,8 +75,8 @@ interface IERC735 {
      * Specification: Requests the ADDITION or the CHANGE of a claim from an issuer.
      * Claims can requested to be added by anybody, including the claim holder itself (self issued).
      *
-     * _signature is a signed message of the following structure: `keccak256(abi.encodePacked(address identityHolder_address, uint256 topic, bytes data))`.
-     * Claim IDs are generated using `keccak256(abi.encodePacked(address issuer_address + uint256 topic))`.
+     * _signature is a signed message of the following structure: `keccak256(abi.encode(address identityHolder_address, uint256 topic, bytes data))`.
+     * Claim IDs are generated using `keccak256(abi.encode(address issuer_address + uint256 topic))`.
      *
      * This COULD implement an approval process for pending claims, or add them right away.
      * MUST return a claimRequestId (use claim ID) that COULD be sent to the approve function.
@@ -88,7 +88,7 @@ interface IERC735 {
      *
      * Triggers Event: `ClaimRemoved`
      *
-     * Claim IDs are generated using `keccak256(abi.encodePacked(address issuer_address + uint256 topic))`.
+     * Claim IDs are generated using `keccak256(abi.encode(address issuer_address + uint256 topic))`.
      */
     function removeClaim(bytes32 _claimId) external returns (bool success);
 }

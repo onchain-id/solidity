@@ -136,7 +136,7 @@ contract ERC734 is IERC734 {
     public
     returns (bool success)
     {
-        require(keyHasPurpose(keccak256(abi.encodePacked(msg.sender)), 2), "Sender does not have action key");
+        require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 2), "Sender does not have action key");
 
         emit Approved(_id, _approve);
 
@@ -184,7 +184,7 @@ contract ERC734 is IERC734 {
 
         emit ExecutionRequested(executionNonce, _to, _value, _data);
 
-        if (keyHasPurpose(keccak256(abi.encodePacked(msg.sender)), 2)) {
+        if (keyHasPurpose(keccak256(abi.encode(msg.sender)), 2)) {
             approve(executionNonce, true);
         }
 
