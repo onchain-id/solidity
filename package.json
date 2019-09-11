@@ -1,12 +1,13 @@
 {
   "name": "@onchain-id/solidity",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Ethereum solidity smart contracts for Blockchain OnchainID identities.",
   "files": [
     "build",
     "contracts",
     "!contracts/examples",
-    "index.js"
+    "index.js",
+    "index.d.ts"
   ],
   "scripts": {
     "compile": "truffle compile",

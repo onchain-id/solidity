@@ -10,6 +10,6 @@ module.exports = {
   },
   interfaces: {
     IERC734,
-    IERC735
+    IERC735,
   },
 };
