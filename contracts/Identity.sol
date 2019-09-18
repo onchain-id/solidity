@@ -19,8 +19,7 @@ contract Identity is ERC734, IERC735 {
        * @param _scheme The scheme with which this claim SHOULD be verified or how it should be processed.
        * @param _issuer The issuers identity contract address, or the address used to sign the above signature.
        * @param _signature Signature which is the proof that the claim issuer issued a claim of topic for this identity.
-       * it MUST be a signed message of the following structure: keccak256(address identityHolder_address, uint256 _ topic, bytes data)
-       * or keccak256(abi.encode(identityHolder_address, topic, data))
+       * it MUST be a signed message of the following structure: keccak256(abi.encode(address identityHolder_address, uint256 _ topic, bytes data))
        * @param _data The hash of the claim data, sitting in another location, a bit-mask, call data, or actual data based on the claim scheme.
        * @param _uri The location of the claim, this can be HTTP links, swarm hashes, IPFS hashes, and such.
        *
@@ -90,7 +89,7 @@ contract Identity is ERC734, IERC735 {
        * Require that the msg.sender has management key.
        * Can only be removed by the claim issuer, or the claim holder itself.
        *
-       * @param _claimId The identity of the claim i.e. keccak256(address issuer_address + uint256 topic)
+       * @param _claimId The identity of the claim i.e. keccak256(abi.encode(_issuer, _topic))
        *
        * @return Returns TRUE when the claim was removed.
        * triggers ClaimRemoved event
@@ -131,7 +130,7 @@ contract Identity is ERC734, IERC735 {
     /**
         * @notice Implementation of the getClaim function from the ERC-735 standard.
         *
-        * @param _claimId The identity of the claim i.e. keccak256(address issuer_address + uint256 topic)
+        * @param _claimId The identity of the claim i.e. keccak256(abi.encode(_issuer, _topic))
         *
         * @return Returns all the parameters of the claim for the specified _claimId (topic, scheme, signature, issuer, data, uri) .
         */
@@ -162,7 +161,7 @@ contract Identity is ERC734, IERC735 {
         * @notice Implementation of the getClaimIdsByTopic function from the ERC-735 standard.
         * used to get all the claims from the specified topic
         *
-        * @param _topic The identity of the claim i.e. keccak256(address issuer_address + uint256 topic)
+        * @param _topic The identity of the claim i.e. keccak256(abi.encode(_issuer, _topic))
         *
         * @return Returns an array of claim IDs by topic.
         */

@@ -58,7 +58,7 @@ interface IERC735 {
     /**
      * @dev Get a claim by its ID.
      *
-     * Claim IDs are generated using `keccak256(abi.encode(address issuer_address + uint256 topic))`.
+     * Claim IDs are generated using `keccak256(abi.encode(address issuer_address, uint256 topic))`.
      */
     function getClaim(bytes32 _claimId) external view returns(uint256 topic, uint256 scheme, address issuer, bytes memory signature, bytes memory data, string memory uri);
 
@@ -88,7 +88,7 @@ interface IERC735 {
      *
      * Triggers Event: `ClaimRemoved`
      *
-     * Claim IDs are generated using `keccak256(abi.encode(address issuer_address + uint256 topic))`.
+     * Claim IDs are generated using `keccak256(abi.encode(address issuer_address, uint256 topic))`.
      */
     function removeClaim(bytes32 _claimId) external returns (bool success);
 }
