@@ -4,7 +4,7 @@ import "./IClaimIssuer.sol";
 import "./Identity.sol";
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
-contract ClaimIssuer is IClaimIssuer, Identity {
+contract ClaimIssuer is IClaimIssuer, Identity, Ownable {
     function revokeClaim(bytes32 _claimId, address _identity) public onlyOwner returns(bool) {
         uint256 foundClaimTopic;
         uint256 scheme;
