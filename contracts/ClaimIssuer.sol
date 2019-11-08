@@ -2,9 +2,10 @@ pragma solidity ^0.5.10;
 
 import "./IClaimIssuer.sol";
 import "./Identity.sol";
+import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
 contract ClaimIssuer is IClaimIssuer, Identity {
-    function revokeClaim(bytes32 _claimId, address _identity) public returns(bool) {
+    function revokeClaim(bytes32 _claimId, address _identity) public onlyOwner returns(bool) {
         uint256 foundClaimTopic;
         uint256 scheme;
         address issuer;
