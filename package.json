@@ -1,6 +1,6 @@
 {
   "name": "@onchain-id/solidity",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Ethereum solidity smart contracts for Blockchain OnchainID identities.",
   "files": [
     "build",

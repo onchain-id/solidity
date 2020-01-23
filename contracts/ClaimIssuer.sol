@@ -10,6 +10,11 @@ contract ClaimIssuer is IClaimIssuer, Identity {
         address issuer;
         bytes memory  sig;
         bytes  memory data;
+
+		if (msg.sender != address(this)) {
+            require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 1), "Permissions: Sender does not have management key");
+        }
+		
         ( foundClaimTopic, scheme, issuer, sig, data, ) = Identity(_identity).getClaim(_claimId);
         // require(sig != 0, "Claim does not exist");
 
