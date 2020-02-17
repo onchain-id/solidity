@@ -1,9 +1,14 @@
-pragma solidity ^0.5.10;
+pragma solidity ^0.6.2;
 
 import "./IClaimIssuer.sol";
 import "./Identity.sol";
 
 contract ClaimIssuer is IClaimIssuer, Identity {
+    uint public issuedClaimCount;
+
+    mapping (bytes => bool) revokedClaims;
+    mapping (bytes32 => address) identityAddresses;
+
     function revokeClaim(bytes32 _claimId, address _identity) public returns(bool) {
         uint256 foundClaimTopic;
         uint256 scheme;
@@ -14,9 +19,8 @@ contract ClaimIssuer is IClaimIssuer, Identity {
 		if (msg.sender != address(this)) {
             require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 1), "Permissions: Sender does not have management key");
         }
-		
+
         ( foundClaimTopic, scheme, issuer, sig, data, ) = Identity(_identity).getClaim(_claimId);
-        // require(sig != 0, "Claim does not exist");
 
         revokedClaims[sig] = true;
         identityAddresses[_claimId] = _identity;
@@ -33,6 +37,7 @@ contract ClaimIssuer is IClaimIssuer, Identity {
 
     function isClaimValid(Identity _identity, bytes32 _claimId, uint256 claimTopic, bytes memory sig, bytes memory data)
     public
+    override
     view
     returns (bool claimValid)
     {
