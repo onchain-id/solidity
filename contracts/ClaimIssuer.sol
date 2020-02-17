@@ -21,7 +21,6 @@ contract ClaimIssuer is IClaimIssuer, Identity {
         }
 
         ( foundClaimTopic, scheme, issuer, sig, data, ) = Identity(_identity).getClaim(_claimId);
-        // require(sig != 0, "Claim does not exist");
 
         revokedClaims[sig] = true;
         identityAddresses[_claimId] = _identity;
