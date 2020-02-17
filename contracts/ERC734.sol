@@ -1,4 +1,4 @@
-pragma solidity ^0.5.10;
+pragma solidity ^0.6.2;
 
 import "./IERC734.sol";
 
@@ -44,10 +44,13 @@ contract ERC734 is IERC734 {
        *
        * @param _key The public key.  for non-hex and long keys, its the Keccak256 hash of the key
        *
-       * @return Returns the full key data, if present in the identity.
+       * @return purposes Returns the full key data, if present in the identity.
+       * @return keyType Returns the full key data, if present in the identity.
+       * @return key Returns the full key data, if present in the identity.
        */
     function getKey(bytes32 _key)
     public
+    override
     view
     returns(uint256[] memory purposes, uint256 keyType, bytes32 key)
     {
@@ -59,10 +62,11 @@ contract ERC734 is IERC734 {
     *
     * @param _key The public key.  for non-hex and long keys, its the Keccak256 hash of the key
     *
-    * @return Returns the purposes of the specified key
+    * @return _purposes Returns the purposes of the specified key
     */
     function getKeyPurposes(bytes32 _key)
     public
+    override
     view
     returns(uint256[] memory _purposes)
     {
@@ -74,10 +78,11 @@ contract ERC734 is IERC734 {
         *
         * @param _purpose a uint256[] Array of the key types, like 1 = MANAGEMENT, 2 = ACTION, 3 = CLAIM, 4 = ENCRYPTION
         *
-        * @return Returns an array of public key bytes32 hold by this identity and having the specified purpose
+        * @return _keys Returns an array of public key bytes32 hold by this identity and having the specified purpose
         */
     function getKeysByPurpose(uint256 _purpose)
     public
+    override
     view
     returns(bytes32[] memory _keys)
     {
@@ -98,11 +103,12 @@ contract ERC734 is IERC734 {
         * @param _type type of key used, which would be a uint256 for different key types. e.g. 1 = ECDSA, 2 = RSA, etc.
         * @param _purpose a uint256[] Array of the key types, like 1 = MANAGEMENT, 2 = ACTION, 3 = CLAIM, 4 = ENCRYPTION
         *
-        * @return Returns TRUE if the addition was successful and FALSE if not
+        * @return success Returns TRUE if the addition was successful and FALSE if not
         */
 
     function addKey(bytes32 _key, uint256 _purpose, uint256 _type)
     public
+    override
     returns (bool success)
     {
         if (msg.sender != address(this)) {
@@ -134,6 +140,7 @@ contract ERC734 is IERC734 {
 
     function approve(uint256 _id, bool _approve)
     public
+    override
     returns (bool success)
     {
         require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 2), "Sender does not have action key");
@@ -174,6 +181,7 @@ contract ERC734 is IERC734 {
 
     function execute(address _to, uint256 _value, bytes memory _data)
     public
+    override
     payable
     returns (uint256 executionId)
     {
@@ -194,6 +202,7 @@ contract ERC734 is IERC734 {
 
     function removeKey(bytes32 _key, uint256 _purpose)
     public
+    override
     returns (bool success)
     {
         require(keys[_key].key == _key, "NonExisting: Key isn't registered");
@@ -241,7 +250,7 @@ contract ERC734 is IERC734 {
     /**
     * @notice implementation of the changeKeysRequired from ERC-734 standard
     */
-    function changeKeysRequired(uint256 purpose, uint256 number) external
+    function changeKeysRequired(uint256 purpose, uint256 number) external override
     {
         revert();
     }
@@ -249,7 +258,7 @@ contract ERC734 is IERC734 {
     /**
     * @notice implementation of the getKeysRequired from ERC-734 standard
     */
-    function getKeysRequired(uint256 purpose) external view returns(uint256 number)
+    function getKeysRequired(uint256 purpose) external override view returns(uint256 number)
     {
         revert();
     }
@@ -259,6 +268,7 @@ contract ERC734 is IERC734 {
     */
     function keyHasPurpose(bytes32 _key, uint256 _purpose)
     public
+    override
     view
     returns(bool result)
     {

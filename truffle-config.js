@@ -1,5 +1,5 @@
 const solcStable = {
-  version: '0.5.10',
+  version: '0.6.2',
 };
 
 module.exports = {

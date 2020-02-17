@@ -1,4 +1,4 @@
-pragma solidity ^0.5.10;
+pragma solidity ^0.6.2;
 
 /**
  * @dev Interface of the ERC735 (Claim Holder) standard as defined in the EIP.
