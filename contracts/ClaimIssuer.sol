@@ -9,7 +9,7 @@ contract ClaimIssuer is IClaimIssuer, Identity {
     mapping (bytes => bool) revokedClaims;
     mapping (bytes32 => address) identityAddresses;
 
-    function revokeClaim(bytes32 _claimId, address _identity) public returns(bool) {
+    function revokeClaim(bytes32 _claimId, address _identity) public override returns(bool) {
         uint256 foundClaimTopic;
         uint256 scheme;
         address issuer;
@@ -27,7 +27,7 @@ contract ClaimIssuer is IClaimIssuer, Identity {
         return true;
     }
 
-    function isClaimRevoked(bytes memory _sig) public view returns (bool) {
+    function isClaimRevoked(bytes memory _sig) public override view returns (bool) {
         if(revokedClaims[_sig]) {
             return true;
         }
@@ -35,11 +35,7 @@ contract ClaimIssuer is IClaimIssuer, Identity {
         return false;
     }
 
-    function isClaimValid(Identity _identity, bytes32 _claimId, uint256 claimTopic, bytes memory sig, bytes memory data)
-    public
-    override
-    view
-    returns (bool claimValid)
+    function isClaimValid(IIdentity _identity, bytes32 _claimId, uint256 claimTopic, bytes memory sig, bytes memory data) public override view returns (bool claimValid)
     {
         bytes32 dataHash = keccak256(abi.encode(_identity, claimTopic, data));
         // Use abi.encodePacked to concatenate the messahe prefix and the message to sign.
@@ -61,7 +57,7 @@ contract ClaimIssuer is IClaimIssuer, Identity {
     }
 
     function getRecoveredAddress(bytes memory sig, bytes32 dataHash)
-        public
+        public override
         pure
         returns (address addr)
     {
