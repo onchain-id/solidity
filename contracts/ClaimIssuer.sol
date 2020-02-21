@@ -6,8 +6,8 @@ import "./Identity.sol";
 contract ClaimIssuer is IClaimIssuer, Identity {
     uint public issuedClaimCount;
 
-    mapping (bytes => bool) revokedClaims;
-    mapping (bytes32 => address) identityAddresses;
+    mapping (bytes => bool) public revokedClaims;
+    mapping (bytes32 => address) public identityAddresses;
 
     function revokeClaim(bytes32 _claimId, address _identity) public override returns(bool) {
         uint256 foundClaimTopic;
@@ -16,7 +16,7 @@ contract ClaimIssuer is IClaimIssuer, Identity {
         bytes memory  sig;
         bytes  memory data;
 
-		if (msg.sender != address(this)) {
+        if (msg.sender != address(this)) {
             require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 1), "Permissions: Sender does not have management key");
         }
 
@@ -28,7 +28,7 @@ contract ClaimIssuer is IClaimIssuer, Identity {
     }
 
     function isClaimRevoked(bytes memory _sig) public override view returns (bool) {
-        if(revokedClaims[_sig]) {
+        if (revokedClaims[_sig]) {
             return true;
         }
 
@@ -72,9 +72,9 @@ contract ClaimIssuer is IClaimIssuer, Identity {
 
         // Divide the signature in r, s and v variables
         assembly {
-          ra := mload(add(sig, 32))
-          sa := mload(add(sig, 64))
-          va := byte(0, mload(add(sig, 96)))
+            ra := mload(add(sig, 32))
+            sa := mload(add(sig, 64))
+            va := byte(0, mload(add(sig, 96)))
         }
 
         if (va < 27) {
