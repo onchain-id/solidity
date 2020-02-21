@@ -84,15 +84,6 @@ interface IERC734 {
     function approve(uint256 _id, bool _approve) external returns (bool success);
 
     /**
-     * @dev Changes the keys required to perform an action for a specific purpose. (This is the n in an n of m multisig approval process.)
-     *
-     * Triggers Event: `KeysRequiredChanged`
-     *
-     * Specification: MUST only be done by keys of purpose 1, or the identity itself. If it's the identity itself, the approval process will determine its approval.
-     */
-    function changeKeysRequired(uint256 purpose, uint256 number) external;
-
-    /**
      * @dev Passes an execution instruction to an ERC725 identity.
      *
      * Triggers Event: `ExecutionRequested`, `Executed`
@@ -117,11 +108,6 @@ interface IERC734 {
      * @dev Returns an array of public key bytes32 held by this identity.
      */
     function getKeysByPurpose(uint256 _purpose) external view returns (bytes32[] memory keys);
-
-    /**
-     * @dev Returns number of keys required for purpose.
-     */
-    function getKeysRequired(uint256 purpose) external view returns (uint256);
 
     /**
      * @dev Returns TRUE if a key is present and has the given purpose. If the key is not present it returns FALSE.

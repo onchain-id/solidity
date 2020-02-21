@@ -35,10 +35,10 @@ contract ClaimIssuer is IClaimIssuer, Identity {
         return false;
     }
 
-    function isClaimValid(IIdentity _identity, bytes32 _claimId, uint256 claimTopic, bytes memory sig, bytes memory data) public override view returns (bool claimValid)
+    function isClaimValid(IIdentity _identity, uint256 claimTopic, bytes memory sig, bytes memory data) public override view returns (bool claimValid)
     {
         bytes32 dataHash = keccak256(abi.encode(_identity, claimTopic, data));
-        // Use abi.encodePacked to concatenate the messahe prefix and the message to sign.
+        // Use abi.encodePacked to concatenate the message prefix and the message to sign.
         bytes32 prefixedHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash));
 
         // Recover address of data signer
