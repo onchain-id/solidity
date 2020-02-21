@@ -4,6 +4,7 @@ const IERC735 = require('./build/contracts/IERC735');
 const ClaimIssuer = require('./build/contracts/ClaimIssuer');
 const ERC734 = require('./build/contracts/ERC734');
 const Identity = require('./build/contracts/Identity');
+const IIdentity = require('./build/contracts/IIdentity');
 
 module.exports = {
   contracts: {
@@ -15,5 +16,6 @@ module.exports = {
     IClaimIssuer,
     IERC734,
     IERC735,
+    IIdentity,
   },
 };

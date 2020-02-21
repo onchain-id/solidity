@@ -6,17 +6,17 @@ import "./Identity.sol";
 contract ClaimIssuer is IClaimIssuer, Identity {
     uint public issuedClaimCount;
 
-    mapping (bytes => bool) revokedClaims;
-    mapping (bytes32 => address) identityAddresses;
+    mapping (bytes => bool) public revokedClaims;
+    mapping (bytes32 => address) public identityAddresses;
 
-    function revokeClaim(bytes32 _claimId, address _identity) public returns(bool) {
+    function revokeClaim(bytes32 _claimId, address _identity) public override returns(bool) {
         uint256 foundClaimTopic;
         uint256 scheme;
         address issuer;
         bytes memory  sig;
         bytes  memory data;
 
-		if (msg.sender != address(this)) {
+        if (msg.sender != address(this)) {
             require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 1), "Permissions: Sender does not have management key");
         }
 
@@ -27,22 +27,18 @@ contract ClaimIssuer is IClaimIssuer, Identity {
         return true;
     }
 
-    function isClaimRevoked(bytes memory _sig) public view returns (bool) {
-        if(revokedClaims[_sig]) {
+    function isClaimRevoked(bytes memory _sig) public override view returns (bool) {
+        if (revokedClaims[_sig]) {
             return true;
         }
 
         return false;
     }
 
-    function isClaimValid(Identity _identity, bytes32 _claimId, uint256 claimTopic, bytes memory sig, bytes memory data)
-    public
-    override
-    view
-    returns (bool claimValid)
+    function isClaimValid(IIdentity _identity, uint256 claimTopic, bytes memory sig, bytes memory data) public override view returns (bool claimValid)
     {
         bytes32 dataHash = keccak256(abi.encode(_identity, claimTopic, data));
-        // Use abi.encodePacked to concatenate the messahe prefix and the message to sign.
+        // Use abi.encodePacked to concatenate the message prefix and the message to sign.
         bytes32 prefixedHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash));
 
         // Recover address of data signer
@@ -61,7 +57,7 @@ contract ClaimIssuer is IClaimIssuer, Identity {
     }
 
     function getRecoveredAddress(bytes memory sig, bytes32 dataHash)
-        public
+        public override
         pure
         returns (address addr)
     {
@@ -76,9 +72,9 @@ contract ClaimIssuer is IClaimIssuer, Identity {
 
         // Divide the signature in r, s and v variables
         assembly {
-          ra := mload(add(sig, 32))
-          sa := mload(add(sig, 64))
-          va := byte(0, mload(add(sig, 96)))
+            ra := mload(add(sig, 32))
+            sa := mload(add(sig, 64))
+            va := byte(0, mload(add(sig, 96)))
         }
 
         if (va < 27) {

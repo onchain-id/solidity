@@ -1,12 +1,12 @@
 pragma solidity ^0.6.2;
 
 import "./ERC734.sol";
-import "./IERC735.sol";
+import "./IIdentity.sol";
 
 /**
  * @dev Implementation of the `IERC734` "KeyHolder" and the `IERC735` "ClaimHolder" interfaces into a common Identity Contract.
  */
-contract Identity is ERC734, IERC735 {
+contract Identity is ERC734, IIdentity {
 
     mapping (bytes32 => Claim) private claims;
     mapping (uint256 => bytes32[]) private claimsByTopic;

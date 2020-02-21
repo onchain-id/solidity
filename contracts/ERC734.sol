@@ -247,21 +247,6 @@ contract ERC734 is IERC734 {
         return true;
     }
 
-    /**
-    * @notice implementation of the changeKeysRequired from ERC-734 standard
-    */
-    function changeKeysRequired(uint256 purpose, uint256 number) external override
-    {
-        revert();
-    }
-
-    /**
-    * @notice implementation of the getKeysRequired from ERC-734 standard
-    */
-    function getKeysRequired(uint256 purpose) external override view returns(uint256 number)
-    {
-        revert();
-    }
 
     /**
     * @notice Returns true if the key has MANAGEMENT purpose or the specified purpose.
