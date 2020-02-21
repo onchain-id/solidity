@@ -1,5 +1,11 @@
 const solcStable = {
   version: '0.6.2',
+  settings: {
+    optimizer: {
+      enabled: true,
+      runs: 200,
+    },
+  },
 };
 
 module.exports = {
@@ -21,4 +27,5 @@ module.exports = {
   compilers: {
     solc: solcStable,
   },
+  plugins: ["solidity-coverage"]
 };

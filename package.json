@@ -12,11 +12,11 @@
   "scripts": {
     "compile": "truffle compile",
     "console": "truffle console",
-    "coverage": "scripts/coverage.sh",
+    "coverage": "truffle run coverage",
     "docgen": "solidity-docgen ./ contracts/ docs/api",
     "lint": "npm run lint:sol",
     "lint:sol": "solhint --max-warnings 0 \"contracts/**/*.sol\"",
-    "test": "scripts/test.sh"
+    "test": "truffle run coverage"
   },
   "repository": {
     "type": "git",
