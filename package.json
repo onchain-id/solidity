@@ -15,7 +15,7 @@
     "coverage": "truffle run coverage",
     "docgen": "solidity-docgen ./ contracts/ docs/api",
     "lint": "npm run lint:sol",
-    "lint:sol": "solhint --max-warnings 0 \"contracts/**/*.sol\"",
+    "lint:sol": "solhint --max-warnings 3 \"contracts/**/*.sol\"",
     "test": "truffle run coverage"
   },
   "repository": {
