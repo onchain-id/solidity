@@ -42,13 +42,21 @@
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "chai-bn": "^0.2.0",
+    "commitlint": "^8.3.5",
+    "cross-env": "^7.0.0",
     "ethereumjs-abi": "^0.6.8",
     "ethereumjs-util": "^6.2.0",
     "ganache-cli": "^6.9.1",
+    "husky": "^4.2.3",
     "semver": "^6.3.0",
     "solhint": "^2.3.0",
     "solidity-coverage": "^0.7.2",
     "solidity-docgen": "^0.3.14",
     "truffle": "^5.1.13"
+  },
+  "husky": {
+    "hooks": {
+      "commit-msg": "cross-env-shell node ./scripts/commit-msg.js $HUSKY_GIT_PARAMS && commitlint -E HUSKY_GIT_PARAMS"
+    }
   }
 }
