@@ -6,7 +6,7 @@ const expectRevert = require('./helpers/expectRevert');
 const expectEvent = require('./helpers/expectEvent');
 const { NULL_KEY } = require('./helpers/constants');
 
-function shouldBehaveLikeERC734 ({ errorPrefix, identityIssuer, identityOwner, anotherAccount }) {
+function shouldBehaveLikeERC734({ errorPrefix, identityIssuer, identityOwner, anotherAccount }) {
   describe('constructor', function () {
     it('has the the address of the identity issuer as MANAGEMENT key', async function () {
       const keys = await this.identity.getKeysByPurpose(1);
@@ -273,23 +273,23 @@ function shouldBehaveLikeERC734 ({ errorPrefix, identityIssuer, identityOwner, a
 
           const { logs } = await this.identity.removeKey(
             bufferToHex(keccak256(abi.rawEncode(['address'], [identityOwner]))),
-            3,
+            4,
             { from: identityIssuer },
           );
 
           expectEvent.inLogs(logs, 'KeyRemoved', {
             key: bufferToHex(keccak256(abi.rawEncode(['address'], [identityOwner]))),
-            purpose: '3',
+            purpose: '4',
             keyType: '1',
           });
 
-          await expect(this.identity.keyHasPurpose(bufferToHex(keccak256(abi.rawEncode(['address'], [identityOwner]))), 3)).to.eventually.be.false;
-          await expect(this.identity.keyHasPurpose(bufferToHex(keccak256(abi.rawEncode(['address'], [identityOwner]))), 4)).to.eventually.be.true;
+          await expect(this.identity.keyHasPurpose(bufferToHex(keccak256(abi.rawEncode(['address'], [identityOwner]))), 3)).to.eventually.be.true;
+          await expect(this.identity.keyHasPurpose(bufferToHex(keccak256(abi.rawEncode(['address'], [identityOwner]))), 4)).to.eventually.be.false;
 
           await expect(this.identity.getKeyPurposes(bufferToHex(keccak256(abi.rawEncode(['address'], [identityOwner]))))).to.eventually.be.an('array').of.length(1);
 
-          await expect(this.identity.getKeysByPurpose(3)).to.eventually.an('array').of.length(0);
-          await expect(this.identity.getKeysByPurpose(4)).to.eventually.an('array').of.length(1);
+          await expect(this.identity.getKeysByPurpose(3)).to.eventually.an('array').of.length(1);
+          await expect(this.identity.getKeysByPurpose(4)).to.eventually.an('array').of.length(0);
         });
       });
 
@@ -322,6 +322,134 @@ function shouldBehaveLikeERC734 ({ errorPrefix, identityIssuer, identityOwner, a
           expect(key.keyType).to.be.bignumber.equal('0');
           expect(key.purposes).to.be.an('array').of.length(0);
         });
+      });
+    });
+  });
+
+  describe("execute", function () {
+    context("when sender has no action or management key", function () {
+      it("Only stores data in execution struct and do not approve it", async function () {
+        const to = await this.identity.address;
+        const value = 0;
+        const data = bufferToHex(abi.simpleEncode("getKeysByPurpose(uint256)", 1));
+        const { logs } = await this.identity.execute(to, value, data, { from: identityOwner });
+
+        expectEvent.inLogs(logs, 'ExecutionRequested', {
+          executionId: '0',
+          to: await this.identity.address,
+          value: '0',
+          data: bufferToHex(abi.simpleEncode("getKeysByPurpose(uint256)", 1))
+        });
+      });
+    });
+
+    context("when sender has an action key", function () {
+      it("should execute the data provided", async function () {
+        const to = await this.identity.address;
+        const value = 0;
+        const key = bufferToHex(keccak256(abi.rawEncode(["address"], [identityOwner])));
+        const data = bufferToHex(abi.simpleEncode("addKey(bytes32,uint256,uint256)", key, 1, 1));
+        const { logs } = await this.identity.execute(to, value, data, { from: identityIssuer });
+
+        expectEvent.inLogs(logs, 'Executed', {
+          executionId: '0',
+          to: await this.identity.address,
+          value: '0',
+          data: bufferToHex(abi.simpleEncode("addKey(bytes32,uint256,uint256)", key, 1, 1))
+        });
+
+        const AddedKey = await this.identity.getKey(key);
+
+        expect(AddedKey.key).to.equal(bufferToHex(keccak256(abi.rawEncode(["address"], [identityOwner]))));
+        expect(AddedKey.keyType).to.be.bignumber.equal('1');
+        expect(AddedKey.purposes).to.be.an('array').of.length(1);
+      });
+
+      it("should not revert if sender is the identity contract while adding key", async function () {
+        const to = await this.identity.address;
+        const value = 0;
+        const key = bufferToHex(keccak256(abi.rawEncode(["address"], [identityOwner])));
+        const data = bufferToHex(abi.simpleEncode("addKey(bytes32,uint256,uint256)", key, 1, 1));
+        await this.identity.execute(to, value, data, { from: identityIssuer });
+
+        const AddedKey = await this.identity.getKey(key);
+
+        expect(AddedKey.key).to.equal(bufferToHex(keccak256(abi.rawEncode(['address'], [identityOwner]))));
+        expect(AddedKey.keyType).to.be.bignumber.equal('1');
+        expect(AddedKey.purposes).to.be.an('array').of.length(1);
+      });
+
+      it("should not revert if sender is the identity contract while removing key", async function () {
+        const key = bufferToHex(keccak256(abi.rawEncode(["address"], [identityOwner])));
+        await this.identity.addKey(key, 1, 1, { from: identityIssuer });
+        const to = await this.identity.address;
+        const value = 0;
+        const data = bufferToHex(abi.simpleEncode("removeKey(bytes32,uint256)", key, 1));
+        await this.identity.execute(to, value, data, { from: identityIssuer });
+        await expect(this.identity.getKeysByPurpose(1)).to.eventually.an('array').of.length(1);
+      });
+    });
+
+    context("Execution fails if the method reverts", function () {
+      it("Only stores data in execution struct and do not approve it", async function () {
+        const key = bufferToHex(keccak256(abi.rawEncode(["address"], [identityOwner])));
+        const to = await this.identity.address;
+        const value = 0;
+        const data = bufferToHex(abi.simpleEncode("removeKey(bytes32,uint256)", key, 1));
+        const {logs} = await this.identity.execute(to, value, data, { from: identityIssuer });
+        
+        expectEvent.inLogs(logs, 'ExecutionFailed', {
+          executionId: '0',
+          to: await this.identity.address,
+          value: '0',
+          data: bufferToHex(abi.simpleEncode("removeKey(bytes32,uint256)", key, 1))
+        });
+      });
+    });
+  });
+
+  describe("approve", function () {
+    context("when sender has no action or management key", function () {
+      it("should revert for no access rights", async function () {
+        const to = await this.identity.address;
+        const value = 0;
+        const key = bufferToHex(keccak256(abi.rawEncode(["address"], [identityOwner])));
+        const data = bufferToHex(abi.simpleEncode("addKey(bytes32,uint256,uint256)", key, 1, 1));
+        await this.identity.execute(to, value, data, { from: identityOwner });
+        await expectRevert(this.identity.approve(0, true, { from: identityOwner }), "Sender does not have action key");
+      });
+    });
+
+    context("when sender has action or management key", function () {
+      it("should not execute if not approved", async function () {
+        const to = await this.identity.address;
+        const value = 0;
+        const key = bufferToHex(keccak256(abi.rawEncode(["address"], [identityOwner])));
+        const data = bufferToHex(abi.simpleEncode("addKey(bytes32,uint256,uint256)", key, 1, 1));
+        await this.identity.execute(to, value, data, { from: identityOwner });
+        await this.identity.approve(0, false, { from: identityIssuer });
+      });
+
+      it("should execute if approved", async function () {
+        const to = await this.identity.address;
+        const value = 0;
+        const key = bufferToHex(keccak256(abi.rawEncode(["address"], [identityOwner])));
+        const data = bufferToHex(abi.simpleEncode("addKey(bytes32,uint256,uint256)", key, 1, 1));
+        await this.identity.execute(to, value, data, { from: identityOwner });
+        const {logs} = await this.identity.approve(0, true, { from: identityIssuer });
+
+        expectEvent.inLogs(logs, 'Executed', {
+          executionId: '0',
+          to: await this.identity.address,
+          value: '0',
+          data: bufferToHex(abi.simpleEncode("addKey(bytes32,uint256,uint256)", key, 1, 1))
+        });
+
+        const AddedKey = await this.identity.getKey(key);
+
+        expect(AddedKey.key).to.equal(bufferToHex(keccak256(abi.rawEncode(["address"], [identityOwner]))));
+        expect(AddedKey.keyType).to.be.bignumber.equal('1');
+        expect(AddedKey.purposes).to.be.an('array').of.length(1);
       });
     });
   });
