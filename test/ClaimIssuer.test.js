@@ -10,6 +10,8 @@ let claimIssuer;
 let identity;
 let signature;
 let hexedData;
+let signer;
+let signerKey;
 
 contract("ClaimIssuer", function([identityIssuer, issuer, anotherAccount]) {
   describe("ClaimIssuer", function() {
@@ -17,8 +19,8 @@ contract("ClaimIssuer", function([identityIssuer, issuer, anotherAccount]) {
       claimIssuer = await ClaimIssuer.new({ from: issuer });
       identity = await Identity.new({ from: identityIssuer });
 
-      let signer = web3.eth.accounts.create();
-      const signerKey = web3.utils.keccak256(
+      signer = web3.eth.accounts.create();
+      signerKey = web3.utils.keccak256(
         web3.eth.abi.encodeParameter("address", signer.address)
       );
 
@@ -55,6 +57,27 @@ contract("ClaimIssuer", function([identityIssuer, issuer, anotherAccount]) {
         from: issuer
       });
       expect(await claimIssuer.isClaimRevoked(signature)).to.equal(true);
+		});
+
+		it("Should remove the given claim if multiple exist for a topic", async () => {
+			let newClaimIssuer = await ClaimIssuer.new({ from: issuer });
+			await newClaimIssuer.addKey(signerKey, 3, 1, { from: issuer });
+
+			await identity.addClaim(
+        7,
+        1,
+        newClaimIssuer.address,
+        signature,
+        hexedData,
+        "",
+        { from: identityIssuer }
+      );
+			let claimIds = await identity.getClaimIdsByTopic(7);
+      await identity.removeClaim(claimIds[1], {
+        from: identityIssuer
+			});
+			claimIds = await identity.getClaimIdsByTopic(7);
+      expect(claimIds.length).to.equal(1);
     });
 
     it("Should revoke claim if sender does not have management key", async () => {
@@ -110,6 +133,24 @@ contract("ClaimIssuer", function([identityIssuer, issuer, anotherAccount]) {
         }
       );
       expect(result).to.equal(false);
+		});
+		
+		it("Should revoke claim if called by the contract", async () => {
+			const claimIds = await identity.getClaimIdsByTopic(7);
+			const to = await claimIssuer.address;
+			const contract = new web3.eth.Contract(ClaimIssuer.abi, claimIssuer.address)
+			const data = contract.methods.revokeClaim(claimIds[0], identity.address).encodeABI();
+			await claimIssuer.execute(to, 0, data, { from: issuer });
+      let result = await claimIssuer.isClaimValid(
+        identity.address,
+        7,
+        signature,
+        hexedData,
+        {
+          from: issuer
+        }
+      );
+			expect(result).to.equal(false);
     });
   });
 });
