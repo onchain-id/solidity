@@ -96,7 +96,7 @@ contract Identity is ERC734, IIdentity {
     */
     function removeClaim(bytes32 _claimId) public override returns (bool success) {
         if (msg.sender != address(this)) {
-            require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 1), "Permissions: Sender does not have CLAIM key");
+            require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 3), "Permissions: Sender does not have CLAIM key");
         }
 
         if (claims[_claimId].topic == 0) {
