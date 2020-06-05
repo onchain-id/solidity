@@ -6,7 +6,7 @@ const { NULL_ADDRESS, NULL_KEY } = require('./helpers/constants');
 const expectRevert = require('./helpers/expectRevert');
 const expectEvent = require('./helpers/expectEvent');
 
-function shouldBehaveLikeERC735 ({ errorPrefix, identityIssuer, identityOwner, claimIssuer, anotherAccount }) {
+function shouldBehaveLikeERC735({ errorPrefix, identityIssuer, identityOwner, claimIssuer, anotherAccount }) {
   describe('addClaim', function () {
     context('when sender has no CLAIM key', function () {
       it('reverts for insufficient privileges', async function () {
@@ -107,6 +107,28 @@ function shouldBehaveLikeERC735 ({ errorPrefix, identityIssuer, identityOwner, c
         });
       });
     });
+
+    context('when sender is Identity contract', function () {
+      it('adds the claim through execute method', async function () {
+        await expect(this.identity.getClaimIdsByTopic(1)).to.eventually.be.an('array').that.is.empty;
+        const to = await this.identity.address;
+        const value = 0;
+        const data = bufferToHex(abi.simpleEncode(
+          "addClaim(uint256,uint256,address,bytes,bytes,string)",
+          1,
+          2,
+          claimIssuer,
+          '0x234564',
+          '0x9087946767',
+          ''
+        ));
+        await this.identity.execute(to, 0, data, { from: identityIssuer });
+        await expect(this.identity.getClaimIdsByTopic(1)).to.eventually.deep.equal([
+          bufferToHex(keccak256(abi.rawEncode(['address', 'uint256'], [claimIssuer, 1])))
+        ]);
+      });
+    });
+
   });
 
   describe('getClaim', function () {
@@ -250,6 +272,27 @@ function shouldBehaveLikeERC735 ({ errorPrefix, identityIssuer, identityOwner, c
           expect(claim.data, 'data was not null').to.be.null;
           expect(claim.uri).to.equals('', 'uri was not an empty string');
         });
+      });
+    });
+
+    context('when sender is Identity contract', function () {
+      it('removes the claim through execute method', async function () {
+        await this.identity.addClaim(
+          1,
+          2,
+          claimIssuer,
+          '0x234564',
+          '0x9087946767',
+          '',
+          { from: identityIssuer }
+        );
+        let claimId = await this.identity.getClaimIdsByTopic(1);
+        const to = await this.identity.address;
+        const value = 0;
+        const data = bufferToHex(abi.simpleEncode("removeClaim(bytes32)", claimId[0]));
+        await this.identity.execute(to, value, data, { from: identityIssuer });
+        claimId = await this.identity.getClaimIdsByTopic(1);
+        await expect(this.identity.getClaimIdsByTopic(1)).to.eventually.be.an('array').that.is.empty;
       });
     });
   });

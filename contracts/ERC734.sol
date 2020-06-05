@@ -150,7 +150,7 @@ contract ERC734 is IERC734 {
         if (_approve == true) {
             executions[_id].approved = true;
 
-            (success,) = executions[_id].to.call.value(executions[_id].value)(abi.encode(executions[_id].data, 0));
+            (success,) = executions[_id].to.call.value(executions[_id].value)(executions[_id].data);
 
             if (success) {
                 executions[_id].executed = true;
