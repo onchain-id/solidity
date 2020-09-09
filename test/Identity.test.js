@@ -20,7 +20,7 @@ contract("Identity", function ([
       });
       await this.identityFactory.createIdentity(identityIssuer);
       this.identity = await Identity.at(
-        await this.identityFactory.IdentityAddresses(0)
+        await this.identityFactory.identityAddresses(0)
       );
     });
 
@@ -49,9 +49,9 @@ contract("Identity", function ([
       await this.identityFactory.createIdentity(identityIssuer);
       await this.identityFactory.createIdentity(identityIssuer);
 
-      const identity0 = await this.identityFactory.IdentityAddresses(0);
-      const identity1 = await this.identityFactory.IdentityAddresses(1);
-      const identity2 = await this.identityFactory.IdentityAddresses(2);
+      const identity0 = await this.identityFactory.identityAddresses(0);
+      const identity1 = await this.identityFactory.identityAddresses(1);
+      const identity2 = await this.identityFactory.identityAddresses(2);
 
       expect(await this.identityFactory.getIdentities()).to.include(
         identity0,
@@ -70,7 +70,7 @@ contract("Identity", function ([
 
     it("Should not be able to set an Identity", async function () {
       const loadedIdentityWithAnotherAccount = await Identity.at(
-        await this.identityFactory.IdentityAddresses(0)
+        await this.identityFactory.identityAddresses(0)
       );
       await expect(
         loadedIdentityWithAnotherAccount.set(anotherAccount, {
