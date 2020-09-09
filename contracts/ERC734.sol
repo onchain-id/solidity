@@ -5,14 +5,16 @@ import "./IERC734.sol";
 /**
  * @dev Implementation of the `IERC734` "KeyHolder" interface.
  */
+
+
 contract ERC734 is IERC734 {
     uint256 public constant MANAGEMENT_KEY = 1;
     uint256 public constant ACTION_KEY = 2;
     uint256 public constant CLAIM_SIGNER_KEY = 3;
     uint256 public constant ENCRYPTION_KEY = 4;
 
+    bool identitySettled = false;
     uint256 private executionNonce;
-
     struct Execution {
         address to;
         uint256 value;
@@ -27,9 +29,10 @@ contract ERC734 is IERC734 {
 
     event ExecutionFailed(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data);
 
-    constructor() public {
-        bytes32 _key = keccak256(abi.encode(msg.sender));
-
+    function set(address _owner) external {
+        bytes32 _key = keccak256(abi.encode(_owner));
+        require(!identitySettled, "Key already exists");
+        identitySettled = true;
         keys[_key].key = _key;
         keys[_key].purposes = [1];
         keys[_key].keyType = 1;
