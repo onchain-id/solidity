@@ -16,7 +16,7 @@
     "docgen": "solidity-docgen ./ contracts/ docs/api",
     "lint": "npm run lint:sol",
     "lint:sol": "solhint --max-warnings 0 \"contracts/**/*.sol\"",
-    "test": "scrip§ts/test.sh"
+    "test": "scripts/test.sh"
   },
   "repository": {
     "type": "git",
