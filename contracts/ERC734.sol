@@ -12,6 +12,7 @@ contract ERC734 is IERC734 {
     uint256 public constant ACTION_KEY = 2;
     uint256 public constant CLAIM_SIGNER_KEY = 3;
     uint256 public constant ENCRYPTION_KEY = 4;
+
     bool private identitySettled = false;
     uint256 private executionNonce;
 
