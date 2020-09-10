@@ -5,8 +5,6 @@ import "./IERC734.sol";
 /**
  * @dev Implementation of the `IERC734` "KeyHolder" interface.
  */
-
-
 contract ERC734 is IERC734 {
     uint256 public constant MANAGEMENT_KEY = 1;
     uint256 public constant ACTION_KEY = 2;
