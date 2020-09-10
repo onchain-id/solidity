@@ -10,7 +10,7 @@
     "index.d.ts"
   ],
   "scripts": {
-    "compile": "truffle compile",
+    "build": "truffle compile",
     "console": "truffle console",
     "coverage": "scripts/coverage.sh",
     "docgen": "solidity-docgen ./ contracts/ docs/api",
