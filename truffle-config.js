@@ -21,4 +21,5 @@ module.exports = {
   compilers: {
     solc: solcStable,
   },
+  plugins: ['solidity-coverage'],
 };

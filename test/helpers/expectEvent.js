@@ -1,9 +1,25 @@
 const { expect } = require('chai');
 
-const BN = web3.utils.BN;
+const { BN } = web3.utils;
 
-function inLogs (logs, eventName, eventArgs = {}) {
-  const events = logs.filter(e => e.event === eventName);
+function isBN(object) {
+  return BN.isBN(object) || object instanceof BN;
+}
+
+function contains(args, key, value) {
+  expect(key in args).to.equal(true, `Unknown event argument '${key}'`);
+
+  if (value === null) {
+    expect(args[key]).to.equal(null);
+  } else if (isBN(args[key])) {
+    expect(args[key]).to.be.bignumber.equal(value);
+  } else {
+    expect(args[key]).to.be.equal(value);
+  }
+}
+
+function inLogs(logs, eventName, eventArgs = {}) {
+  const events = logs.filter((e) => e.event === eventName);
   expect(events.length > 0).to.equal(true, `There is no '${eventName}'`);
 
   const exception = [];
@@ -26,30 +42,19 @@ function inLogs (logs, eventName, eventArgs = {}) {
   return event;
 }
 
-async function inConstruction (contract, eventName, eventArgs = {}) {
-  return inTransaction(contract.transactionHash, contract.constructor, eventName, eventArgs);
-}
-
-async function inTransaction (txHash, emitter, eventName, eventArgs = {}) {
+async function inTransaction(txHash, emitter, eventName, eventArgs = {}) {
   const receipt = await web3.eth.getTransactionReceipt(txHash);
   const logs = emitter.decodeLogs(receipt.logs);
   return inLogs(logs, eventName, eventArgs);
 }
 
-function contains (args, key, value) {
-  expect(key in args).to.equal(true, `Unknown event argument '${key}'`);
-
-  if (value === null) {
-    expect(args[key]).to.equal(null);
-  } else if (isBN(args[key])) {
-    expect(args[key]).to.be.bignumber.equal(value);
-  } else {
-    expect(args[key]).to.be.equal(value);
-  }
-}
-
-function isBN (object) {
-  return BN.isBN(object) || object instanceof BN;
+async function inConstruction(contract, eventName, eventArgs = {}) {
+  return inTransaction(
+    contract.transactionHash,
+    contract.constructor,
+    eventName,
+    eventArgs
+  );
 }
 
 module.exports = {
