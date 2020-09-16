@@ -13,8 +13,6 @@ contract('Identity', function ([
   anotherAccount,
 ]) {
   let identityCreated0;
-  let identityCreated1;
-  let identityCreated2;
 
   describe('Identity', function () {
     beforeEach(async function () {
@@ -22,9 +20,11 @@ contract('Identity', function ([
       this.identityFactory = await IdentityFactory.new(this.identity.address, {
         from: identityIssuer,
       });
-      identityCreated0 = await this.identityFactory.createIdentity(identityIssuer);
+      identityCreated0 = await this.identityFactory.createIdentity(
+        identityIssuer
+      );
       this.identity = await Identity.at(
-           (identityCreated0.logs[0].args.newIdentityAddress)
+        identityCreated0.logs[0].args.newIdentityAddress
       );
     });
 
@@ -58,10 +58,8 @@ contract('Identity', function ([
     });
 
     it('Should not be able to set an Identity twice', async function () {
-      const identity0 = (identityCreated0.logs[0].args.newIdentityAddress);
-      const loadedIdentityWithAnotherAccount = await Identity.at(
-        identity0
-      );
+      const identity0 = identityCreated0.logs[0].args.newIdentityAddress;
+      const loadedIdentityWithAnotherAccount = await Identity.at(identity0);
       await expect(
         loadedIdentityWithAnotherAccount.set(anotherAccount, {
           from: anotherAccount,
