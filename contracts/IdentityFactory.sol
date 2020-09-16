@@ -6,8 +6,6 @@ pragma solidity 0.6.2;
 contract IdentityFactory is CloneFactory {
     address public libraryAddress;
 
-    Identity[] public identityAddresses;
-
     event IdentityCreated(address newIdentityAddress);
 
     constructor(address _libraryAddress) public {
@@ -20,7 +18,6 @@ contract IdentityFactory is CloneFactory {
 
     function createIdentity(address _owner) public  {
         address clone = createClone(libraryAddress);
-        identityAddresses.push(Identity(clone));
         Identity(clone).set(_owner);
         IdentityCreated(clone);
     }
@@ -28,9 +25,4 @@ contract IdentityFactory is CloneFactory {
     function isClonedIdentity(address _identity) public view returns (bool) {
         return isClone(libraryAddress, _identity);
     }
-
-    function getIdentities() external view returns (Identity[] memory) {
-        return identityAddresses;
-    }
-
 }

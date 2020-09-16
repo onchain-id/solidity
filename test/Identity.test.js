@@ -12,15 +12,19 @@ contract('Identity', function ([
   claimIssuer,
   anotherAccount,
 ]) {
+  let identityCreated0;
+  let identityCreated1;
+  let identityCreated2;
+
   describe('Identity', function () {
     beforeEach(async function () {
       this.identity = await Identity.new({ from: identityIssuer });
       this.identityFactory = await IdentityFactory.new(this.identity.address, {
         from: identityIssuer,
       });
-      await this.identityFactory.createIdentity(identityIssuer);
+      identityCreated0 = await this.identityFactory.createIdentity(identityIssuer);
       this.identity = await Identity.at(
-        await this.identityFactory.identityAddresses(0)
+           (identityCreated0.logs[0].args.newIdentityAddress)
       );
     });
 
@@ -45,21 +49,6 @@ contract('Identity', function ([
       ).to.equals(true);
     });
 
-    it('Should returns Identities', async function () {
-      await this.identityFactory.createIdentity(identityIssuer);
-      await this.identityFactory.createIdentity(identityIssuer);
-
-      const identity0 = await this.identityFactory.identityAddresses(0);
-      const identity1 = await this.identityFactory.identityAddresses(1);
-      const identity2 = await this.identityFactory.identityAddresses(2);
-
-      expect(await this.identityFactory.getIdentities()).to.include(
-        identity0,
-        identity1,
-        identity2
-      );
-    });
-
     it('Should set a new LibraryAddress', async function () {
       const newIdentity = await Identity.new({ from: identityIssuer });
       await this.identityFactory.setLibraryAddress(newIdentity.address);
@@ -68,9 +57,10 @@ contract('Identity', function ([
       );
     });
 
-    it('Should not be able to set an Identity', async function () {
+    it('Should not be able to set an Identity twice', async function () {
+      const identity0 = (identityCreated0.logs[0].args.newIdentityAddress);
       const loadedIdentityWithAnotherAccount = await Identity.at(
-        await this.identityFactory.identityAddresses(0)
+        identity0
       );
       await expect(
         loadedIdentityWithAnotherAccount.set(anotherAccount, {
