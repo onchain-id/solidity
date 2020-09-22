@@ -1,0 +1,49 @@
+name: Publish Beta Package
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    if: "github.event.release.prerelease"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 12
+      - run: npm ci
+      - run: npm run build
+
+  publish-gpr:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 12
+          registry-url: https://npm.pkg.github.com/
+          scope: '@onchain-id'
+      - run: npm ci
+      - run: npm run build
+      - run: npm publish --tag beta
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+  publish-npm:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 12
+          registry-url: https://registry.npmjs.org/
+          scope: '@onchain-id'
+      - run: npm ci
+      - run: npm run build
+      - run: npm publish --tag beta
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.npm_token}}
