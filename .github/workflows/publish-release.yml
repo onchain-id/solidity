@@ -44,6 +44,6 @@ jobs:
           scope: '@onchain-id'
       - run: npm ci
       - run: npm run build
-      - run: npm publish --tag
+      - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.npm_token}}
