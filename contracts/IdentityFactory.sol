@@ -16,10 +16,11 @@ contract IdentityFactory is CloneFactory {
         libraryAddress = _libraryAddress;
     }
 
-    function createIdentity(address _owner) public  {
+    function createIdentity(address _owner) public returns(address) {
         address clone = createClone(libraryAddress);
         Identity(clone).set(_owner);
         IdentityCreated(clone);
+        return clone;
     }
 
     function isClonedIdentity(address _identity) public view returns (bool) {
