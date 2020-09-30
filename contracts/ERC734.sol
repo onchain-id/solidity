@@ -28,7 +28,7 @@ contract ERC734 is IERC734 {
 
     event ExecutionFailed(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data);
 
-    function set(address _owner) external {
+    function set(address _owner) public {
         bytes32 _key = keccak256(abi.encode(_owner));
         require(!identitySettled, "Key already exists");
         identitySettled = true;
