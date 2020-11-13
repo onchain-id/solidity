@@ -1,5 +1,5 @@
 const solcStable = {
-  version: '0.6.2',
+  version: '0.6.9',
 };
 
 module.exports = {
@@ -21,5 +21,5 @@ module.exports = {
   compilers: {
     solc: solcStable,
   },
-  plugins: ['solidity-coverage'],
+  plugins: ['solidity-coverage', 'truffle-proxy'],
 };
