@@ -1,36 +1,20 @@
-pragma solidity ^0.6.2;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity ^0.6.9;
 
 import "./IERC734.sol";
+import "./Storage.sol";
+import "./LibraryLock.sol";
 
 /**
  * @dev Implementation of the `IERC734` "KeyHolder" interface.
  */
-contract ERC734 is IERC734 {
-    uint256 public constant MANAGEMENT_KEY = 1;
-    uint256 public constant ACTION_KEY = 2;
-    uint256 public constant CLAIM_SIGNER_KEY = 3;
-    uint256 public constant ENCRYPTION_KEY = 4;
-
-    bool private identitySettled = false;
-    uint256 private executionNonce;
-
-    struct Execution {
-        address to;
-        uint256 value;
-        bytes data;
-        bool approved;
-        bool executed;
-    }
-
-    mapping (bytes32 => Key) private keys;
-    mapping (uint256 => bytes32[]) private keysByPurpose;
-    mapping (uint256 => Execution) private executions;
-
+contract ERC734 is Storage, LibraryLock, IERC734 {
     event ExecutionFailed(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data);
 
     function set(address _owner) public {
         bytes32 _key = keccak256(abi.encode(_owner));
         require(!identitySettled, "Key already exists");
+        initialize();
         identitySettled = true;
         keys[_key].key = _key;
         keys[_key].purposes = [1];
@@ -41,15 +25,15 @@ contract ERC734 is IERC734 {
         emit KeyAdded(_key, 1, 1);
     }
 
-    /**
-       * @notice Implementation of the getKey function from the ERC-734 standard
-       *
-       * @param _key The public key.  for non-hex and long keys, its the Keccak256 hash of the key
-       *
-       * @return purposes Returns the full key data, if present in the identity.
-       * @return keyType Returns the full key data, if present in the identity.
-       * @return key Returns the full key data, if present in the identity.
-       */
+   /**
+    * @notice Implementation of the getKey function from the ERC-734 standard
+    *
+    * @param _key The public key.  for non-hex and long keys, its the Keccak256 hash of the key
+    *
+    * @return purposes Returns the full key data, if present in the identity.
+    * @return keyType Returns the full key data, if present in the identity.
+    * @return key Returns the full key data, if present in the identity.
+    */
     function getKey(bytes32 _key)
     public
     override

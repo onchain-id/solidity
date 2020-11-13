@@ -1,15 +1,15 @@
-pragma solidity ^0.6.2;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity ^0.6.9;
 
 import "./ERC734.sol";
 import "./IIdentity.sol";
+import "./Proxiable.sol";
+import "./LibraryLock.sol";
 
 /**
  * @dev Implementation of the `IERC734` "KeyHolder" and the `IERC735` "ClaimHolder" interfaces into a common Identity Contract.
  */
-contract Identity is ERC734, IIdentity {
-
-    mapping (bytes32 => Claim) private claims;
-    mapping (uint256 => bytes32[]) private claimsByTopic;
+contract Identity is ERC734, IIdentity, Proxiable {
 
     /**
     * @notice Implementation of the addClaim function from the ERC-735 standard
@@ -176,5 +176,21 @@ contract Identity is ERC734, IIdentity {
     returns(bytes32[] memory claimIds)
     {
         return claimsByTopic[_topic];
+    }
+
+   /**
+    * This function should normally be guarded by onlyOwner. The modifier was
+    * removed for the purposes of the demo.
+    *
+    * Because the proxy-test ganache instance running a forked chain uses
+    * different accounts than those used to deploy the contract on the
+    * original chain, it does not have access to the owner account.
+    *
+    * It is important for the proxy-test feature to run the upgrade pattern
+    * because it needs to verify that an upgrade deployed live will work
+    * properly.
+    */
+    function updateCode(address newCode) public delegatedOnly  {
+        updateCodeAddress(newCode);
     }
 }
