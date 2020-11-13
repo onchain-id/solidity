@@ -11,17 +11,14 @@ import "./LibraryLock.sol";
 contract ERC734 is Storage, LibraryLock, IERC734 {
     event ExecutionFailed(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data);
 
-    function set(address _owner) public {
+    function _set(address _owner) internal {
         bytes32 _key = keccak256(abi.encode(_owner));
-        require(!identitySettled, "Key already exists");
+        require(!initialized, "Key already exists");
         initialize();
-        identitySettled = true;
         keys[_key].key = _key;
         keys[_key].purposes = [1];
         keys[_key].keyType = 1;
-
         keysByPurpose[1].push(_key);
-
         emit KeyAdded(_key, 1, 1);
     }
 

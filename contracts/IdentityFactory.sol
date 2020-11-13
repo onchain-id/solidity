@@ -19,7 +19,7 @@ contract IdentityFactory is CloneFactory {
 
     function createIdentity(address _owner) public returns(address) {
         address clone = createClone(libraryAddress);
-        Identity(clone).set(_owner);
+        Identity(clone).postConstructor(_owner);
         IdentityCreated(clone);
         return clone;
     }

@@ -11,6 +11,12 @@ import "./LibraryLock.sol";
  */
 contract Identity is ERC734, IIdentity, Proxiable {
 
+
+    function postConstructor(address _owner) public {
+        _set(_owner);
+    }
+
+
     /**
     * @notice Implementation of the addClaim function from the ERC-735 standard
     *  Require that the msg.sender has claim signer key.

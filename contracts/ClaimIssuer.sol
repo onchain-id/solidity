@@ -11,7 +11,7 @@ contract ClaimIssuer is IClaimIssuer, Identity {
     mapping (bytes32 => address) public identityAddresses;
 
     constructor(address _owner) public {
-        set(_owner);
+        _set(_owner);
     }
 
     function revokeClaim(bytes32 _claimId, address _identity) public override returns(bool) {
