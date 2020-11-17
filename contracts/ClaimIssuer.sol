@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.6.9;
 
-import "./IClaimIssuer.sol";
+import "./Interface/IClaimIssuer.sol";
 import "./Identity.sol";
 
 contract ClaimIssuer is IClaimIssuer, Identity {

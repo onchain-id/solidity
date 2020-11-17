@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.6.9;
 
-import "./IERC734.sol";
-import "./Storage.sol";
-import "./LibraryLock.sol";
+import "./Storage/Storage.sol";
+import "./Library/LibraryLock.sol";
+import "./Interface/IERC734.sol";
+
 
 /**
  * @dev Implementation of the `IERC734` "KeyHolder" interface.
@@ -91,6 +92,7 @@ contract ERC734 is Storage, LibraryLock, IERC734 {
 
     function addKey(bytes32 _key, uint256 _purpose, uint256 _type)
     public
+    delegatedOnly
     override
     returns (bool success)
     {
@@ -123,6 +125,7 @@ contract ERC734 is Storage, LibraryLock, IERC734 {
 
     function approve(uint256 _id, bool _approve)
     public
+    delegatedOnly
     override
     returns (bool success)
     {
@@ -133,7 +136,7 @@ contract ERC734 is Storage, LibraryLock, IERC734 {
         if (_approve == true) {
             executions[_id].approved = true;
 
-            (success,) = executions[_id].to.call.value(executions[_id].value)(abi.encode(executions[_id].data, 0));
+            (success,) = executions[_id].to.call{value:(executions[_id].value)}(abi.encode(executions[_id].data, 0));
 
             if (success) {
                 executions[_id].executed = true;
@@ -164,6 +167,7 @@ contract ERC734 is Storage, LibraryLock, IERC734 {
 
     function execute(address _to, uint256 _value, bytes memory _data)
     public
+    delegatedOnly
     override
     payable
     returns (uint256 executionId)
@@ -185,6 +189,7 @@ contract ERC734 is Storage, LibraryLock, IERC734 {
 
     function removeKey(bytes32 _key, uint256 _purpose)
     public
+    delegatedOnly
     override
     returns (bool success)
     {

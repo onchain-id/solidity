@@ -2,15 +2,13 @@
 pragma solidity ^0.6.9;
 
 import "./ERC734.sol";
-import "./IIdentity.sol";
-import "./Proxiable.sol";
-import "./LibraryLock.sol";
+import "./Interface/IIdentity.sol";
+import "./version/Version.sol";
 
 /**
  * @dev Implementation of the `IERC734` "KeyHolder" and the `IERC735` "ClaimHolder" interfaces into a common Identity Contract.
  */
-contract Identity is ERC734, IIdentity, Proxiable {
-
+contract Identity is ERC734, IIdentity, Version {
 
     function postConstructor(address _owner) public {
         _set(_owner);
@@ -41,6 +39,7 @@ contract Identity is ERC734, IIdentity, Proxiable {
         string memory _uri
     )
     public
+    delegatedOnly
     override
     returns (bytes32 claimRequestId)
     {
@@ -100,7 +99,7 @@ contract Identity is ERC734, IIdentity, Proxiable {
     * @return success Returns TRUE when the claim was removed.
     * triggers ClaimRemoved event
     */
-    function removeClaim(bytes32 _claimId) public override returns (bool success) {
+    function removeClaim(bytes32 _claimId) public delegatedOnly override returns (bool success) {
         if (msg.sender != address(this)) {
             require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 3), "Permissions: Sender does not have CLAIM key");
         }
@@ -182,21 +181,5 @@ contract Identity is ERC734, IIdentity, Proxiable {
     returns(bytes32[] memory claimIds)
     {
         return claimsByTopic[_topic];
-    }
-
-   /**
-    * This function should normally be guarded by onlyOwner. The modifier was
-    * removed for the purposes of the demo.
-    *
-    * Because the proxy-test ganache instance running a forked chain uses
-    * different accounts than those used to deploy the contract on the
-    * original chain, it does not have access to the owner account.
-    *
-    * It is important for the proxy-test feature to run the upgrade pattern
-    * because it needs to verify that an upgrade deployed live will work
-    * properly.
-    */
-    function updateCode(address newCode) public delegatedOnly  {
-        updateCodeAddress(newCode);
     }
 }
