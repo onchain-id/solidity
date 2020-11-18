@@ -8,29 +8,21 @@ contract ImplementationAuthority is Ownable {
 
     event UpdatedImplementation(address newAddress);
 
-    bytes32 internal implementation;
+    address implementation;
 
     constructor(address _implementation) public {
-        bytes32 slot = implementation;
-        assembly {
-            sstore(slot, _implementation)
-        }
+        implementation = _implementation;
         emit UpdatedImplementation(_implementation);
     }
 
-    function getImplementation() external view returns(address impl) {
-        bytes32 slot = implementation;
-        assembly {
-            impl := sload(slot)
-        }
+    function getImplementation() external view returns(address) {
+        return implementation;
     }
 
     function updateImplementation(address _newImplementation) public onlyOwner {
-        bytes32 slot = implementation;
-        assembly {
-            sstore(slot, _newImplementation)
-        }
+        implementation = _newImplementation;
         emit UpdatedImplementation(_newImplementation);
     }
 }
+
 
