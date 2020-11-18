@@ -3,7 +3,6 @@ pragma solidity ^0.6.9;
 import "./Structs.sol";
 
 contract Storage is Structs {
-    string constant private IDENTITY_VERSION = "1.0.0";
     uint256 public constant MANAGEMENT_KEY = 1;
     uint256 public constant ACTION_KEY = 2;
     uint256 public constant CLAIM_SIGNER_KEY = 3;
