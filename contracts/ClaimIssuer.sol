@@ -10,11 +10,11 @@ contract ClaimIssuer is IClaimIssuer, Identity {
     mapping (bytes => bool) public revokedClaims;
     mapping (bytes32 => address) public identityAddresses;
 
-    constructor(address _owner) public {
-        _set(_owner);
+    function setClaimIssuer(address _owner) public {
+        postConstructor(_owner);
     }
 
-    function revokeClaim(bytes32 _claimId, address _identity) public override returns(bool) {
+    function revokeClaim(bytes32 _claimId, address _identity) public override delegatedOnly returns(bool) {
         uint256 foundClaimTopic;
         uint256 scheme;
         address issuer;
