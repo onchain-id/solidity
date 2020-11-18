@@ -9,8 +9,8 @@ contract Version {
     /**
      * @dev Returns the address of the current version.
      */
-    function version() public pure returns (bytes3) {
+    function version() public pure returns (string memory) {
         // version 1.0.0
-        return "100";
+        return "1.0.0";
     }
 }
