@@ -2,11 +2,18 @@
 
 pragma solidity ^0.6.9;
 
-import "../Interface/IImplementationProxy.sol";
+import "../Interface/IImplementationAuthority.sol";
 
 contract Proxy {
+
+    address implementation;
+
+    constructor(address _implementation) public {
+        implementation = _implementation;
+    }
+
     fallback() external payable {
-    address logic = IImplementationProxy(0x0000000000000000000000000000000000000000).getImplementation();
+    address logic = IImplementationAuthority(implementation).getImplementation();
 
         assembly { // solium-disable-line
             calldatacopy(0x0, 0x0, calldatasize())

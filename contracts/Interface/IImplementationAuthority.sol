@@ -2,6 +2,6 @@
 
 pragma solidity ^0.6.9;
 
-interface IImplementationProxy {
+interface IImplementationAuthority {
     function getImplementation() external view returns(address);
 }
