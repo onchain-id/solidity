@@ -6,7 +6,7 @@ import "../Interface/IImplementationProxy.sol";
 
 contract Proxy {
     fallback() external payable {
-    address logic = IImplementationProxy(0xa6165bbb69f7e8f3d960220B5F28e990ea5F630D).getImplementation();
+    address logic = IImplementationProxy(0x0000000000000000000000000000000000000000).getImplementation();
 
         assembly { // solium-disable-line
             calldatacopy(0x0, 0x0, calldatasize())
