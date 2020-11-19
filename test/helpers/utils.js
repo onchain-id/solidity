@@ -2,7 +2,7 @@ const fs = require('fs');
 
 function replaceAddressOnImplementation(address) {
 
-  fs.readFile("./contracts/Proxy/UpgradableProxy.sol", 'utf8', function (err,data) {
+  fs.readFile("./contracts/proxy/UpgradableProxy.sol", 'utf8', function (err,data) {
     if (err) {
       return console.log(err);
     }

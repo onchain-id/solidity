@@ -2,7 +2,7 @@
 pragma solidity ^0.6.9;
 
 /**
- * @dev Interface of the ERC734 (Key Holder) standard as defined in the EIP.
+ * @dev interface of the ERC734 (Key Holder) standard as defined in the EIP.
  */
 interface IERC734 {
 

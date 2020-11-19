@@ -12,8 +12,8 @@ import "./Interface/IERC734.sol";
 contract ERC734 is Storage, LibraryLock, IERC734 {
     event ExecutionFailed(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data);
 
-    function _set(address _owner) internal {
-        bytes32 _key = keccak256(abi.encode(_owner));
+    function _setManager(address _manager) internal {
+        bytes32 _key = keccak256(abi.encode(_manager));
         require(!initialized, "Key already exists");
         initialize();
         keys[_key].key = _key;

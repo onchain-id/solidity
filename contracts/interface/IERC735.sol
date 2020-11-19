@@ -2,7 +2,7 @@
 pragma solidity ^0.6.9;
 
 /**
- * @dev Interface of the ERC735 (Claim Holder) standard as defined in the EIP.
+ * @dev interface of the ERC735 (Claim Holder) standard as defined in the EIP.
  */
 interface IERC735 {
 

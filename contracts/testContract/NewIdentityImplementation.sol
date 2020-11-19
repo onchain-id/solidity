@@ -2,6 +2,7 @@
 
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.6.9;
+
 import "../Library/LibraryLock.sol";
 
 
@@ -69,7 +70,7 @@ contract NewStorage is NewStructs {
 
 
 /**
- * @dev Interface of the ERC734 (Key Holder) standard as defined in the EIP.
+ * @dev interface of the ERC734 (Key Holder) standard as defined in the EIP.
  */
 interface NEWIERC734 {
 
@@ -185,8 +186,8 @@ interface NEWIERC734 {
 contract NEWERC734 is NewStorage, LibraryLock, NEWIERC734 {
     event ExecutionFailed(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data);
 
-    function _set(address _owner) internal {
-        bytes32 _key = keccak256(abi.encode(_owner));
+    function _setManager(address manager) internal {
+        bytes32 _key = keccak256(abi.encode(manager));
         require(!initialized, "Key already exists");
         initialize();
         keys[_key].key = _key;
@@ -435,7 +436,7 @@ contract NEWERC734 is NewStorage, LibraryLock, NEWIERC734 {
 pragma solidity ^0.6.9;
 
 /**
- * @dev Interface of the ERC735 (Claim Holder) standard as defined in the EIP.
+ * @dev interface of the ERC735 (Claim Holder) standard as defined in the EIP.
  */
 interface NEWIERC735 {
 
@@ -538,8 +539,8 @@ pragma solidity ^0.6.9;
  */
 contract NewIdentity is NEWERC734, NEWIIdentity, NEWVersion {
 
-    function postConstructor(address _owner) public {
-        _set(_owner);
+    function setManager(address manager) public {
+        _setManager(manager);
     }
 
 
