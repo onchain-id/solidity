@@ -7,7 +7,7 @@ pragma solidity ^0.6.9;
  */
 contract Version {
     /**
-     * @dev Returns the address of the current version.
+     * @dev Returns the string of the current version.
      */
     function version() public pure returns (string memory) {
         // version 1.0.0
