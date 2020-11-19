@@ -57,7 +57,6 @@
     "solhint": "^2.3.0",
     "solidity-coverage": "^0.7.5",
     "solidity-docgen": "^0.3.14",
-    "truffle": "^5.1.13",
-    "truffle-proxy": "git+https://github.com/mdcoon/truffle-proxy.git"
+    "truffle": "^5.1.13"
   }
 }

@@ -1,7 +1,7 @@
 {
   "extends": "solhint:recommended",
   "rules": {
-    "indent": ["off", 4],
+    "indent": "off",
     "func-order": "off",
     "bracket-align": "off",
     "compiler-fixed": "off",
