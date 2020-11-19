@@ -30,7 +30,7 @@ contract('Identity', function ([
       this.identity = await Identity.at(
         this.proxy.address
       );
-      await this.identity.postConstructor(identityIssuer);
+      await this.identity.setManager(identityIssuer);
     });
 
     shouldBehaveLikeERC734({
