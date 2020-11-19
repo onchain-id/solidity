@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.6.9;
 
-import "./Storage/Storage.sol";
-import "./Library/LibraryLock.sol";
-import "./Interface/IERC734.sol";
+import "./storage/Storage.sol";
+import "./library/LibraryLock.sol";
+import "./interface/IERC734.sol";
 
 
 /**

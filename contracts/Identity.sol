@@ -2,7 +2,7 @@
 pragma solidity ^0.6.9;
 
 import "./ERC734.sol";
-import "./Interface/IIdentity.sol";
+import "./interface/IIdentity.sol";
 import "./version/Version.sol";
 
 /**

@@ -2,7 +2,9 @@
 
 pragma solidity ^0.6.9;
 
-import "../Interface/IImplementationAuthority.sol";
+interface IImplementationAuthority {
+    function getImplementation() external view returns(address);
+}
 
 contract Proxy {
     address implementationAuthority;
