@@ -1,4 +1,3 @@
-const {replaceAddressOnImplementation} = require("./helpers/utils");
 const { expect } = require('chai');
 
 const { shouldBehaveLikeERC734 } = require('./ERC734.behavior');
@@ -9,20 +8,17 @@ const Implementation = artifacts.require('ImplementationAuthority');
 const Proxy = artifacts.require('Proxy');
 const NewIdentity = artifacts.require('NewIdentity');
 
-// const IdentityFactory = artifacts.require('IdentityFactory');
-
 contract('Identity', function ([
   identityIssuer,
   identityOwner,
   claimIssuer,
   anotherAccount,
 ]) {
-  let identityCreated0;
 
   describe('Identity', function () {
 
     beforeEach(async function () {
-      this.identity = await Identity.new({ from: identityIssuer });
+      this.identity = await Identity.new(identityIssuer, { from: identityIssuer });
       this.implementation = await Implementation.new(
         this.identity.address
       );

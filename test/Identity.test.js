@@ -14,8 +14,7 @@ contract('Identity', function ([
 
   describe('Identity', function () {
     beforeEach(async function () {
-      this.identity = await Identity.new({ from: identityIssuer });
-      await this.identity.setManager(identityIssuer);
+      this.identity = await Identity.new(identityIssuer, { from: identityIssuer });
     });
 
     shouldBehaveLikeERC734({

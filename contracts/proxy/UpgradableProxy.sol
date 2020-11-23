@@ -11,7 +11,6 @@ contract Proxy {
 
     constructor(address _implementationAuthority) public {
         implementationAuthority = _implementationAuthority;
-        address contractLogic = IImplementationAuthority(_implementationAuthority).getImplementation();
     }
 
     fallback() external payable {

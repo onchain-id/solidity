@@ -10,6 +10,10 @@ contract ClaimIssuer is IClaimIssuer, Identity {
     mapping (bytes => bool) public revokedClaims;
     mapping (bytes32 => address) public identityAddresses;
 
+    constructor(address _manager) public Identity(_manager){
+
+    }
+
     function setClaimIssuer(address _manager) public {
         setManager(_manager);
     }

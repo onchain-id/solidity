@@ -10,6 +10,12 @@ import "./version/Version.sol";
  */
 contract Identity is ERC734, IIdentity, Version {
 
+
+
+    constructor(address _manager) public {
+        _setManager(_manager);
+    }
+
     function setManager(address _manager) public {
         _setManager(_manager);
     }
