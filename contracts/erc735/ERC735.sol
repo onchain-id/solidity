@@ -33,7 +33,7 @@ contract ERC735 is IERC735, ERC734 {
     mapping(bytes32 => Claim) internal claims;
     mapping(uint256 => bytes32[]) internal claimsByTopic;
 
-    constructor(address initialManagementKey) ERC734(initialManagementKey) public {}
+    constructor(address initialManagementKey) public ERC734(initialManagementKey) {}
 
     /**
     * @notice Implementation of the addClaim function from the ERC-735 standard
