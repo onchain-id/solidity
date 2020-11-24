@@ -1,21 +1,54 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.6.9;
 
-import "./storage/Storage.sol";
-import "./library/LibraryLock.sol";
-import "./interface/IERC734.sol";
-
+import "../interface/IERC734.sol";
 
 /**
  * @dev Implementation of the `IERC734` "KeyHolder" interface.
  */
-contract ERC734 is Storage, LibraryLock, IERC734 {
-    event ExecutionFailed(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data);
+contract ERC734 is IERC734 {
+    /**
+    * @dev Definition of the structure of a Key.
+    *
+    * Specification: Keys are cryptographic public keys, or contract addresses associated with this identity.
+    * The structure should be as follows:
+    *   - key: A public key owned by this identity
+    *      - purposes: uint256[] Array of the key purposes, like 1 = MANAGEMENT, 2 = EXECUTION
+    *      - keyType: The type of key used, which would be a uint256 for different key types. e.g. 1 = ECDSA, 2 = RSA, etc.
+    *      - key: bytes32 The public key. // Its the Keccak256 hash of the key
+    */
+    struct Key {
+        uint256[] purposes;
+        uint256 keyType;
+        bytes32 key;
+    }
 
-    function _setManager(address _manager) internal {
-        bytes32 _key = keccak256(abi.encode(_manager));
-        require(!initialized, "Key already exists");
-        initialize();
+    struct Execution {
+        address to;
+        uint256 value;
+        bytes data;
+        bool approved;
+        bool executed;
+    }
+
+    uint256 public constant MANAGEMENT_KEY = 1;
+    uint256 public constant ACTION_KEY = 2;
+    uint256 public constant CLAIM_SIGNER_KEY = 3;
+    uint256 public constant ENCRYPTION_KEY = 4;
+    uint256 internal executionNonce;
+    mapping(bytes32 => Key) internal keys;
+    mapping(uint256 => bytes32[]) internal keysByPurpose;
+    mapping(uint256 => Execution) internal executions;
+    bool public initialManagementKeySet = false;
+
+    constructor(address initialManagementKey) public {
+        setInitialManagementKey(initialManagementKey);
+    }
+
+    function setInitialManagementKey(address initialManagementKey) internal {
+        bytes32 _key = keccak256(abi.encode(initialManagementKey));
+        require(!initialManagementKeySet, "Initial management key already set.");
+        initialManagementKeySet = true;
         keys[_key].key = _key;
         keys[_key].purposes = [1];
         keys[_key].keyType = 1;
@@ -92,7 +125,6 @@ contract ERC734 is Storage, LibraryLock, IERC734 {
 
     function addKey(bytes32 _key, uint256 _purpose, uint256 _type)
     public
-    delegatedOnly
     override
     returns (bool success)
     {
@@ -125,7 +157,6 @@ contract ERC734 is Storage, LibraryLock, IERC734 {
 
     function approve(uint256 _id, bool _approve)
     public
-    delegatedOnly
     override
     returns (bool success)
     {
@@ -167,7 +198,6 @@ contract ERC734 is Storage, LibraryLock, IERC734 {
 
     function execute(address _to, uint256 _value, bytes memory _data)
     public
-    delegatedOnly
     override
     payable
     returns (uint256 executionId)
@@ -189,7 +219,6 @@ contract ERC734 is Storage, LibraryLock, IERC734 {
 
     function removeKey(bytes32 _key, uint256 _purpose)
     public
-    delegatedOnly
     override
     returns (bool success)
     {
