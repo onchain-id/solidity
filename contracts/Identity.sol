@@ -3,7 +3,6 @@ pragma solidity ^0.6.9;
 
 import "./interface/IIdentity.sol";
 import "./version/Version.sol";
-import "./storage/Structs.sol";
 import "./storage/Storage.sol";
 import "./library/LibraryLock.sol";
 
@@ -11,7 +10,7 @@ import "./library/LibraryLock.sol";
  * @dev Implementation of the `IERC734` "KeyHolder" and the `IERC735` "ClaimHolder" interfaces into a common Identity Contract.
  * This implementation has a separate contract were it declares all storage, allowing for it to be used as an upgradable logic contract.
  */
-contract Identity is Structs, Storage, LibraryLockDataLayout, LibraryLock, IIdentity, Version {
+contract Identity is Storage, LibraryLockDataLayout, LibraryLock, IIdentity, Version {
     constructor(address _manager) public {
         setManager(_manager);
     }
