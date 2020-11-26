@@ -19,7 +19,7 @@ contract Identity is Storage, LibraryLockDataLayout, LibraryLock, IIdentity, Ver
 
     function setInitialManagementKey(address initialManagementKey) internal {
         bytes32 _key = keccak256(abi.encode(initialManagementKey));
-        require(!initialized, "Key already exists");
+        require(!initialized, "Initial key was already setup.");
         initialize();
         keys[_key].key = _key;
         keys[_key].purposes = [1];
