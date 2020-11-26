@@ -11,6 +11,7 @@ contract LibraryLock is LibraryLockDataLayout {
         require(initialized == true, "The library is locked. No direct call is allowed");
         _;
     }
+
     function initialize() internal {
         initialized = true;
     }
