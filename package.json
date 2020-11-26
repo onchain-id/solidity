@@ -5,7 +5,6 @@
   "files": [
     "build",
     "contracts",
-    "!contracts/examples",
     "index.js",
     "index.d.ts"
   ],

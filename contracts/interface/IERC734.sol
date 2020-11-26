@@ -27,6 +27,8 @@ interface IERC734 {
      */
     event ExecutionRequested(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data);
 
+    event ExecutionFailed(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data);
+
     /**
      * @dev Emitted when a key was added to the Identity.
      *
