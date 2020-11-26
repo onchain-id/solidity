@@ -26,7 +26,7 @@ contract('Identity', function ([
       this.identity = await Identity.at(
         this.proxy.address
       );
-      await this.identity.setManager(identityIssuer);
+      await this.identity.setInitialManagementKey(identityIssuer);
     });
 
     shouldBehaveLikeERC734({
@@ -49,20 +49,12 @@ contract('Identity', function ([
     });
 
     it('Should replace the implementation with a new one', async function () {
-      expect((await this.identity.MANAGEMENT_KEY()).toString()).to.equals('1');
-      expect((await this.identity.ACTION_KEY()).toString()).to.equals('2');
-      expect((await this.identity.CLAIM_SIGNER_KEY()).toString()).to.equals('3');
-      expect((await this.identity.ENCRYPTION_KEY()).toString()).to.equals('4');
       expect((await this.identity.version()).toString()).to.equals('1.0.0');
 
       // Deploy & Replace Implementation on AuthorityImplementation with the new Identity Contract
       this.newImplementation = await NewIdentity.new({ from: identityIssuer });
       this.implementation.updateImplementation(this.newImplementation.address);
 
-      expect((await this.identity.MANAGEMENT_KEY()).toString()).to.equals('11');
-      expect((await this.identity.ACTION_KEY()).toString()).to.equals('22');
-      expect((await this.identity.CLAIM_SIGNER_KEY()).toString()).to.equals('33');
-      expect((await this.identity.ENCRYPTION_KEY()).toString()).to.equals('44');
       expect((await this.identity.version()).toString()).to.equals('2.1.0');
     });
 
