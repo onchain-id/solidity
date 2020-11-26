@@ -11,8 +11,8 @@ import "./library/LibraryLock.sol";
  * This implementation has a separate contract were it declares all storage, allowing for it to be used as an upgradable logic contract.
  */
 contract Identity is Storage, LibraryLockDataLayout, LibraryLock, IIdentity, Version {
-    constructor(address _manager) public {
-        setManager(_manager);
+    constructor(address initialManagementKey) public {
+        setInitialManagementKey(initialManagementKey);
     }
 
     function setManager(address _manager) public {
@@ -21,8 +21,8 @@ contract Identity is Storage, LibraryLockDataLayout, LibraryLock, IIdentity, Ver
 
     event ExecutionFailed(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data);
 
-    function _setManager(address _manager) internal {
-        bytes32 _key = keccak256(abi.encode(_manager));
+    function setInitialManagementKey(address initialManagementKey) internal {
+        bytes32 _key = keccak256(abi.encode(initialManagementKey));
         require(!initialized, "Key already exists");
         initialize();
         keys[_key].key = _key;
