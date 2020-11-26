@@ -15,10 +15,6 @@ contract Identity is Storage, LibraryLockDataLayout, LibraryLock, IIdentity, Ver
         setInitialManagementKey(initialManagementKey);
     }
 
-    function setManager(address _manager) public {
-        _setManager(_manager);
-    }
-
     event ExecutionFailed(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data);
 
     function setInitialManagementKey(address initialManagementKey) internal {
@@ -260,7 +256,7 @@ contract Identity is Storage, LibraryLockDataLayout, LibraryLock, IIdentity, Ver
         for (uint keyPurposeIndex = 0; keyPurposeIndex < key.purposes.length; keyPurposeIndex++) {
             uint256 purpose = key.purposes[keyPurposeIndex];
 
-            if (purpose == MANAGEMENT_KEY || purpose == _purpose) return true;
+            if (purpose == 1 || purpose == _purpose) return true;
         }
 
         return false;

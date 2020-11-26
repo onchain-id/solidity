@@ -5,18 +5,9 @@ import "./interface/IClaimIssuer.sol";
 import "./Identity.sol";
 
 contract ClaimIssuer is IClaimIssuer, Identity {
-    uint public issuedClaimCount;
-
     mapping (bytes => bool) public revokedClaims;
-    mapping (bytes32 => address) public identityAddresses;
 
-    constructor(address _manager) public Identity(_manager){
-
-    }
-
-    function setClaimIssuer(address _manager) public {
-        setManager(_manager);
-    }
+    constructor(address initialManagementKey) public Identity(initialManagementKey) {}
 
     function revokeClaim(bytes32 _claimId, address _identity) public override delegatedOnly returns(bool) {
         uint256 foundClaimTopic;
@@ -32,7 +23,6 @@ contract ClaimIssuer is IClaimIssuer, Identity {
         ( foundClaimTopic, scheme, issuer, sig, data, ) = Identity(_identity).getClaim(_claimId);
 
         revokedClaims[sig] = true;
-        identityAddresses[_claimId] = _identity;
         return true;
     }
 
