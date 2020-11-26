@@ -26,7 +26,6 @@ contract('Identity', function ([
       this.identity = await Identity.at(
         this.proxy.address
       );
-      await this.identity.setInitialManagementKey(identityIssuer);
     });
 
     shouldBehaveLikeERC734({
