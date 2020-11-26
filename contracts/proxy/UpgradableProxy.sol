@@ -7,7 +7,7 @@ interface IImplementationAuthority {
 }
 
 contract Proxy {
-    address implementationAuthority;
+    address public implementationAuthority;
 
     constructor(address _implementationAuthority) public {
         implementationAuthority = _implementationAuthority;
