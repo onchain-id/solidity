@@ -16,10 +16,18 @@ contract ImplementationAuthority is IImplementationAuthority, Ownable {
         emit UpdatedImplementation(_implementation);
     }
 
+    /**
+     * @dev get the address of the implementation contract.
+     * @returns the address of the implementation contract
+     */
     function getImplementation() external override view returns(address) {
         return implementation;
     }
 
+    /**
+     * @dev update the address of the implementation contract.
+     * @param _newImplementation the implementation address
+     */
     function updateImplementation(address _newImplementation) public onlyOwner {
         implementation = _newImplementation;
         emit UpdatedImplementation(_newImplementation);
