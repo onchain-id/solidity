@@ -4,7 +4,11 @@ pragma solidity ^0.6.9;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract ImplementationAuthority is Ownable {
+interface IImplementationAuthority {
+    function getImplementation() external view returns(address);
+}
+
+contract ImplementationAuthority is IImplementationAuthority, Ownable {
 
     event UpdatedImplementation(address newAddress);
 
@@ -15,7 +19,7 @@ contract ImplementationAuthority is Ownable {
         emit UpdatedImplementation(_implementation);
     }
 
-    function getImplementation() external view returns(address) {
+    function getImplementation() external override view returns(address) {
         return implementation;
     }
 

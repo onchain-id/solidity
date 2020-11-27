@@ -220,7 +220,7 @@ contract Identity is Storage, IIdentity, Version {
      * SHOULD require approve to be called with one or more keys of purpose 1 or 2 to approve this execution.
      * Execute COULD be used as the only accessor for addKey, removeKey and replaceKey and removeClaim.
      *
-     * @returns executionId: SHOULD be sent to the approve function, to approve or reject this execution.
+     * @return executionId SHOULD be sent to the approve function, to approve or reject this execution.
      */
     function execute(address _to, uint256 _value, bytes memory _data)
     public
