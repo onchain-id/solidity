@@ -40,7 +40,6 @@ contract Identity is Storage, IIdentity, Version {
         return cs == 0;
     }
 
-    event ExecutionFailed(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data);
 
     // solhint-disable-next-line func-name-mixedcase
     function __Identity_init(address initialManagementKey) internal {
@@ -456,5 +455,12 @@ contract Identity is Storage, IIdentity, Version {
     returns(bytes32[] memory claimIds)
     {
         return claimsByTopic[_topic];
+    }
+
+    /**
+    * @notice Emit events to update Implementation's code on Etherscan
+    */
+    function updateCode() external delegatedOnly {
+        emit UpdatedCode(address(this));
     }
 }
