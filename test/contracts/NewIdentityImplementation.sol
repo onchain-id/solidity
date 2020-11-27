@@ -1,70 +1,109 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.6.9;
 
-import "./interface/IIdentity.sol";
-import "./version/Version.sol";
-import "./storage/Storage.sol";
+import "../../contracts/interface/IIdentity.sol";
+
+contract NewStructs {
+    /**
+     * @dev Definition of the structure of a Key.
+     *
+     * Specification: Keys are cryptographic public keys, or contract addresses associated with this identity.
+     * The structure should be as follows:
+     *   - key: A public key owned by this identity
+     *      - purposes: uint256[] Array of the key purposes, like 1 = MANAGEMENT, 2 = EXECUTION
+     *      - keyType: The type of key used, which would be a uint256 for different key types. e.g. 1 = ECDSA, 2 = RSA, etc.
+     *      - key: bytes32 The public key. // Its the Keccak256 hash of the key
+     */
+    struct Key {
+        uint256[] purposes;
+        uint256 keyType;
+        bytes32 key;
+    }
+
+    struct Execution {
+        address to;
+        uint256 value;
+        bytes data;
+        bool approved;
+        bool executed;
+    }
+
+    /**
+     * @dev Definition of the structure of a Claim.
+     *
+     * Specification: Claims are information an issuer has about the identity holder.
+     * The structure should be as follows:
+     *   - claim: A claim published for the Identity.
+     *      - topic: A uint256 number which represents the topic of the claim. (e.g. 1 biometric, 2 residence (ToBeDefined: number schemes, sub topics based on number ranges??))
+     *      - scheme : The scheme with which this claim SHOULD be verified or how it should be processed. Its a uint256 for different schemes. E.g. could 3 mean contract verification, where the data will be call data, and the issuer a contract address to call (ToBeDefined). Those can also mean different key types e.g. 1 = ECDSA, 2 = RSA, etc. (ToBeDefined)
+     *      - issuer: The issuers identity contract address, or the address used to sign the above signature. If an identity contract, it should hold the key with which the above message was signed, if the key is not present anymore, the claim SHOULD be treated as invalid. The issuer can also be a contract address itself, at which the claim can be verified using the call data.
+     *      - signature: Signature which is the proof that the claim issuer issued a claim of topic for this identity. it MUST be a signed message of the following structure: `keccak256(abi.encode(identityHolder_address, topic, data))`
+     *      - data: The hash of the claim data, sitting in another location, a bit-mask, call data, or actual data based on the claim scheme.
+     *      - uri: The location of the claim, this can be HTTP links, swarm hashes, IPFS hashes, and such.
+     */
+    struct Claim {
+        uint256 topic;
+        uint256 scheme;
+        address issuer;
+        bytes signature;
+        bytes data;
+        string uri;
+    }
+}
+
+contract NewStorage is NewStructs {
+    bool initialized = false;
+    bool isLibrary = false;
+
+    uint256 internal executionNonce;
+    mapping(bytes32 => Key) internal keys;
+    mapping(uint256 => bytes32[]) internal keysByPurpose;
+    mapping(uint256 => Execution) internal executions;
+    mapping(bytes32 => Claim) internal claims;
+    mapping(uint256 => bytes32[]) internal claimsByTopic;
+}
+
+/**
+ * @dev Version contract gives the versioning information of the implementation contract
+ */
+contract NewVersion {
+    /**
+     * @dev Returns the string of the current version.
+     */
+    function version() public pure returns (string memory) {
+        // version 1.0.0
+        return "1.1.0";
+    }
+}
 
 /**
  * @dev Implementation of the `IERC734` "KeyHolder" and the `IERC735` "ClaimHolder" interfaces into a common Identity Contract.
  * This implementation has a separate contract were it declares all storage, allowing for it to be used as an upgradable logic contract.
  */
-contract Identity is Storage, IIdentity, Version {
-    bool private initialized = false;
-    bool private canInteract = true;
-
+contract NewIdentity is NewStorage, IIdentity, NewVersion {
     constructor(address initialManagementKey, bool _isLibrary) public {
-        canInteract = !_isLibrary;
+        setInitialManagementKey(initialManagementKey);
 
-        if (canInteract) {
-            __Identity_init(initialManagementKey);
-        } else {
-            initialized = true;
+        if (_isLibrary) {
+            isLibrary = true;
         }
     }
 
-    /**
-     * @notice Prevent any direct calls to the implementation contract (marked by canInteract = false).
-     */
     modifier delegatedOnly() {
-        require(canInteract == true, "Interacting with the library contract is forbidden.");
+        require(isLibrary == false, "Interacting with the library contract is forbidden.");
         _;
     }
 
-    /**
-     * @notice When using this contract as an implementation for a proxy, call this initializer with a delegatecall.
-     *
-     * @param initialManagementKey The ethereum address to be set as the management key of the ONCHAINID.
-     */
-    function initialize(address initialManagementKey) public {
-        __Identity_init(initialManagementKey);
-    }
-
-    /**
-     * @notice Computes if the context in which the function is called is a constructor or not.
-     *
-     * @return true if the context is a constructor.
-     */
-    function _isConstructor() private view returns (bool) {
-        address self = address(this);
-        uint256 cs;
-        // solhint-disable-next-line no-inline-assembly
-        assembly { cs := extcodesize(self) }
-        return cs == 0;
-    }
-
-    /**
-     * @notice Initializer internal function for the Identity contract.
-     *
-     * @param initialManagementKey The ethereum address to be set as the management key of the ONCHAINID.
-     */
-    // solhint-disable-next-line func-name-mixedcase
-    function __Identity_init(address initialManagementKey) internal {
-        require(!initialized || _isConstructor(), "Initial key was already setup.");
+    function initialize() internal {
         initialized = true;
-        canInteract = true;
+    }
 
+    event ExecutionFailed(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data);
+
+    function setInitialManagementKey(address initialManagementKey) public {
         bytes32 _key = keccak256(abi.encode(initialManagementKey));
+        require(!initialized, "Initial key was already setup.");
+        initialize();
         keys[_key].key = _key;
         keys[_key].purposes = [1];
         keys[_key].keyType = 1;
@@ -123,21 +162,22 @@ contract Identity is Storage, IIdentity, Version {
     }
 
     /**
-    * @notice implementation of the addKey function of the ERC-734 standard
-    * Adds a _key to the identity. The _purpose specifies the purpose of key. Initially we propose four purposes:
-    * 1: MANAGEMENT keys, which can manage the identity
-    * 2: ACTION keys, which perform actions in this identities name (signing, logins, transactions, etc.)
-    * 3: CLAIM signer keys, used to sign claims on other identities which need to be revokable.
-    * 4: ENCRYPTION keys, used to encrypt data e.g. hold in claims.
-    * MUST only be done by keys of purpose 1, or the identity itself.
-    * If its the identity itself, the approval process will determine its approval.
-    *
-    * @param _key keccak256 representation of an ethereum address
-    * @param _type type of key used, which would be a uint256 for different key types. e.g. 1 = ECDSA, 2 = RSA, etc.
-    * @param _purpose a uint256[] Array of the key types, like 1 = MANAGEMENT, 2 = ACTION, 3 = CLAIM, 4 = ENCRYPTION
-    *
-    * @return success Returns TRUE if the addition was successful and FALSE if not
-    */
+        * @notice implementation of the addKey function of the ERC-734 standard
+        * Adds a _key to the identity. The _purpose specifies the purpose of key. Initially we propose four purposes:
+        * 1: MANAGEMENT keys, which can manage the identity
+        * 2: ACTION keys, which perform actions in this identities name (signing, logins, transactions, etc.)
+        * 3: CLAIM signer keys, used to sign claims on other identities which need to be revokable.
+        * 4: ENCRYPTION keys, used to encrypt data e.g. hold in claims.
+        * MUST only be done by keys of purpose 1, or the identity itself.
+        * If its the identity itself, the approval process will determine its approval.
+        *
+        * @param _key keccak256 representation of an ethereum address
+        * @param _type type of key used, which would be a uint256 for different key types. e.g. 1 = ECDSA, 2 = RSA, etc.
+        * @param _purpose a uint256[] Array of the key types, like 1 = MANAGEMENT, 2 = ACTION, 3 = CLAIM, 4 = ENCRYPTION
+        *
+        * @return success Returns TRUE if the addition was successful and FALSE if not
+        */
+
     function addKey(bytes32 _key, uint256 _purpose, uint256 _type)
     public
     delegatedOnly
@@ -171,11 +211,6 @@ contract Identity is Storage, IIdentity, Version {
         return true;
     }
 
-    /**
-     * @notice Approves an execution or claim addition.
-     * This SHOULD require n of m approvals of keys purpose 1, if the _to of the execution is the identity contract itself, to successfully approve an execution.
-     * And COULD require n of m approvals of keys purpose 2, if the _to of the execution is another contract, to successfully approve an execution.
-     */
     function approve(uint256 _id, bool _approve)
     public
     delegatedOnly
@@ -218,13 +253,6 @@ contract Identity is Storage, IIdentity, Version {
         return true;
     }
 
-    /**
-     * @notice Passes an execution instruction to the keymanager.
-     * SHOULD require approve to be called with one or more keys of purpose 1 or 2 to approve this execution.
-     * Execute COULD be used as the only accessor for addKey, removeKey and replaceKey and removeClaim.
-     *
-     * @return executionId SHOULD be sent to the approve function, to approve or reject this execution.
-     */
     function execute(address _to, uint256 _value, bytes memory _data)
     public
     delegatedOnly
@@ -247,9 +275,6 @@ contract Identity is Storage, IIdentity, Version {
         return executionNonce-1;
     }
 
-    /**
-    * @notice Remove the purpose from a key.
-    */
     function removeKey(bytes32 _key, uint256 _purpose)
     public
     delegatedOnly
@@ -462,12 +487,12 @@ contract Identity is Storage, IIdentity, Version {
     )
     {
         return (
-            claims[_claimId].topic,
-            claims[_claimId].scheme,
-            claims[_claimId].issuer,
-            claims[_claimId].signature,
-            claims[_claimId].data,
-            claims[_claimId].uri
+        claims[_claimId].topic,
+        claims[_claimId].scheme,
+        claims[_claimId].issuer,
+        claims[_claimId].signature,
+        claims[_claimId].data,
+        claims[_claimId].uri
         );
     }
 

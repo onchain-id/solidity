@@ -1,19 +1,21 @@
-pragma solidity ^0.6.2;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity ^0.6.9;
 
-import "./IClaimIssuer.sol";
+import "./interface/IClaimIssuer.sol";
 import "./Identity.sol";
 
 contract ClaimIssuer is IClaimIssuer, Identity {
-    uint public issuedClaimCount;
-
     mapping (bytes => bool) public revokedClaims;
-    mapping (bytes32 => address) public identityAddresses;
 
-    constructor(address _owner) public {
-        set(_owner);
-    }
+    constructor(address initialManagementKey) public Identity(initialManagementKey, false) {}
 
-    function revokeClaim(bytes32 _claimId, address _identity) public override returns(bool) {
+    /**
+     * @dev Revoke a claim previously issued, the claim is no longer considered as valid after revocation.
+     * @param _claimId the id of the claim
+     * @param _identity the address of the identity contract
+     * @return isRevoked true when the claim is revoked
+     */
+    function revokeClaim(bytes32 _claimId, address _identity) public override delegatedOnly returns(bool) {
         uint256 foundClaimTopic;
         uint256 scheme;
         address issuer;
@@ -27,10 +29,14 @@ contract ClaimIssuer is IClaimIssuer, Identity {
         ( foundClaimTopic, scheme, issuer, sig, data, ) = Identity(_identity).getClaim(_claimId);
 
         revokedClaims[sig] = true;
-        identityAddresses[_claimId] = _identity;
         return true;
     }
 
+    /**
+     * @dev Returns revocation status of a claim.
+     * @param _sig the signature of the claim
+     * @return isRevoked true if the claim is revoked and false otherwise
+     */
     function isClaimRevoked(bytes memory _sig) public override view returns (bool) {
         if (revokedClaims[_sig]) {
             return true;
@@ -39,6 +45,14 @@ contract ClaimIssuer is IClaimIssuer, Identity {
         return false;
     }
 
+    /**
+     * @dev Checks if a claim is valid.
+     * @param _identity the identity contract related to the claim
+     * @param claimTopic the claim topic of the claim
+     * @param sig the signature of the claim
+     * @param data the data field of the claim
+     * @return claimValid true if the claim is valid, false otherwise
+     */
     function isClaimValid(IIdentity _identity, uint256 claimTopic, bytes memory sig, bytes memory data) public override view returns (bool claimValid)
     {
         bytes32 dataHash = keccak256(abi.encode(_identity, claimTopic, data));

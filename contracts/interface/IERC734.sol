@@ -1,24 +1,10 @@
-pragma solidity ^0.6.2;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity ^0.6.9;
 
 /**
- * @dev Interface of the ERC734 (Key Holder) standard as defined in the EIP.
+ * @dev interface of the ERC734 (Key Holder) standard as defined in the EIP.
  */
 interface IERC734 {
-    /**
-     * @dev Definition of the structure of a Key.
-     *
-     * Specification: Keys are cryptographic public keys, or contract addresses associated with this identity.
-     * The structure should be as follows:
-     *   - key: A public key owned by this identity
-     *      - purposes: uint256[] Array of the key purposes, like 1 = MANAGEMENT, 2 = EXECUTION
-     *      - keyType: The type of key used, which would be a uint256 for different key types. e.g. 1 = ECDSA, 2 = RSA, etc.
-     *      - key: bytes32 The public key. // Its the Keccak256 hash of the key
-     */
-    struct Key {
-        uint256[] purposes;
-        uint256 keyType;
-        bytes32 key;
-    }
 
     /**
      * @dev Emitted when an execution request was approved.
@@ -40,6 +26,8 @@ interface IERC734 {
      * Specification: MUST be triggered when execute was successfully called.
      */
     event ExecutionRequested(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data);
+
+    event ExecutionFailed(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data);
 
     /**
      * @dev Emitted when a key was added to the Identity.
