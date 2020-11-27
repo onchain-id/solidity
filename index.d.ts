@@ -2,7 +2,7 @@ export namespace contracts {
   export const ClaimIssuer: any;
   export const Identity: any;
   export const ImplementationAuthority: any;
-  export const Proxy: any;
+  export const IdentityProxy: any;
 }
 
 export namespace interfaces {

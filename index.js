@@ -7,14 +7,14 @@ const IImplementationAuthority = require('./build/contracts/IImplementationAutho
 const ClaimIssuer = require('./build/contracts/ClaimIssuer');
 const Identity = require('./build/contracts/Identity');
 const ImplementationAuthority = require('./build/contracts/ImplementationAuthority');
-const Proxy = require('./build/contracts/Proxy');
+const IdentityProxy = require('./build/contracts/IdentityProxy');
 
 module.exports = {
   contracts: {
     ClaimIssuer,
     Identity,
     ImplementationAuthority,
-    Proxy,
+    IdentityProxy,
   },
   interfaces: {
     IClaimIssuer,

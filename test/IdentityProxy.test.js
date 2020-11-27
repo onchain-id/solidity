@@ -5,7 +5,7 @@ const { shouldBehaveLikeERC735 } = require('./ERC735.behavior');
 
 const Identity = artifacts.require('Identity');
 const Implementation = artifacts.require('ImplementationAuthority');
-const Proxy = artifacts.require('Proxy');
+const IdentityProxy = artifacts.require('IdentityProxy');
 const NewIdentity = artifacts.require('NewIdentity');
 
 contract('Identity', function ([
@@ -22,7 +22,7 @@ contract('Identity', function ([
       this.implementation = await Implementation.new(
         this.identityImplementation.address
       );
-      this.proxy = await Proxy.new(
+      this.proxy = await IdentityProxy.new(
         this.implementation.address,
         identityIssuer,
       );
