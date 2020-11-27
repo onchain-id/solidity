@@ -47,7 +47,7 @@ contract('Identity', function ([
       anotherAccount,
     });
 
-    it.only('Should return version', async function () {
+    it('Should return version', async function () {
       expect(await this.identity.version()).to.equals("1.0.0");
     });
 
