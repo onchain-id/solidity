@@ -28,10 +28,20 @@ contract Identity is Storage, IIdentity, Version {
         _;
     }
 
+    /**
+     * @notice When using this contract as an implementation for a proxy, call this initializer with a delegatecall.
+     *
+     * @param initialManagementKey The ethereum address to be set as the management key of the ONCHAINID.
+     */
     function initialize(address initialManagementKey) public {
         __Identity_init(initialManagementKey);
     }
 
+    /**
+     * @notice Computes if the context in which the function is called is a constructor or not.
+     *
+     * @return true if the context is a constructor.
+     */
     function _isConstructor() private view returns (bool) {
         address self = address(this);
         uint256 cs;
@@ -41,6 +51,11 @@ contract Identity is Storage, IIdentity, Version {
     }
 
     // solhint-disable-next-line func-name-mixedcase
+    /**
+     * @notice Initializer internal function for the Identity contract.
+     *
+     * @param initialManagementKey The ethereum address to be set as the management key of the ONCHAINID.
+     */
     function __Identity_init(address initialManagementKey) internal {
         require(!initialized || _isConstructor(), "Initial key was already setup.");
         initialized = true;
@@ -105,22 +120,21 @@ contract Identity is Storage, IIdentity, Version {
     }
 
     /**
-        * @notice implementation of the addKey function of the ERC-734 standard
-        * Adds a _key to the identity. The _purpose specifies the purpose of key. Initially we propose four purposes:
-        * 1: MANAGEMENT keys, which can manage the identity
-        * 2: ACTION keys, which perform actions in this identities name (signing, logins, transactions, etc.)
-        * 3: CLAIM signer keys, used to sign claims on other identities which need to be revokable.
-        * 4: ENCRYPTION keys, used to encrypt data e.g. hold in claims.
-        * MUST only be done by keys of purpose 1, or the identity itself.
-        * If its the identity itself, the approval process will determine its approval.
-        *
-        * @param _key keccak256 representation of an ethereum address
-        * @param _type type of key used, which would be a uint256 for different key types. e.g. 1 = ECDSA, 2 = RSA, etc.
-        * @param _purpose a uint256[] Array of the key types, like 1 = MANAGEMENT, 2 = ACTION, 3 = CLAIM, 4 = ENCRYPTION
-        *
-        * @return success Returns TRUE if the addition was successful and FALSE if not
-        */
-
+    * @notice implementation of the addKey function of the ERC-734 standard
+    * Adds a _key to the identity. The _purpose specifies the purpose of key. Initially we propose four purposes:
+    * 1: MANAGEMENT keys, which can manage the identity
+    * 2: ACTION keys, which perform actions in this identities name (signing, logins, transactions, etc.)
+    * 3: CLAIM signer keys, used to sign claims on other identities which need to be revokable.
+    * 4: ENCRYPTION keys, used to encrypt data e.g. hold in claims.
+    * MUST only be done by keys of purpose 1, or the identity itself.
+    * If its the identity itself, the approval process will determine its approval.
+    *
+    * @param _key keccak256 representation of an ethereum address
+    * @param _type type of key used, which would be a uint256 for different key types. e.g. 1 = ECDSA, 2 = RSA, etc.
+    * @param _purpose a uint256[] Array of the key types, like 1 = MANAGEMENT, 2 = ACTION, 3 = CLAIM, 4 = ENCRYPTION
+    *
+    * @return success Returns TRUE if the addition was successful and FALSE if not
+    */
     function addKey(bytes32 _key, uint256 _purpose, uint256 _type)
     public
     delegatedOnly
@@ -154,6 +168,11 @@ contract Identity is Storage, IIdentity, Version {
         return true;
     }
 
+    /**
+     * @notice Approves an execution or claim addition.
+     * This SHOULD require n of m approvals of keys purpose 1, if the _to of the execution is the identity contract itself, to successfully approve an execution.
+     * And COULD require n of m approvals of keys purpose 2, if the _to of the execution is another contract, to successfully approve an execution.
+     */
     function approve(uint256 _id, bool _approve)
     public
     delegatedOnly
@@ -196,6 +215,13 @@ contract Identity is Storage, IIdentity, Version {
         return true;
     }
 
+    /**
+     * @notice Passes an execution instruction to the keymanager.
+     * SHOULD require approve to be called with one or more keys of purpose 1 or 2 to approve this execution.
+     * Execute COULD be used as the only accessor for addKey, removeKey and replaceKey and removeClaim.
+     *
+     * @returns executionId: SHOULD be sent to the approve function, to approve or reject this execution.
+     */
     function execute(address _to, uint256 _value, bytes memory _data)
     public
     delegatedOnly
@@ -218,6 +244,9 @@ contract Identity is Storage, IIdentity, Version {
         return executionNonce-1;
     }
 
+    /**
+    * @notice Remove the purpose from a key.
+    */
     function removeKey(bytes32 _key, uint256 _purpose)
     public
     delegatedOnly
