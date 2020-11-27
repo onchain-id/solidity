@@ -1,23 +1,19 @@
-
-
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.6.9;
 
-import "../../contracts/library/LibraryLock.sol";
-
+import "../../contracts/interface/IIdentity.sol";
 
 contract NewStructs {
-
-   /**
-    * @dev Definition of the structure of a Key.
-    *
-    * Specification: Keys are cryptographic public keys, or contract addresses associated with this identity.
-    * The structure should be as follows:
-    *   - key: A public key owned by this identity
-    *      - purposes: uint256[] Array of the key purposes, like 1 = MANAGEMENT, 2 = EXECUTION
-    *      - keyType: The type of key used, which would be a uint256 for different key types. e.g. 1 = ECDSA, 2 = RSA, etc.
-    *      - key: bytes32 The public key. // Its the Keccak256 hash of the key
-    */
+    /**
+     * @dev Definition of the structure of a Key.
+     *
+     * Specification: Keys are cryptographic public keys, or contract addresses associated with this identity.
+     * The structure should be as follows:
+     *   - key: A public key owned by this identity
+     *      - purposes: uint256[] Array of the key purposes, like 1 = MANAGEMENT, 2 = EXECUTION
+     *      - keyType: The type of key used, which would be a uint256 for different key types. e.g. 1 = ECDSA, 2 = RSA, etc.
+     *      - key: bytes32 The public key. // Its the Keccak256 hash of the key
+     */
     struct Key {
         uint256[] purposes;
         uint256 keyType;
@@ -32,19 +28,19 @@ contract NewStructs {
         bool executed;
     }
 
-   /**
-    * @dev Definition of the structure of a Claim.
-    *
-    * Specification: Claims are information an issuer has about the identity holder.
-    * The structure should be as follows:
-    *   - claim: A claim published for the Identity.
-    *      - topic: A uint256 number which represents the topic of the claim. (e.g. 1 biometric, 2 residence (ToBeDefined: number schemes, sub topics based on number ranges??))
-    *      - scheme : The scheme with which this claim SHOULD be verified or how it should be processed. Its a uint256 for different schemes. E.g. could 3 mean contract verification, where the data will be call data, and the issuer a contract address to call (ToBeDefined). Those can also mean different key types e.g. 1 = ECDSA, 2 = RSA, etc. (ToBeDefined)
-    *      - issuer: The issuers identity contract address, or the address used to sign the above signature. If an identity contract, it should hold the key with which the above message was signed, if the key is not present anymore, the claim SHOULD be treated as invalid. The issuer can also be a contract address itself, at which the claim can be verified using the call data.
-    *      - signature: Signature which is the proof that the claim issuer issued a claim of topic for this identity. it MUST be a signed message of the following structure: `keccak256(abi.encode(identityHolder_address, topic, data))`
-    *      - data: The hash of the claim data, sitting in another location, a bit-mask, call data, or actual data based on the claim scheme.
-    *      - uri: The location of the claim, this can be HTTP links, swarm hashes, IPFS hashes, and such.
-    */
+    /**
+     * @dev Definition of the structure of a Claim.
+     *
+     * Specification: Claims are information an issuer has about the identity holder.
+     * The structure should be as follows:
+     *   - claim: A claim published for the Identity.
+     *      - topic: A uint256 number which represents the topic of the claim. (e.g. 1 biometric, 2 residence (ToBeDefined: number schemes, sub topics based on number ranges??))
+     *      - scheme : The scheme with which this claim SHOULD be verified or how it should be processed. Its a uint256 for different schemes. E.g. could 3 mean contract verification, where the data will be call data, and the issuer a contract address to call (ToBeDefined). Those can also mean different key types e.g. 1 = ECDSA, 2 = RSA, etc. (ToBeDefined)
+     *      - issuer: The issuers identity contract address, or the address used to sign the above signature. If an identity contract, it should hold the key with which the above message was signed, if the key is not present anymore, the claim SHOULD be treated as invalid. The issuer can also be a contract address itself, at which the claim can be verified using the call data.
+     *      - signature: Signature which is the proof that the claim issuer issued a claim of topic for this identity. it MUST be a signed message of the following structure: `keccak256(abi.encode(identityHolder_address, topic, data))`
+     *      - data: The hash of the claim data, sitting in another location, a bit-mask, call data, or actual data based on the claim scheme.
+     *      - uri: The location of the claim, this can be HTTP links, swarm hashes, IPFS hashes, and such.
+     */
     struct Claim {
         uint256 topic;
         uint256 scheme;
@@ -56,10 +52,9 @@ contract NewStructs {
 }
 
 contract NewStorage is NewStructs {
-    uint256 public constant MANAGEMENT_KEY = 11;
-    uint256 public constant ACTION_KEY = 22;
-    uint256 public constant CLAIM_SIGNER_KEY = 33;
-    uint256 public constant ENCRYPTION_KEY = 44;
+    bool initialized = false;
+    bool isLibrary = false;
+
     uint256 internal executionNonce;
     mapping(bytes32 => Key) internal keys;
     mapping(uint256 => bytes32[]) internal keysByPurpose;
@@ -68,127 +63,46 @@ contract NewStorage is NewStructs {
     mapping(uint256 => bytes32[]) internal claimsByTopic;
 }
 
-
 /**
- * @dev interface of the ERC734 (Key Holder) standard as defined in the EIP.
+ * @dev Version contract gives the versioning information of the implementation contract
  */
-interface NEWIERC734 {
-
+contract NewVersion {
     /**
-     * @dev Emitted when an execution request was approved.
-     *
-     * Specification: MUST be triggered when approve was successfully called.
+     * @dev Returns the string of the current version.
      */
-    event Approved(uint256 indexed executionId, bool approved);
-
-    /**
-     * @dev Emitted when an execute operation was approved and successfully performed.
-     *
-     * Specification: MUST be triggered when approve was called and the execution was successfully approved.
-     */
-    event Executed(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data);
-
-    /**
-     * @dev Emitted when an execution request was performed via `execute`.
-     *
-     * Specification: MUST be triggered when execute was successfully called.
-     */
-    event ExecutionRequested(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data);
-
-    /**
-     * @dev Emitted when a key was added to the Identity.
-     *
-     * Specification: MUST be triggered when addKey was successfully called.
-     */
-    event KeyAdded(bytes32 indexed key, uint256 indexed purpose, uint256 indexed keyType);
-
-    /**
-     * @dev Emitted when a key was removed from the Identity.
-     *
-     * Specification: MUST be triggered when removeKey was successfully called.
-     */
-    event KeyRemoved(bytes32 indexed key, uint256 indexed purpose, uint256 indexed keyType);
-
-    /**
-     * @dev Emitted when the list of required keys to perform an action was updated.
-     *
-     * Specification: MUST be triggered when changeKeysRequired was successfully called.
-     */
-    event KeysRequiredChanged(uint256 purpose, uint256 number);
-
-
-    /**
-     * @dev Adds a _key to the identity. The _purpose specifies the purpose of the key.
-     *
-     * Triggers Event: `KeyAdded`
-     *
-     * Specification: MUST only be done by keys of purpose 1, or the identity itself. If it's the identity itself, the approval process will determine its approval.
-     */
-    function addKey(bytes32 _key, uint256 _purpose, uint256 _keyType) external returns (bool success);
-
-    /**
-    * @dev Approves an execution or claim addition.
-    *
-    * Triggers Event: `Approved`, `Executed`
-    *
-    * Specification:
-    * This SHOULD require n of m approvals of keys purpose 1, if the _to of the execution is the identity contract itself, to successfully approve an execution.
-    * And COULD require n of m approvals of keys purpose 2, if the _to of the execution is another contract, to successfully approve an execution.
-    */
-    function approve(uint256 _id, bool _approve) external returns (bool success);
-
-    /**
-     * @dev Passes an execution instruction to an ERC725 identity.
-     *
-     * Triggers Event: `ExecutionRequested`, `Executed`
-     *
-     * Specification:
-     * SHOULD require approve to be called with one or more keys of purpose 1 or 2 to approve this execution.
-     * Execute COULD be used as the only accessor for `addKey` and `removeKey`.
-     */
-    function execute(address _to, uint256 _value, bytes calldata _data) external payable returns (uint256 executionId);
-
-    /**
-     * @dev Returns the full key data, if present in the identity.
-     */
-    function getKey(bytes32 _key) external view returns (uint256[] memory purposes, uint256 keyType, bytes32 key);
-
-    /**
-     * @dev Returns the list of purposes associated with a key.
-     */
-    function getKeyPurposes(bytes32 _key) external view returns(uint256[] memory _purposes);
-
-    /**
-     * @dev Returns an array of public key bytes32 held by this identity.
-     */
-    function getKeysByPurpose(uint256 _purpose) external view returns (bytes32[] memory keys);
-
-    /**
-     * @dev Returns TRUE if a key is present and has the given purpose. If the key is not present it returns FALSE.
-     */
-    function keyHasPurpose(bytes32 _key, uint256 _purpose) external view returns (bool exists);
-
-    /**
-     * @dev Removes _purpose for _key from the identity.
-     *
-     * Triggers Event: `KeyRemoved`
-     *
-     * Specification: MUST only be done by keys of purpose 1, or the identity itself. If it's the identity itself, the approval process will determine its approval.
-     */
-    function removeKey(bytes32 _key, uint256 _purpose) external returns (bool success);
+    function version() public pure returns (string memory) {
+        // version 1.0.0
+        return "1.1.0";
+    }
 }
 
-
-
 /**
- * @dev Implementation of the `NEWIERC734` "KeyHolder" interface.
+ * @dev Implementation of the `IERC734` "KeyHolder" and the `IERC735` "ClaimHolder" interfaces into a common Identity Contract.
+ * This implementation has a separate contract were it declares all storage, allowing for it to be used as an upgradable logic contract.
  */
-contract NEWERC734 is NewStorage, LibraryLock, NEWIERC734 {
+contract NewIdentity is NewStorage, IIdentity, NewVersion {
+    constructor(address initialManagementKey, bool _isLibrary) public {
+        setInitialManagementKey(initialManagementKey);
+
+        if (_isLibrary) {
+            isLibrary = true;
+        }
+    }
+
+    modifier delegatedOnly() {
+        require(isLibrary == false, "Interacting with the library contract is forbidden.");
+        _;
+    }
+
+    function initialize() internal {
+        initialized = true;
+    }
+
     event ExecutionFailed(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data);
 
-    function _setManager(address manager) internal {
-        bytes32 _key = keccak256(abi.encode(manager));
-        require(!initialized, "Key already exists");
+    function setInitialManagementKey(address initialManagementKey) public {
+        bytes32 _key = keccak256(abi.encode(initialManagementKey));
+        require(!initialized, "Initial key was already setup.");
         initialize();
         keys[_key].key = _key;
         keys[_key].purposes = [1];
@@ -197,15 +111,15 @@ contract NEWERC734 is NewStorage, LibraryLock, NEWIERC734 {
         emit KeyAdded(_key, 1, 1);
     }
 
-   /**
-    * @notice Implementation of the getKey function from the ERC-734 standard
-    *
-    * @param _key The public key.  for non-hex and long keys, its the Keccak256 hash of the key
-    *
-    * @return purposes Returns the full key data, if present in the identity.
-    * @return keyType Returns the full key data, if present in the identity.
-    * @return key Returns the full key data, if present in the identity.
-    */
+    /**
+     * @notice Implementation of the getKey function from the ERC-734 standard
+     *
+     * @param _key The public key.  for non-hex and long keys, its the Keccak256 hash of the key
+     *
+     * @return purposes Returns the full key data, if present in the identity.
+     * @return keyType Returns the full key data, if present in the identity.
+     * @return key Returns the full key data, if present in the identity.
+     */
     function getKey(bytes32 _key)
     public
     override
@@ -425,124 +339,11 @@ contract NEWERC734 is NewStorage, LibraryLock, NEWIERC734 {
         for (uint keyPurposeIndex = 0; keyPurposeIndex < key.purposes.length; keyPurposeIndex++) {
             uint256 purpose = key.purposes[keyPurposeIndex];
 
-            if (purpose == MANAGEMENT_KEY || purpose == _purpose) return true;
+            if (purpose == 1 || purpose == _purpose) return true;
         }
 
         return false;
     }
-}
-
-
-pragma solidity ^0.6.9;
-
-/**
- * @dev interface of the ERC735 (Claim Holder) standard as defined in the EIP.
- */
-interface NEWIERC735 {
-
-    /**
-     * @dev Emitted when a claim request was performed.
-     *
-     * Specification: Is not clear
-     */
-    event ClaimRequested(uint256 indexed claimRequestId, uint256 indexed topic, uint256 scheme, address indexed issuer, bytes signature, bytes data, string uri);
-
-    /**
-     * @dev Emitted when a claim was added.
-     *
-     * Specification: MUST be triggered when a claim was successfully added.
-     */
-    event ClaimAdded(bytes32 indexed claimId, uint256 indexed topic, uint256 scheme, address indexed issuer, bytes signature, bytes data, string uri);
-
-    /**
-     * @dev Emitted when a claim was removed.
-     *
-     * Specification: MUST be triggered when removeClaim was successfully called.
-     */
-    event ClaimRemoved(bytes32 indexed claimId, uint256 indexed topic, uint256 scheme, address indexed issuer, bytes signature, bytes data, string uri);
-
-    /**
-     * @dev Emitted when a claim was changed.
-     *
-     * Specification: MUST be triggered when changeClaim was successfully called.
-     */
-    event ClaimChanged(bytes32 indexed claimId, uint256 indexed topic, uint256 scheme, address indexed issuer, bytes signature, bytes data, string uri);
-
-    /**
-     * @dev Get a claim by its ID.
-     *
-     * Claim IDs are generated using `keccak256(abi.encode(address issuer_address, uint256 topic))`.
-     */
-    function getClaim(bytes32 _claimId) external view returns(uint256 topic, uint256 scheme, address issuer, bytes memory signature, bytes memory data, string memory uri);
-
-    /**
-     * @dev Returns an array of claim IDs by topic.
-     */
-    function getClaimIdsByTopic(uint256 _topic) external view returns(bytes32[] memory claimIds);
-
-    /**
-     * @dev Add or update a claim.
-     *
-     * Triggers Event: `ClaimRequested`, `ClaimAdded`, `ClaimChanged`
-     *
-     * Specification: Requests the ADDITION or the CHANGE of a claim from an issuer.
-     * Claims can requested to be added by anybody, including the claim holder itself (self issued).
-     *
-     * _signature is a signed message of the following structure: `keccak256(abi.encode(address identityHolder_address, uint256 topic, bytes data))`.
-     * Claim IDs are generated using `keccak256(abi.encode(address issuer_address + uint256 topic))`.
-     *
-     * This COULD implement an approval process for pending claims, or add them right away.
-     * MUST return a claimRequestId (use claim ID) that COULD be sent to the approve function.
-     */
-    function addClaim(uint256 _topic, uint256 _scheme, address issuer, bytes calldata _signature, bytes calldata _data, string calldata _uri) external returns (bytes32 claimRequestId);
-
-    /**
-     * @dev Removes a claim.
-     *
-     * Triggers Event: `ClaimRemoved`
-     *
-     * Claim IDs are generated using `keccak256(abi.encode(address issuer_address, uint256 topic))`.
-     */
-    function removeClaim(bytes32 _claimId) external returns (bool success);
-}
-
-
-pragma solidity ^0.6.9;
-
-
-
-interface NEWIIdentity is NEWIERC734, NEWIERC735 {}
-
-
-
-pragma solidity ^0.6.9;
-
-/**
- * @dev NEWVersion contract gives the versioning information of the implementation contract
- */
-contract NEWVersion {
-    /**
-     * @dev Returns the address of the current version.
-     */
-    function version() public pure returns (string memory) {
-        // version 1.0.0
-        return "2.1.0";
-    }
-}
-
-
-pragma solidity ^0.6.9;
-
-
-/**
- * @dev Implementation of the `NEWIERC734` "KeyHolder" and the `IERC735` "ClaimHolder" interfaces into a common Identity Contract.
- */
-contract NewIdentity is NEWERC734, NEWIIdentity, NEWVersion {
-
-    function setManager(address manager) public {
-        _setManager(manager);
-    }
-
 
     /**
     * @notice Implementation of the addClaim function from the ERC-735 standard
@@ -686,12 +487,12 @@ contract NewIdentity is NEWERC734, NEWIIdentity, NEWVersion {
     )
     {
         return (
-            claims[_claimId].topic,
-            claims[_claimId].scheme,
-            claims[_claimId].issuer,
-            claims[_claimId].signature,
-            claims[_claimId].data,
-            claims[_claimId].uri
+        claims[_claimId].topic,
+        claims[_claimId].scheme,
+        claims[_claimId].issuer,
+        claims[_claimId].signature,
+        claims[_claimId].data,
+        claims[_claimId].uri
         );
     }
 

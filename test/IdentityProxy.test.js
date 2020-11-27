@@ -1,4 +1,5 @@
 const { expect } = require('chai');
+const abi = require('ethereumjs-abi');
 
 const { shouldBehaveLikeERC734 } = require('./ERC734.behavior');
 const { shouldBehaveLikeERC735 } = require('./ERC735.behavior');
@@ -18,13 +19,16 @@ contract('Identity', function ([
   describe('Identity', function () {
 
     beforeEach(async function () {
-      this.identity = await Identity.new(identityIssuer, { from: identityIssuer });
+      const identityImplementation = await Identity.new(identityIssuer, true, { from: identityIssuer });
       this.implementation = await Implementation.new(
-        this.identity.address
+        identityImplementation.address
       );
-      this.proxy = await Proxy.new(this.implementation.address);
+      this.proxy = await Proxy.new(
+        this.implementation.address,
+        identityIssuer,
+      );
       this.identity = await Identity.at(
-        this.proxy.address
+        this.proxy.address,
       );
     });
 
@@ -43,7 +47,7 @@ contract('Identity', function ([
       anotherAccount,
     });
 
-    it('Should return version', async function () {
+    it.only('Should return version', async function () {
       expect(await this.identity.version()).to.equals("1.0.0");
     });
 

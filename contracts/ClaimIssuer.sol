@@ -7,7 +7,7 @@ import "./Identity.sol";
 contract ClaimIssuer is IClaimIssuer, Identity {
     mapping (bytes => bool) public revokedClaims;
 
-    constructor(address initialManagementKey) public Identity(initialManagementKey) {}
+    constructor(address initialManagementKey) public Identity(initialManagementKey, false) {}
 
     function revokeClaim(bytes32 _claimId, address _identity) public override delegatedOnly returns(bool) {
         uint256 foundClaimTopic;

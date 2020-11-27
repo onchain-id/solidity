@@ -4,23 +4,49 @@ pragma solidity ^0.6.9;
 import "./interface/IIdentity.sol";
 import "./version/Version.sol";
 import "./storage/Storage.sol";
-import "./library/LibraryLock.sol";
 
 /**
  * @dev Implementation of the `IERC734` "KeyHolder" and the `IERC735` "ClaimHolder" interfaces into a common Identity Contract.
  * This implementation has a separate contract were it declares all storage, allowing for it to be used as an upgradable logic contract.
  */
-contract Identity is Storage, LibraryLockDataLayout, LibraryLock, IIdentity, Version {
-    constructor(address initialManagementKey) public {
-        setInitialManagementKey(initialManagementKey);
+contract Identity is Storage, IIdentity, Version {
+    bool private initialized = false;
+    bool private canInteract = true;
+
+    constructor(address initialManagementKey, bool _isLibrary) public {
+        canInteract = !_isLibrary;
+
+        if (canInteract) {
+            __Identity_init(initialManagementKey);
+        } else {
+            initialized = true;
+        }
+    }
+
+    modifier delegatedOnly() {
+        require(canInteract == true, "Interacting with the library contract is forbidden.");
+        _;
+    }
+
+    function initialize(address initialManagementKey) public {
+        __Identity_init(initialManagementKey);
+    }
+
+    function _isConstructor() private view returns (bool) {
+        address self = address(this);
+        uint256 cs;
+        // solhint-disable-next-line no-inline-assembly
+        assembly { cs := extcodesize(self) }
+        return cs == 0;
     }
 
     event ExecutionFailed(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data);
 
-    function setInitialManagementKey(address initialManagementKey) internal {
+    function __Identity_init(address initialManagementKey) internal {
+        require(!initialized || _isConstructor(), "Initial key was already setup.");
+        initialized = true;
+
         bytes32 _key = keccak256(abi.encode(initialManagementKey));
-        require(!initialized, "Initial key was already setup.");
-        initialize();
         keys[_key].key = _key;
         keys[_key].purposes = [1];
         keys[_key].keyType = 1;

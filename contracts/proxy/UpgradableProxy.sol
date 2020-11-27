@@ -2,6 +2,7 @@
 
 pragma solidity ^0.6.9;
 
+
 interface IImplementationAuthority {
     function getImplementation() external view returns(address);
 }
@@ -9,8 +10,13 @@ interface IImplementationAuthority {
 contract Proxy {
     address public implementationAuthority;
 
-    constructor(address _implementationAuthority) public {
+    constructor(address _implementationAuthority, address initialManagementKey) public {
         implementationAuthority = _implementationAuthority;
+
+        address logic = IImplementationAuthority(implementationAuthority).getImplementation();
+
+        (bool success,) = logic.delegatecall(abi.encodeWithSignature("initialize(address)", initialManagementKey));
+        require(success, "Initialization failed.");
     }
 
     fallback() external payable {
