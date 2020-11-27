@@ -40,8 +40,6 @@ contract Identity is Storage, IIdentity, Version {
         return cs == 0;
     }
 
-    event ExecutionFailed(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data);
-
     // solhint-disable-next-line func-name-mixedcase
     function __Identity_init(address initialManagementKey) internal {
         require(!initialized || _isConstructor(), "Initial key was already setup.");
