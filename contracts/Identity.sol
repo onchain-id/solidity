@@ -50,12 +50,12 @@ contract Identity is Storage, IIdentity, Version {
         return cs == 0;
     }
 
-    // solhint-disable-next-line func-name-mixedcase
     /**
      * @notice Initializer internal function for the Identity contract.
      *
      * @param initialManagementKey The ethereum address to be set as the management key of the ONCHAINID.
      */
+    // solhint-disable-next-line func-name-mixedcase
     function __Identity_init(address initialManagementKey) internal {
         require(!initialized || _isConstructor(), "Initial key was already setup.");
         initialized = true;
