@@ -3,10 +3,7 @@
 pragma solidity ^0.6.9;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-
-interface IImplementationAuthority {
-    function getImplementation() external view returns(address);
-}
+import "../interface/IImplementationAuthority.sol";
 
 contract ImplementationAuthority is IImplementationAuthority, Ownable {
 
