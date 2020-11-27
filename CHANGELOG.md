@@ -10,7 +10,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New ImplementationAuthority contract that acts as an authority for proxy contracts
 - Library Lock contract to ensure no one can manipulate the Logic Contract once it is deployed
 - Version contract that gives the versioning information of the implementation contract
-- NewIdentityImplementation, a new contract similar to Identity, but with some modifications to test the upgradeability
 ### Moved
 - variables in a separate contract (Storage.sol)
 - structs in a separate contract (Structs.sol)
