@@ -55,10 +55,10 @@ contract('Identity', function ([
       expect((await this.identity.version()).toString()).to.equals('1.0.0');
 
       // Deploy & Replace Implementation on AuthorityImplementation with the new Identity Contract
-      this.newImplementation = await NewIdentity.new({ from: identityIssuer });
+      this.newImplementation = await NewIdentity.new(identityIssuer, true, { from: identityIssuer });
       this.implementation.updateImplementation(this.newImplementation.address);
 
-      expect((await this.identity.version()).toString()).to.equals('2.1.0');
+      expect((await this.identity.version()).toString()).to.equals('1.1.0');
     });
 
   });

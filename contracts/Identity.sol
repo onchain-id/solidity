@@ -45,6 +45,7 @@ contract Identity is Storage, IIdentity, Version {
     function __Identity_init(address initialManagementKey) internal {
         require(!initialized || _isConstructor(), "Initial key was already setup.");
         initialized = true;
+        canInteract = true;
 
         bytes32 _key = keccak256(abi.encode(initialManagementKey));
         keys[_key].key = _key;
