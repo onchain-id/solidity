@@ -18,7 +18,7 @@ contract ImplementationAuthority is IImplementationAuthority, Ownable {
 
     /**
      * @dev get the address of the implementation contract.
-     * @returns the address of the implementation contract
+     * @return implementation the address of the implementation contract
      */
     function getImplementation() external override view returns(address) {
         return implementation;

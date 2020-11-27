@@ -13,7 +13,7 @@ contract ClaimIssuer is IClaimIssuer, Identity {
      * @dev Revoke a claim previously issued, the claim is no longer considered as valid after revocation.
      * @param _claimId the id of the claim
      * @param _identity the address of the identity contract
-     * @returns true when the claim is revoked
+     * @return isRevoked true when the claim is revoked
      */
     function revokeClaim(bytes32 _claimId, address _identity) public override delegatedOnly returns(bool) {
         uint256 foundClaimTopic;
@@ -35,7 +35,7 @@ contract ClaimIssuer is IClaimIssuer, Identity {
     /**
      * @dev Returns revocation status of a claim.
      * @param _sig the signature of the claim
-     * @returns true if the claim is revoked and false otherwise
+     * @return isRevoked true if the claim is revoked and false otherwise
      */
     function isClaimRevoked(bytes memory _sig) public override view returns (bool) {
         if (revokedClaims[_sig]) {
@@ -51,7 +51,7 @@ contract ClaimIssuer is IClaimIssuer, Identity {
      * @param claimTopic the claim topic of the claim
      * @param sig the signature of the claim
      * @param data the data field of the claim
-     * @returns true if the claim is valid, false otherwise
+     * @return claimValid true if the claim is valid, false otherwise
      */
     function isClaimValid(IIdentity _identity, uint256 claimTopic, bytes memory sig, bytes memory data) public override view returns (bool claimValid)
     {
