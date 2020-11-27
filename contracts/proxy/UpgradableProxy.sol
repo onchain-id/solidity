@@ -15,6 +15,7 @@ contract Proxy {
 
         address logic = IImplementationAuthority(implementationAuthority).getImplementation();
 
+        // solhint-disable-next-line avoid-low-level-calls
         (bool success,) = logic.delegatecall(abi.encodeWithSignature("initialize(address)", initialManagementKey));
         require(success, "Initialization failed.");
     }
