@@ -23,6 +23,9 @@ contract Identity is Storage, IIdentity, Version {
         }
     }
 
+    /**
+     * @notice Prevent any direct calls to the implementation contract (marked by canInteract = false).
+     */
     modifier delegatedOnly() {
         require(canInteract == true, "Interacting with the library contract is forbidden.");
         _;
