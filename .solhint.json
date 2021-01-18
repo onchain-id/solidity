@@ -9,7 +9,7 @@
     "separate-by-one-line-in-contract": "off",
     "two-lines-top-level-separator": "off",
     "mark-callable-contracts": "off",
-    "compiler-version": ["error", "^0.6.2"],
+    "compiler-version": ["error", "^0.8.0"],
     "no-inline-assembly": "off",
     "avoid-call-value": "off",
     "no-empty-blocks": "off",
