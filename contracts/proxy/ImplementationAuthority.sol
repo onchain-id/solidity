@@ -3,18 +3,9 @@
 pragma solidity ^0.8.0;
 
 import "../interface/IImplementationAuthority.sol";
+import "./access/Ownable.sol";
 
-contract ImplementationAuthority is IImplementationAuthority {
-
-    address public owner;
-
-    modifier onlyOwner() {
-        require(
-            msg.sender == owner,
-            "This function is restricted to the contract's owner"
-        );
-        _;
-    }
+contract ImplementationAuthority is IImplementationAuthority, Ownable {
 
     event UpdatedImplementation(address newAddress);
 
@@ -23,7 +14,6 @@ contract ImplementationAuthority is IImplementationAuthority {
     constructor(address _implementation) public {
         implementation = _implementation;
         emit UpdatedImplementation(_implementation);
-        owner = msg.sender;
     }
 
     /**
