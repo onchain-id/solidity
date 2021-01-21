@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update contracts to SOL =0.8.0
 - Update test to work with truffle
 - Update truffle-config.js
+- Update solhint config
 
 ## [1.2.0] - 2020-11-27
 ### Added
