@@ -1,18 +1,16 @@
 {
   "extends": "solhint:recommended",
   "rules": {
-    "indent": "off",
     "func-order": "off",
-    "bracket-align": "off",
-    "compiler-fixed": "off",
-    "no-simple-event-func-name": "off",
-    "separate-by-one-line-in-contract": "off",
-    "two-lines-top-level-separator": "off",
     "mark-callable-contracts": "off",
     "compiler-version": ["error", "^0.8.0"],
     "no-inline-assembly": "off",
     "avoid-call-value": "off",
     "no-empty-blocks": "off",
-    "state-visibility": "off"
+    "state-visibility": "off",
+    "func-visibility": "off",
+    "reason-string": "off",
+    "no-complex-fallback": "off",
+    "avoid-low-level-calls": "off"
   }
 }

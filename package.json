@@ -51,7 +51,7 @@
     "ethereumjs-abi": "^0.6.8",
     "ethereumjs-util": "^7.0.7",
     "prettier": "^2.0.5",
-    "solhint": "^2.3.0",
+    "solhint": "^3.3.2",
     "solidity-coverage": "^0.7.14",
     "solidity-docgen": "^0.3.14",
     "truffle": "^5.1.13"
