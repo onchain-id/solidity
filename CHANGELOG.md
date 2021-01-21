@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2021-01-21
+### Added
+- Ownable 0.8.0
+- Context 0.8.0
+### Updated
+- Update version to 1.3.0
+- Update contracts to SOL =0.8.0
+- Update test to work with truffle
+- Update truffle-config.js
+
 ## [1.2.0] - 2020-11-27
 ### Added
 - Custom Upgradable Proxy contract that behaves similarly to the [EIP-1822](https://eips.ethereum.org/EIPS/eip-1822): Universal Upgradeable Proxy Standard (UUPS), except that it points to an Authority contract which in itself points to an implementation (which can be updated).
