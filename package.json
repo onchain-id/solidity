@@ -37,7 +37,7 @@
   },
   "homepage": "https://github.com/onchain-id/solidity#readme",
   "devDependencies": {
-    "@openzeppelin/contracts": "^3.3.0",
+    "@openzeppelin/contracts": "^3.3.0-solc-0.8",
     "ansi-colors": "^4.1.1",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
