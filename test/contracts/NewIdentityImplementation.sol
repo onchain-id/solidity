@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.6.9;
+pragma solidity ^0.8.0;
 
 import "../../contracts/interface/IIdentity.sol";
 
@@ -98,7 +98,6 @@ contract NewIdentity is NewStorage, IIdentity, NewVersion {
         initialized = true;
     }
 
-    event ExecutionFailed(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data);
 
     function setInitialManagementKey(address initialManagementKey) public {
         bytes32 _key = keccak256(abi.encode(initialManagementKey));

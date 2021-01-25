@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity ^0.6.9;
+pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "../interface/IImplementationAuthority.sol";
+import "./access/Ownable.sol";
 
 contract ImplementationAuthority is IImplementationAuthority, Ownable {
 
