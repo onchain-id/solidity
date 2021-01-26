@@ -7,7 +7,7 @@ import "../interface/IImplementationAuthority.sol";
 contract IdentityProxy {
     address public implementationAuthority;
 
-    constructor(address _implementationAuthority, address initialManagementKey) public {
+    constructor(address _implementationAuthority, address initialManagementKey) {
         implementationAuthority = _implementationAuthority;
 
         address logic = IImplementationAuthority(implementationAuthority).getImplementation();

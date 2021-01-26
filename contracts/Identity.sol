@@ -13,7 +13,7 @@ contract Identity is Storage, IIdentity, Version {
     bool private initialized = false;
     bool private canInteract = true;
 
-    constructor(address initialManagementKey, bool _isLibrary) public {
+    constructor(address initialManagementKey, bool _isLibrary) {
         canInteract = !_isLibrary;
 
         if (canInteract) {
