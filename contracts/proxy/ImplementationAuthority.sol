@@ -11,7 +11,7 @@ contract ImplementationAuthority is IImplementationAuthority, Ownable {
 
     address implementation;
 
-    constructor(address _implementation) public {
+    constructor(address _implementation) {
         implementation = _implementation;
         emit UpdatedImplementation(_implementation);
     }

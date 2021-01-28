@@ -51,7 +51,7 @@ contract('Identity', function ([
     });
 
     it('Should return version', async function () {
-      expect(await this.identity.version()).to.equals("1.3.0");
+      expect(await this.identity.version()).to.equals("1.4.0");
     });
 
     context('when updating the implementation', function() {

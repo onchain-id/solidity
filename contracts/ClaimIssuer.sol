@@ -7,7 +7,7 @@ import "./Identity.sol";
 contract ClaimIssuer is IClaimIssuer, Identity {
     mapping (bytes => bool) public revokedClaims;
 
-    constructor(address initialManagementKey) public Identity(initialManagementKey, false) {}
+    constructor(address initialManagementKey) Identity(initialManagementKey, false) {}
 
     /**
      * @dev Revoke a claim previously issued, the claim is no longer considered as valid after revocation.
