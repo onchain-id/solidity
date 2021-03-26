@@ -329,6 +329,135 @@ function shouldBehaveLikeERC735({
       });
     });
   });
+
+  describe('isClaimValid', () => {
+    context('when claim is still valid', () => {
+      beforeEach('add claim', async function () {
+        await this.identity.addClaim(
+          10,
+          2,
+          this.identity.address,
+          '0x234564',
+          '0x9087946767',
+          'https://localhost',
+          { from: identityIssuer }
+        );
+      });
+      it('should return true', async function () {
+        await expect(
+          this.identity.isClaimValid(
+            this.identity.address,
+            10,
+            '0x234564',
+            '0x9087946767'
+          )
+        ).to.eventually.be.true;
+      });
+    });
+
+    context('when claim is not the latest claim', () => {
+      beforeEach('add claim', async function () {
+        await this.identity.addClaim(
+          10,
+          2,
+          this.identity.address,
+          '0x234564',
+          '0x9087946767',
+          'https://localhost',
+          { from: identityIssuer }
+        );
+      });
+      beforeEach('add claim', async function () {
+        await this.identity.addClaim(
+          10,
+          2,
+          this.identity.address,
+          '0x234564',
+          '0x8790676794',
+          'https://localhost',
+          { from: identityIssuer }
+        );
+      });
+      it('should return false', async function () {
+        await expect(
+          this.identity.isClaimValid(
+            this.identity.address,
+            10,
+            '0x234564',
+            '0x9087946767'
+          )
+        ).to.eventually.be.false;
+      });
+    });
+
+    context('when claim was removed', () => {
+      context('when claim is still valid', () => {
+        beforeEach('add claim', async function () {
+          await this.identity.addClaim(
+            10,
+            2,
+            this.identity.address,
+            '0x234564',
+            '0x9087946767',
+            'https://localhost',
+            { from: identityIssuer }
+          );
+          beforeEach('remove claim', async function () {
+            const claimTopic = '0x234564';
+            const data = '0x9087946767';
+            const dataHash = keccak256(
+              abi.encode(this.identity, claimTopic, data)
+            );
+            // Use abi.encodePacked to concatenate the message prefix and the message to sign.
+            const prefixedHash = keccak256(
+              abi.encodePacked('\x19Ethereum Signed Message:\n32', dataHash)
+            );
+            // Recover address of data signer
+            const recovered = getRecoveredAddress(sig, prefixedHash);
+            // Take hash of recovered address
+            const hashedAddr = keccak256(abi.encode(recovered));
+            const claimId = keccak256(abi.encode(hashedAddr, claimTopic));
+            await this.identity.removeClaim(claimId);
+          });
+
+          it('should return false', async function () {
+            await expect(
+              this.identity.isClaimValid(
+                this.identity.address,
+                10,
+                '0x234564',
+                '0x9087946767'
+              )
+            ).to.eventually.be.false;
+          });
+        });
+      });
+    });
+
+    context('when claim signer has no CLAIM key', () => {
+      beforeEach('add claim', async function () {
+        await this.identity.addClaim(
+          10,
+          2,
+          this.identity.address,
+          '0x234564',
+          '0x9087946767',
+          'https://localhost',
+          { from: '0x00109' }
+        );
+      });
+      it('should return false', async function () {
+        await expect(
+          this.identity.isClaimValid(
+            this.identity.address,
+            10,
+            '0x234564',
+            '0x9087946767'
+          )
+        ).to.eventually.be.false;
+      });
+    });
+  });
 }
 
 module.exports = {

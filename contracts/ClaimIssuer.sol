@@ -53,7 +53,7 @@ contract ClaimIssuer is IClaimIssuer, Identity {
      * @param data the data field of the claim
      * @return claimValid true if the claim is valid, false otherwise
      */
-    function isClaimValid(IIdentity _identity, uint256 claimTopic, bytes memory sig, bytes memory data) public override view returns (bool claimValid)
+    function isClaimValid(IIdentity _identity, uint256 claimTopic, bytes memory sig, bytes memory data) public override(IClaimIssuer, Identity) view returns (bool claimValid)
     {
         bytes32 dataHash = keccak256(abi.encode(_identity, claimTopic, data));
         // Use abi.encodePacked to concatenate the message prefix and the message to sign.
@@ -72,35 +72,5 @@ contract ClaimIssuer is IClaimIssuer, Identity {
         }
 
         return false;
-    }
-
-    function getRecoveredAddress(bytes memory sig, bytes32 dataHash)
-        public override
-        pure
-        returns (address addr)
-    {
-        bytes32 ra;
-        bytes32 sa;
-        uint8 va;
-
-        // Check the signature length
-        if (sig.length != 65) {
-            return address(0);
-        }
-
-        // Divide the signature in r, s and v variables
-        assembly {
-            ra := mload(add(sig, 32))
-            sa := mload(add(sig, 64))
-            va := byte(0, mload(add(sig, 96)))
-        }
-
-        if (va < 27) {
-            va += 27;
-        }
-
-        address recoveredAddress = ecrecover(dataHash, va, ra, sa);
-
-        return (recoveredAddress);
     }
 }
