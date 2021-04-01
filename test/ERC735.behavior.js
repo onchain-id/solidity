@@ -336,7 +336,7 @@ function shouldBehaveLikeERC735({
         await this.identity.addClaim(
           10,
           2,
-          this.identity.Address,
+          this.identity.address,
           '0x234564',
           '0x9087946767',
           'https://localhost',
@@ -360,7 +360,7 @@ function shouldBehaveLikeERC735({
         await this.identity.addClaim(
           10,
           2,
-          this.identity.Address,
+          this.identity.address,
           '0x234564',
           '0x9087946767',
           'https://localhost',
@@ -371,7 +371,7 @@ function shouldBehaveLikeERC735({
         await this.identity.addClaim(
           10,
           2,
-          this.identity.Address,
+          this.identity.address,
           '0x234564',
           '0x8790676794',
           'https://localhost',
@@ -396,7 +396,7 @@ function shouldBehaveLikeERC735({
           await this.identity.addClaim(
             10,
             2,
-            this.identity.Address,
+            this.identity.address,
             '0x234564',
             '0x9087946767',
             'https://localhost',
@@ -439,7 +439,7 @@ function shouldBehaveLikeERC735({
         await this.identity.addClaim(
           10,
           2,
-          this.identity.Address,
+          this.identity.address,
           '0x234564',
           '0x9087946767',
           'https://localhost',

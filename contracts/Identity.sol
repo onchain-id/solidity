@@ -496,7 +496,7 @@ contract Identity is Storage, IIdentity, Version {
      * @param data the data field of the claim
      * @return claimValid true if the claim is valid, false otherwise
      */
-    function isClaimValid(IIdentity _identity, uint256 claimTopic, bytes memory sig, bytes memory data) public view returns (bool claimValid)
+    function isClaimValid(IIdentity _identity, uint256 claimTopic, bytes memory sig, bytes memory data) public override virtual view returns (bool claimValid)
     {
         bytes32 dataHash = keccak256(abi.encode(_identity, claimTopic, data));
         // Use abi.encodePacked to concatenate the message prefix and the message to sign.
@@ -512,7 +512,6 @@ contract Identity is Storage, IIdentity, Version {
         bytes memory signature = claims[claimId].signature;
 
         // Does the trusted identifier have they key which signed the user's claim?
-        //  && (isClaimRevoked(_claimId) == false)
         if (keyHasPurpose(hashedAddr, 3) && keccak256(signature) == keccak256(sig)) {
             return true;
         }

@@ -4,4 +4,6 @@ pragma solidity ^0.8.0;
 import "./IERC734.sol";
 import "./IERC735.sol";
 
-interface IIdentity is IERC734, IERC735 {}
+interface IIdentity is IERC734, IERC735 {
+    function isClaimValid(IIdentity _identity, uint256 claimTopic, bytes calldata sig, bytes calldata data) external view returns (bool);
+}
