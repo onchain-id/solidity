@@ -9,7 +9,7 @@
     "index.d.ts"
   ],
   "scripts": {
-    "build": "truffle compile",
+    "build": "truffle compile && truffle-flattener contracts/Identity.sol > build/Identity.sol && truffle-flattener contracts/proxy/ImplementationAuthority.sol > build/ImplementationAuthority.sol && truffle-flattener contracts/ClaimIssuer.sol > build/ClaimIssuer.sol && truffle-flattener contracts/factory/IdFactory.sol > build/IdFactory.sol",
     "console": "truffle console",
     "coverage": "truffle run coverage",
     "docgen": "solidity-docgen ./ contracts/ docs/api",
@@ -37,23 +37,23 @@
   },
   "homepage": "https://github.com/onchain-id/solidity#readme",
   "devDependencies": {
-    "@openzeppelin/contracts": "^3.3.0",
     "ansi-colors": "^4.1.1",
-    "chai": "^4.2.0",
+    "chai": "^4.3.6",
     "chai-as-promised": "^7.1.1",
     "chai-bignumber": "^3.0.0",
-    "chai-bn": "^0.2.1",
-    "eslint": "^7.18.0",
-    "eslint-config-airbnb-base": "^14.2.1",
-    "eslint-config-prettier": "^7.2.0",
-    "eslint-plugin-import": "^2.22.1",
-    "eslint-plugin-prettier": "^3.3.1",
+    "chai-bn": "^0.3.1",
+    "eslint": "^8.10.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-import": "^2.25.4",
+    "eslint-plugin-prettier": "^4.0.0",
     "ethereumjs-abi": "^0.6.8",
-    "ethereumjs-util": "^7.0.7",
-    "prettier": "^2.2.1",
-    "solhint": "^3.3.2",
-    "solidity-coverage": "^0.7.14",
-    "solidity-docgen": "^0.5.11",
-    "truffle": "^5.1.63"
+    "ethereumjs-util": "^7.1.4",
+    "prettier": "^2.5.1",
+    "solhint": "^3.3.7",
+    "solidity-coverage": "^0.7.20",
+    "solidity-docgen": "^0.5.16",
+    "truffle-flattener": "^1.6.0",
+    "truffle": "^5.5.3"
   }
 }

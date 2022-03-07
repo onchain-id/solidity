@@ -5,30 +5,27 @@ const { shouldBehaveLikeERC735 } = require('./ERC735.behavior');
 
 const Identity = artifacts.require('Identity');
 const Implementation = artifacts.require('ImplementationAuthority');
-const IdentityProxy = artifacts.require('IdentityProxy');
+const Factory = artifacts.require('IdFactory');
 const NewIdentity = artifacts.require('NewIdentity');
 
-contract('IdentityProxy', function ([
-  identityIssuer,
-  identityOwner,
-  claimIssuer,
-  anotherAccount,
-]) {
+contract('FactoryIdentities', function ([
+                                      identityIssuer,
+                                      identityOwner,
+                                      claimIssuer,
+                                      anotherAccount,
+                                    ]) {
 
-  describe('IdentityProxy', function () {
+  describe('FactoryIdentities', function () {
 
     beforeEach(async function () {
       this.identityImplementation = await Identity.new(identityIssuer, true, { from: identityIssuer });
       this.implementation = await Implementation.new(
         this.identityImplementation.address
       );
-      this.proxy = await IdentityProxy.new(
-        this.implementation.address,
-        identityIssuer,
-      );
-      this.identity = await Identity.at(
-        this.proxy.address,
-      );
+      this.factory = await Factory.new(this.implementation.address);
+      await this.factory.createIdentity(identityIssuer, 'test');
+      const IdAddress = await this.factory.getIdentity(identityIssuer);
+      this.identity = await Identity.at(IdAddress);
     });
 
     shouldBehaveLikeERC734({
