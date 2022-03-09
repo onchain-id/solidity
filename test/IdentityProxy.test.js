@@ -53,21 +53,5 @@ contract('IdentityProxy', function ([
     it('Should return version', async function () {
       expect(await this.identity.version()).to.equals("1.4.0");
     });
-
-    context('when updating the implementation', function() {
-      beforeEach('update implementation', async function() {
-        // Deploy & Replace Implementation on AuthorityImplementation with the new Identity Contract
-        this.newImplementation = await NewIdentity.new(identityIssuer, true, { from: identityIssuer });
-        this.implementation.updateImplementation(this.newImplementation.address);
-      });
-
-      it('Should return the updated version', async function () {
-        expect((await this.identity.version()).toString()).to.equals('1.1.0');
-      });
-
-      it('Should still prevent interaction with the implementation', async function () {
-        await expect(this.newImplementation.removeClaim('0x5fe52eb367804d226afc6386050a629ba0ca6b30bed2f1487dc7afde7db13771')).to.eventually.be.rejectedWith('Returned error: VM Exception while processing transaction: revert Interacting with the library contract is forbidden. -- Reason given: Interacting with the library contract is forbidden..');
-      });
-    });
   });
 });

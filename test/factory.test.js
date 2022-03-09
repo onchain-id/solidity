@@ -1,6 +1,7 @@
 require('chai').use(require('chai-as-promised')).should();
 const EVMRevert = require('./helpers/VMExceptionRevert');
 const log = require('./helpers/logger');
+const {expect} = require("chai");
 
 const Identity = artifacts.require('Identity');
 const Implementation = artifacts.require('ImplementationAuthority');
@@ -25,7 +26,7 @@ contract('IDFactory', (accounts) => {
     factory = await Factory.new(implementationAuthority.address, { from: owner });
     await factory.createIdentity(user1 , 'user1', { from : owner});
     const idAddress = await factory.getIdentity(user1);
-    identity1 = await NewIdentity.at(idAddress);
+    identity1 = await Identity.at(idAddress);
   });
 
   it('should not deploy 2 identities for 1 wallet', async () => {
@@ -57,6 +58,18 @@ contract('IDFactory', (accounts) => {
   it('cannot unlink a wallet on an identity managed by someone else', async () => {
     await factory.createIdentity(user2 , 'user2', { from : owner}).should.be.fulfilled;
     await factory.unlinkWallet(user2, { from : user1}).should.be.rejectedWith(EVMRevert);
+  });
+
+  it('should update the version of implementation', async () => {
+    let newImplementation = await NewIdentity.new(owner, true, { from: owner });
+    await implementationAuthority.updateImplementation(newImplementation.address, {from: owner});
+    expect((await identity1.version()).toString()).to.equals('1.1.0');
+  });
+
+  it('Should still prevent interaction with the implementation after update of implementation', async () => {
+    let newImplementation = await NewIdentity.new(owner, true, { from: owner });
+    await implementationAuthority.updateImplementation(newImplementation.address, {from: owner});
+    await expect(newImplementation.removeClaim('0x5fe52eb367804d226afc6386050a629ba0ca6b30bed2f1487dc7afde7db13771'), {from: owner}).to.be.rejectedWith(EVMRevert);
   });
 
 

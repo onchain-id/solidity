@@ -81,7 +81,7 @@ contract NewVersion {
  * This implementation has a separate contract were it declares all storage, allowing for it to be used as an upgradable logic contract.
  */
 contract NewIdentity is NewStorage, IIdentity, NewVersion {
-    constructor(address initialManagementKey, bool _isLibrary) public {
+    constructor(address initialManagementKey, bool _isLibrary) {
         setInitialManagementKey(initialManagementKey);
 
         if (_isLibrary) {
