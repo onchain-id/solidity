@@ -71,8 +71,8 @@ contract NewVersion {
      * @dev Returns the string of the current version.
      */
     function version() public pure returns (string memory) {
-        // version 1.0.0
-        return "1.1.0";
+        // version 2.1.0
+        return "2.1.0";
     }
 }
 

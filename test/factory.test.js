@@ -63,7 +63,7 @@ contract('IDFactory', (accounts) => {
   it('should update the version of implementation', async () => {
     let newImplementation = await NewIdentity.new(owner, true, { from: owner });
     await implementationAuthority.updateImplementation(newImplementation.address, {from: owner});
-    expect((await identity1.version()).toString()).to.equals('1.1.0');
+    expect((await identity1.version()).toString()).to.equals('2.1.0');
   });
 
   it('Should still prevent interaction with the implementation after update of implementation', async () => {
