@@ -57,6 +57,7 @@
     "solidity-docgen": "^0.5.16",
     "truffle": "^5.5.3",
     "truffle-flattener": "^1.6.0",
-    "@nomiclabs/hardhat-web3": "^2.0.0"
+    "@nomiclabs/hardhat-web3": "^2.0.0",
+    "@openzeppelin/contracts": "^4.2.0"
   }
 }
