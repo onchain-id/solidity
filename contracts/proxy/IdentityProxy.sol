@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.17;
 
 import "../interface/IImplementationAuthority.sol";
 
@@ -17,10 +17,12 @@ contract IdentityProxy {
         require(success, "Initialization failed.");
     }
 
+    // solhint-disable-next-line no-complex-fallback
     fallback() external payable {
         address logic = IImplementationAuthority(implementationAuthority).getImplementation();
 
-        assembly { // solium-disable-line
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
         calldatacopy(0x0, 0x0, calldatasize())
         let success := delegatecall(sub(gas(), 10000), logic, 0x0, calldatasize(), 0, 0)
         let retSz := returndatasize()

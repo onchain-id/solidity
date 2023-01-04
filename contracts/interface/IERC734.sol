@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.0;
+pragma solidity 0.8.17;
 
 /**
  * @dev interface of the ERC734 (Key Holder) standard as defined in the EIP.
@@ -56,7 +56,8 @@ interface IERC734 {
      *
      * Triggers Event: `KeyAdded`
      *
-     * Specification: MUST only be done by keys of purpose 1, or the identity itself. If it's the identity itself, the approval process will determine its approval.
+     * Specification: MUST only be done by keys of purpose 1, or the identity
+     * itself. If it's the identity itself, the approval process will determine its approval.
      */
     function addKey(bytes32 _key, uint256 _purpose, uint256 _keyType) external returns (bool success);
 
@@ -66,10 +67,22 @@ interface IERC734 {
     * Triggers Event: `Approved`, `Executed`
     *
     * Specification:
-    * This SHOULD require n of m approvals of keys purpose 1, if the _to of the execution is the identity contract itself, to successfully approve an execution.
-    * And COULD require n of m approvals of keys purpose 2, if the _to of the execution is another contract, to successfully approve an execution.
+    * This SHOULD require n of m approvals of keys purpose 1, if the _to of the execution
+    * is the identity contract itself, to successfully approve an execution.
+    * And COULD require n of m approvals of keys purpose 2, if the _to of the execution
+    * is another contract, to successfully approve an execution.
     */
     function approve(uint256 _id, bool _approve) external returns (bool success);
+
+    /**
+     * @dev Removes _purpose for _key from the identity.
+     *
+     * Triggers Event: `KeyRemoved`
+     *
+     * Specification: MUST only be done by keys of purpose 1, or the identity itself.
+     * If it's the identity itself, the approval process will determine its approval.
+     */
+    function removeKey(bytes32 _key, uint256 _purpose) external returns (bool success);
 
     /**
      * @dev Passes an execution instruction to an ERC725 identity.
@@ -101,13 +114,4 @@ interface IERC734 {
      * @dev Returns TRUE if a key is present and has the given purpose. If the key is not present it returns FALSE.
      */
     function keyHasPurpose(bytes32 _key, uint256 _purpose) external view returns (bool exists);
-
-    /**
-     * @dev Removes _purpose for _key from the identity.
-     *
-     * Triggers Event: `KeyRemoved`
-     *
-     * Specification: MUST only be done by keys of purpose 1, or the identity itself. If it's the identity itself, the approval process will determine its approval.
-     */
-    function removeKey(bytes32 _key, uint256 _purpose) external returns (bool success);
 }
