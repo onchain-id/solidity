@@ -328,6 +328,10 @@ contract Identity is Storage, IIdentity, Version {
         uint claimIndex = 0;
         while (_claimsByTopic[_topic][claimIndex] != _claimId) {
             claimIndex++;
+
+            if (claimIndex >= _claimsByTopic[_topic].length) {
+                break;
+            }
         }
 
         _claimsByTopic[_topic][claimIndex] =
