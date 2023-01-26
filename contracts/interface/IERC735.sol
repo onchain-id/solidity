@@ -7,20 +7,6 @@ pragma solidity 0.8.17;
 interface IERC735 {
 
     /**
-     * @dev Emitted when a claim request was performed.
-     *
-     * Specification: Is not clear
-     */
-    event ClaimRequested(
-        uint256 indexed claimRequestId,
-        uint256 indexed topic,
-        uint256 scheme,
-        address indexed issuer,
-        bytes signature,
-        bytes data,
-        string uri);
-
-    /**
      * @dev Emitted when a claim was added.
      *
      * Specification: MUST be triggered when a claim was successfully added.
