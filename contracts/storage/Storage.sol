@@ -29,7 +29,7 @@ contract Storage is Structs {
     bool internal _initialized = false;
 
     // status on potential interactions with the contract
-    bool internal _canInteract = true;
+    bool internal _canInteract = false;
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new

@@ -41,9 +41,7 @@ contract Identity is Storage, IIdentity, Version {
     }
 
     constructor(address initialManagementKey, bool _isLibrary) {
-        _canInteract = !_isLibrary;
-
-        if (_canInteract) {
+        if (!_isLibrary) {
             __Identity_init(initialManagementKey);
         } else {
             _initialized = true;
