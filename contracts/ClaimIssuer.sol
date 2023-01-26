@@ -13,16 +13,17 @@ contract ClaimIssuer is IClaimIssuer, Identity {
     /**
      *  @dev See {IClaimIssuer-revokeClaim}.
      */
-    function revokeClaim(bytes32 _claimId, address _identity) external override delegatedOnly returns(bool) {
+    function revokeClaim(bytes32 _claimId, address _identity)
+    external
+    override
+    delegatedOnly
+    onlyManager
+    returns(bool) {
         uint256 foundClaimTopic;
         uint256 scheme;
         address issuer;
         bytes memory  sig;
         bytes  memory data;
-
-        if (msg.sender != address(this)) {
-            require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 1), "Permissions: Sender does not have management key");
-        }
 
         ( foundClaimTopic, scheme, issuer, sig, data, ) = Identity(_identity).getClaim(_claimId);
 

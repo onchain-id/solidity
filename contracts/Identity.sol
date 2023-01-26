@@ -22,6 +22,24 @@ contract Identity is Storage, IIdentity, Version {
         _;
     }
 
+    /**
+     * @notice requires management key to call this function, or internal call
+     */
+    modifier onlyManager() {
+        require(msg.sender == address(this) || keyHasPurpose(keccak256(abi.encode(msg.sender)), 1)
+        , "Permissions: Sender does not have management key");
+        _;
+    }
+
+    /**
+     * @notice requires claim key to call this function, or internal call
+     */
+    modifier onlyClaimKey() {
+        require(msg.sender == address(this) || keyHasPurpose(keccak256(abi.encode(msg.sender)), 3)
+        , "Permissions: Sender does not have claim signer key");
+        _;
+    }
+
     constructor(address initialManagementKey, bool _isLibrary) {
         _canInteract = !_isLibrary;
 
@@ -60,13 +78,10 @@ contract Identity is Storage, IIdentity, Version {
     function addKey(bytes32 _key, uint256 _purpose, uint256 _type)
     public
     delegatedOnly
+    onlyManager
     override
     returns (bool success)
     {
-        if (msg.sender != address(this)) {
-            require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 1), "Permissions: Sender does not have management key");
-        }
-
         if (_keys[_key].key == _key) {
             for (uint keyPurposeIndex = 0; keyPurposeIndex < _keys[_key].purposes.length; keyPurposeIndex++) {
                 uint256 purpose = _keys[_key].purposes[keyPurposeIndex];
@@ -183,16 +198,11 @@ contract Identity is Storage, IIdentity, Version {
     function removeKey(bytes32 _key, uint256 _purpose)
     public
     delegatedOnly
+    onlyManager
     override
     returns (bool success)
     {
         require(_keys[_key].key == _key, "NonExisting: Key isn't registered");
-
-        if (msg.sender != address(this)) {
-            require(
-                keyHasPurpose(keccak256(abi.encode(msg.sender)), 1)
-                , "Permissions: Sender does not have management key");
-        }
 
         require(_keys[_key].purposes.length > 0, "NonExisting: Key doesn't have such purpose");
 
@@ -258,14 +268,12 @@ contract Identity is Storage, IIdentity, Version {
     )
     public
     delegatedOnly
+    onlyClaimKey
     override
     returns (bytes32 claimRequestId)
     {
         require(IClaimIssuer(_issuer).isClaimValid(IIdentity(address(this)), _topic, _signature, _data), "invalid claim");
         bytes32 claimId = keccak256(abi.encode(_issuer, _topic));
-        if (msg.sender != address(this)) {
-            require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 3), "Permissions: Sender does not have claim signer key");
-        }
         if (_claims[claimId].issuer != _issuer) {
             _claimsByTopic[_topic].push(claimId);
             _claims[claimId].topic = _topic;
@@ -298,10 +306,14 @@ contract Identity is Storage, IIdentity, Version {
     * @return success Returns TRUE when the claim was removed.
     * triggers ClaimRemoved event
     */
-    function removeClaim(bytes32 _claimId) public delegatedOnly override returns (bool success) {
-        if (msg.sender != address(this)) {
-            require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 3), "Permissions: Sender does not have CLAIM key");
-        }
+    function removeClaim(bytes32 _claimId)
+    public
+    delegatedOnly
+    onlyClaimKey
+    override
+    returns
+    (bool success) {
+
 
         if (_claims[_claimId].topic == 0) {
             revert("NonExisting: There is no claim with this ID");
