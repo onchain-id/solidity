@@ -316,23 +316,23 @@ contract Identity is Storage, IIdentity, Version {
     returns
     (bool success) {
 
-
-        if (_claims[_claimId].topic == 0) {
+        uint256 _topic = _claims[_claimId].topic;
+        if (_topic == 0) {
             revert("NonExisting: There is no claim with this ID");
         }
 
         uint claimIndex = 0;
-        while (_claimsByTopic[_claims[_claimId].topic][claimIndex] != _claimId) {
+        while (_claimsByTopic[_topic][claimIndex] != _claimId) {
             claimIndex++;
         }
 
-        _claimsByTopic[_claims[_claimId].topic][claimIndex] =
-        _claimsByTopic[_claims[_claimId].topic][_claimsByTopic[_claims[_claimId].topic].length - 1];
-        _claimsByTopic[_claims[_claimId].topic].pop();
+        _claimsByTopic[_topic][claimIndex] =
+        _claimsByTopic[_topic][_claimsByTopic[_topic].length - 1];
+        _claimsByTopic[_topic].pop();
 
         emit ClaimRemoved(
             _claimId,
-            _claims[_claimId].topic,
+            _topic,
             _claims[_claimId].scheme,
             _claims[_claimId].issuer,
             _claims[_claimId].signature,
