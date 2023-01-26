@@ -83,8 +83,9 @@ contract Identity is Storage, IIdentity, Version {
     returns (bool success)
     {
         if (_keys[_key].key == _key) {
-            for (uint keyPurposeIndex = 0; keyPurposeIndex < _keys[_key].purposes.length; keyPurposeIndex++) {
-                uint256 purpose = _keys[_key].purposes[keyPurposeIndex];
+            uint256[] memory _purposes = _keys[_key].purposes;
+            for (uint keyPurposeIndex = 0; keyPurposeIndex < _purposes.length; keyPurposeIndex++) {
+                uint256 purpose = _purposes[keyPurposeIndex];
 
                 if (purpose == _purpose) {
                     revert("Conflict: Key already has purpose");
@@ -203,19 +204,20 @@ contract Identity is Storage, IIdentity, Version {
     returns (bool success)
     {
         require(_keys[_key].key == _key, "NonExisting: Key isn't registered");
+        uint256[] memory _purposes = _keys[_key].purposes;
 
-        require(_keys[_key].purposes.length > 0, "NonExisting: Key doesn't have such purpose");
+        require(_purposes.length > 0, "NonExisting: Key doesn't have such purpose");
 
         uint purposeIndex = 0;
-        while (_keys[_key].purposes[purposeIndex] != _purpose) {
+        while (_purposes[purposeIndex] != _purpose) {
             purposeIndex++;
 
-            if (purposeIndex >= _keys[_key].purposes.length) {
+            if (purposeIndex >= _purposes.length) {
                 break;
             }
         }
 
-        require(purposeIndex < _keys[_key].purposes.length, "NonExisting: Key doesn't have such purpose");
+        require(purposeIndex < _purposes.length, "NonExisting: Key doesn't have such purpose");
 
         _keys[_key].purposes[purposeIndex] = _keys[_key].purposes[_keys[_key].purposes.length - 1];
         _keys[_key].purposes.pop();
