@@ -43,13 +43,6 @@ interface IERC734 {
      */
     event KeyRemoved(bytes32 indexed key, uint256 indexed purpose, uint256 indexed keyType);
 
-    /**
-     * @dev Emitted when the list of required keys to perform an action was updated.
-     *
-     * Specification: MUST be triggered when changeKeysRequired was successfully called.
-     */
-    event KeysRequiredChanged(uint256 purpose, uint256 number);
-
 
     /**
      * @dev Adds a _key to the identity. The _purpose specifies the purpose of the key.
