@@ -226,6 +226,10 @@ contract Identity is Storage, IIdentity, Version {
 
         while (_keysByPurpose[_purpose][keyIndex] != _key) {
             keyIndex++;
+
+            if (keyIndex >= _keysByPurpose[_purpose].length) {
+                break;
+            }
         }
 
         _keysByPurpose[_purpose][keyIndex] = _keysByPurpose[_purpose][_keysByPurpose[_purpose].length - 1];
