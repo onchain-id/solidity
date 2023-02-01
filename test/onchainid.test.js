@@ -538,6 +538,18 @@ contract('ONCHAINID', (accounts) => {
           ).should.eventually.be.true;
         });
       });
+
+      describe('When the execution should fail', () => {
+        it('should revert the approval', async () => {
+          await user1Identity.execute(user1Identity.address, 0, '0x001009473', {
+            from: user1ActionAccount,
+          });
+
+          await user1Identity
+            .approve(4, true, { from: user1 })
+            .should.be.rejectedWith('Execution failed.');
+        });
+      });
     });
   });
 });
