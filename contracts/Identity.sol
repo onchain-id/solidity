@@ -92,8 +92,10 @@ contract Identity is Storage, IIdentity, Version {
 
     /**
      *  @notice Approves an execution or claim addition.
-     * If the sender is an ACTION key and the destination address is not the identity contract itself, then the approval is authorized and the operation would be performed.
-     * If the destination address is the identity itself, then the execution would be authorized and performed only if the sender is a MANAGEMENT key.
+     * If the sender is an ACTION key and the destination address is not the identity contract itself, then the
+     * approval is authorized and the operation would be performed.
+     * If the destination address is the identity itself, then the execution would be authorized and performed only
+     * if the sender is a MANAGEMENT key.
      */
     function approve(uint256 _id, bool _approve)
     public
@@ -147,9 +149,12 @@ contract Identity is Storage, IIdentity, Version {
 
     /**
      * @notice Passes an execution instruction to the keymanager.
-     * If the sender is an ACTION key and the destination address is not the identity contract itself, then the execution is immediately approved and performed.
-     * If the destination address is the identity itself, then the execution would be performed immediately only if the sender is a MANAGEMENT key.
-     * Otherwise, the execute method triggers an ExecutionRequested event, and the execution request must be approved using the `approve` method.
+     * If the sender is an ACTION key and the destination address is not the identity contract itself, then the
+     * execution is immediately approved and performed.
+     * If the destination address is the identity itself, then the execution would be performed immediately only if
+     * the sender is a MANAGEMENT key.
+     * Otherwise, the execute method triggers an ExecutionRequested event, and the execution request must be approved
+     * using the `approve` method.
      *
      * @return executionId to use in the approve function, to approve or reject this execution.
      */
