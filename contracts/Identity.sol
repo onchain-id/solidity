@@ -115,13 +115,12 @@ contract Identity is Storage, IIdentity, Version {
 
         if (_approve == true) {
             _executions[_id].approved = true;
+            _executions[_id].executed = true;
 
             // solhint-disable-next-line avoid-low-level-calls
             (success,) = _executions[_id].to.call{value:(_executions[_id].value)}(_executions[_id].data);
 
             if (success) {
-                _executions[_id].executed = true;
-
                 emit Executed(
                     _id,
                     _executions[_id].to,
