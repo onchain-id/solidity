@@ -92,10 +92,8 @@ contract Identity is Storage, IIdentity, Version {
 
     /**
      *  @notice Approves an execution or claim addition.
-     *  This SHOULD require an approval of key purpose 1, if the _to of the execution is the identity contract
-     *  itself, to successfully approve an execution.
-     *  And COULD require an approval of key purpose 2, if the _to of the execution is another contract, to
-     *  successfully approve an execution.
+     * If the sender is an ACTION key and the destination address is not the identity contract itself, then the approval is authorized and the operation would be performed.
+     * If the destination address is the identity itself, then the execution would be authorized and performed only if the sender is a MANAGEMENT key.
      */
     function approve(uint256 _id, bool _approve)
     public
@@ -119,7 +117,7 @@ contract Identity is Storage, IIdentity, Version {
             _executions[_id].approved = true;
 
             // solhint-disable-next-line avoid-low-level-calls
-            (success,) = _executions[_id].to.call{value:(_executions[_id].value)}(abi.encode(_executions[_id].data, 0));
+            (success,) = _executions[_id].to.call{value:(_executions[_id].value)}(_executions[_id].data);
 
             if (success) {
                 _executions[_id].executed = true;
@@ -140,7 +138,7 @@ contract Identity is Storage, IIdentity, Version {
                     _executions[_id].data
                 );
 
-                return false;
+                revert("Execution failed.");
             }
         } else {
             _executions[_id].approved = false;
@@ -150,10 +148,11 @@ contract Identity is Storage, IIdentity, Version {
 
     /**
      * @notice Passes an execution instruction to the keymanager.
-     * SHOULD require approve to be called with one or more keys of purpose 1 or 2 to approve this execution.
-     * Execute COULD be used as the only accessor for addKey, removeKey and replaceKey and removeClaim.
+     * If the sender is an ACTION key and the destination address is not the identity contract itself, then the execution is immediately approved and performed.
+     * If the destination address is the identity itself, then the execution would be performed immediately only if the sender is a MANAGEMENT key.
+     * Otherwise, the execute method triggers an ExecutionRequested event, and the execution request must be approved using the `approve` method.
      *
-     * @return executionId SHOULD be sent to the approve function, to approve or reject this execution.
+     * @return executionId to use in the approve function, to approve or reject this execution.
      */
     function execute(address _to, uint256 _value, bytes memory _data)
     public
@@ -162,23 +161,23 @@ contract Identity is Storage, IIdentity, Version {
     payable
     returns (uint256 executionId)
     {
-        require(!_executions[_executionNonce].executed, "Already executed");
-        uint256 executionId = _executionNonce;
-        _executions[_executionNonce].to = _to;
-        _executions[_executionNonce].value = _value;
-        _executions[_executionNonce].data = _data;
+        uint256 _executionId = _executionNonce;
+        require(!_executions[_executionId].executed, "Already executed");
+        _executions[_executionId].to = _to;
+        _executions[_executionId].value = _value;
+        _executions[_executionId].data = _data;
         _executionNonce++;
 
-        emit ExecutionRequested(_executionNonce, _to, _value, _data);
+        emit ExecutionRequested(_executionId, _to, _value, _data);
 
         if (keyHasPurpose(keccak256(abi.encode(msg.sender)), 1)) {
-            approve(executionId, true);
+            approve(_executionId, true);
         }
         else if (_to != address(this) && keyHasPurpose(keccak256(abi.encode(msg.sender)), 2)){
-            approve(executionId, true);
+            approve(_executionId, true);
         }
 
-        return executionId;
+        return _executionId;
     }
 
     /**

@@ -409,7 +409,7 @@ contract('ONCHAINID', (accounts) => {
             .getBalance(user1Identity.address)
             .should.eventually.equal('10');
           await user1Identity
-            .approve(0, true, {
+            .approve(2, true, {
               from: unauthorizedAccount,
             })
             .should.be.rejectedWith(EVMRevert);
@@ -467,7 +467,49 @@ contract('ONCHAINID', (accounts) => {
     describe('When executing an action over the identity itself', () => {
       describe('When signing with an ACTION key', () => {
         it('should revert the approval for non-authorized', async () => {
-          await user1Identity.execute(user1Identity.address, 0, '0x', {
+          const addKeyData = web3.eth.abi.encodeFunctionCall(
+            {
+              inputs: [
+                {
+                  internalType: 'bytes32',
+                  name: '_key',
+                  type: 'bytes32',
+                },
+                {
+                  internalType: 'uint256',
+                  name: '_purpose',
+                  type: 'uint256',
+                },
+                {
+                  internalType: 'uint256',
+                  name: '_type',
+                  type: 'uint256',
+                },
+              ],
+              name: 'addKey',
+              outputs: [
+                {
+                  internalType: 'bool',
+                  name: 'success',
+                  type: 'bool',
+                },
+              ],
+              stateMutability: 'nonpayable',
+              type: 'function',
+            },
+            [
+              web3.utils.keccak256(
+                web3.eth.abi.encodeParameter(
+                  'address',
+                  '0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199'
+                )
+              ),
+              2,
+              1,
+            ]
+          );
+
+          await user1Identity.execute(user1Identity.address, 0, addKeyData, {
             from: unauthorizedAccount,
           });
 
@@ -475,7 +517,7 @@ contract('ONCHAINID', (accounts) => {
             .approve(3, true, {
               from: user1ActionAccount,
             })
-            .should.be.rejectedWith(EVMRevert);
+            .should.be.rejectedWith('Sender does not have management key');
         });
       });
 
@@ -484,6 +526,16 @@ contract('ONCHAINID', (accounts) => {
           await user1Identity.approve(3, true, {
             from: user1,
           }).should.be.fulfilled;
+
+          await user1Identity.keyHasPurpose(
+            web3.utils.keccak256(
+              web3.eth.abi.encodeParameter(
+                'address',
+                '0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199'
+              )
+            ),
+            2
+          ).should.eventually.be.true;
         });
       });
     });
