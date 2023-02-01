@@ -87,7 +87,8 @@ interface IERC734 {
     /**
      * @dev Passes an execution instruction to an ERC734 identity.
      * How the execution is handled is up to the identity implementation:
-     * An execution COULD be requested and require `approve` to be called with one or more keys of purpose 1 or 2 to approve this execution.
+     * An execution COULD be requested and require `approve` to be called with one or more keys of purpose 1 or 2 to
+     * approve this execution.
      * Execute COULD be used as the only accessor for `addKey` and `removeKey`.
      *
      * Triggers Event: `ExecutionRequested`, `Executed`
