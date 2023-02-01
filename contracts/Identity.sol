@@ -144,8 +144,8 @@ contract Identity is Storage, IIdentity, Version {
             }
         } else {
             _executions[_id].approved = false;
+            return false;
         }
-        return true;
     }
 
     /**

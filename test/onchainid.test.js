@@ -422,6 +422,14 @@ contract('ONCHAINID', (accounts) => {
         });
       });
 
+      describe('When not approving as a MANAGEMENT key', () => {
+        it('should be a no-op, leaving the approval status at false', async () => {
+          await user1Identity.approve(2, false, {
+            from: user1,
+          }).should.be.fulfilled;
+        });
+      });
+
       describe('When approving as a MANAGEMENT key', () => {
         it('should approve the execution', async () => {
           const currentBalance = await web3.eth.getBalance(user2);
@@ -442,6 +450,40 @@ contract('ONCHAINID', (accounts) => {
               .add(web3.utils.toBN('10'))
               .toString()
           );
+        });
+      });
+    });
+
+    describe('When approving with an execution ID that is not assigned yet', () => {
+      it('should revert for non-existing execution ID', async () => {
+        await user1Identity
+          .approve(100, true, {
+            from: user1,
+          })
+          .should.be.rejectedWith(EVMRevert);
+      });
+    });
+
+    describe('When executing an action over the identity itself', () => {
+      describe('When signing with an ACTION key', () => {
+        it('should revert the approval for non-authorized', async () => {
+          await user1Identity.execute(user1Identity.address, 0, '0x', {
+            from: unauthorizedAccount,
+          });
+
+          await user1Identity
+            .approve(3, true, {
+              from: user1ActionAccount,
+            })
+            .should.be.rejectedWith(EVMRevert);
+        });
+      });
+
+      describe('When signing with a MANAGEMENT key', () => {
+        it('should execute the pending request', async () => {
+          await user1Identity.approve(3, true, {
+            from: user1,
+          }).should.be.fulfilled;
         });
       });
     });
