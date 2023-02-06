@@ -87,11 +87,12 @@ interface IERC734 {
     /**
      * @dev Passes an execution instruction to an ERC725 identity.
      *
-     * Triggers Event: `ExecutionRequested`, `Executed`
-     *
-     * Specification:
-     * SHOULD require approve to be called with one or more keys of purpose 1 or 2 to approve this execution.
+     * How the execution is handled is up to the identity implementation:
+     * An execution COULD be requested and require `approve` to be called with one or more keys of purpose 1 or 2 to
+     * approve this execution.
      * Execute COULD be used as the only accessor for `addKey` and `removeKey`.
+     *
+     * Triggers Event: `ExecutionRequested`, `Executed`
      */
     function execute(address _to, uint256 _value, bytes calldata _data) external payable returns (uint256 executionId);
 

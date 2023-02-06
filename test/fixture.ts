@@ -1,7 +1,7 @@
 import { ethers } from 'hardhat';
 
 export async function deployIdentityFixture() {
-  const [deployerWallet, claimIssuerWallet, aliceWallet, bobWallet, carolWallet] =
+  const [deployerWallet, claimIssuerWallet, aliceWallet, bobWallet, carolWallet, davidWallet] =
     await ethers.getSigners();
 
   const Identity = await ethers.getContractFactory('Identity');
@@ -27,6 +27,9 @@ export async function deployIdentityFixture() {
   await aliceIdentity.connect(aliceWallet).addKey(ethers.utils.keccak256(
     ethers.utils.defaultAbiCoder.encode(['address'], [carolWallet.address])
   ), 3, 1);
+  await aliceIdentity.connect(aliceWallet).addKey(ethers.utils.keccak256(
+    ethers.utils.defaultAbiCoder.encode(['address'], [davidWallet.address])
+  ), 2, 1);
 
   await identityFactory.connect(bobWallet).createIdentity(bobWallet.address, 'bob');
   const bobIdentity = await ethers.getContractAt('Identity', await identityFactory.getIdentity(bobWallet.address));
@@ -37,6 +40,7 @@ export async function deployIdentityFixture() {
     aliceWallet,
     bobWallet,
     carolWallet,
+    davidWallet,
     deployerWallet,
     claimIssuerWallet,
     aliceIdentity,
