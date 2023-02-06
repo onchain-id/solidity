@@ -270,7 +270,10 @@ contract Identity is Storage, IIdentity, Version {
     override
     returns (bytes32 claimRequestId)
     {
-        require(IClaimIssuer(_issuer).isClaimValid(IIdentity(address(this)), _topic, _signature, _data), "invalid claim");
+        if (_issuer != address(this)) {
+            require(IClaimIssuer(_issuer).isClaimValid(IIdentity(address(this)), _topic, _signature, _data), "invalid claim");
+        }
+
         bytes32 claimId = keccak256(abi.encode(_issuer, _topic));
         if (msg.sender != address(this)) {
             require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 3), "Permissions: Sender does not have claim signer key");

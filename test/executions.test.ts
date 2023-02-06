@@ -29,7 +29,7 @@ describe('Identity', () => {
 
       describe('when execution is possible (successfull call)', () => {
         it('should emit Executed', async () => {
-          const { aliceIdentity, aliceWallet, carolWallet } = await loadFixture(deployIdentityFixture);
+          const { aliceIdentity, aliceWallet } = await loadFixture(deployIdentityFixture);
 
           const aliceKeyHash = ethers.utils.keccak256(
             ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address])
