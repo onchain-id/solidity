@@ -33,6 +33,9 @@ interface IIdFactory {
      *  @param _salt the salt used by create2 to issue the contract
      *  requires a new salt for each deployment
      *  _wallet cannot be linked to another ONCHAINID
+     *  only Owner can call => Owner is supposed to be a smart contract, managing the accessibility
+     *  of the function, including calls to oracles for multichain
+     *  deployment security (avoid identity theft), defining payment requirements, etc.
      */
     function createIdentity(address _wallet, string memory _salt) external returns (address);
 
@@ -98,6 +101,13 @@ interface IIdFactory {
      *  returns an array of addresses linked to the OID
      */
     function getWallets(address _identity) external view returns (address[] memory);
+
+    /**
+     *  @dev getter to fetch the token address linked to an OID contract
+     *  @param _identity the address of the OID contract
+     *  returns the address linked to the OID
+     */
+    function getToken(address _identity) external view returns (address);
 
     /**
      *  @dev getter to know if an address is registered as token factory or not

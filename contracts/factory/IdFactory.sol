@@ -22,6 +22,12 @@ contract IdFactory is IIdFactory, Ownable {
     // wallets currently linked to an ONCHAINID
     mapping(address => address[]) private _wallets;
 
+    // ONCHAINID of the token
+    mapping(address => address) private _tokenIdentity;
+
+    // token linked to an ONCHAINID
+    mapping(address => address) private _tokenAddress;
+
 
     // setting
     constructor (address implementationAuthority) {
@@ -54,7 +60,7 @@ contract IdFactory is IIdFactory, Ownable {
     function createIdentity(
         address _wallet,
         string memory _salt)
-    external override returns (address) {
+    external onlyOwner override returns (address) {
         require(_wallet != address(0), "invalid argument - zero address");
         require(keccak256(abi.encode(_salt)) != keccak256(abi.encode("")), "invalid argument - empty string");
         string memory oidSalt = string.concat("OID",_salt);
@@ -82,11 +88,11 @@ contract IdFactory is IIdFactory, Ownable {
         require(keccak256(abi.encode(_salt)) != keccak256(abi.encode("")), "invalid argument - empty string");
         string memory tokenIdSalt = string.concat("Token",_salt);
         require (!_saltTaken[tokenIdSalt], "salt already taken");
-        require (_userIdentity[_token] == address(0), "token already linked to an identity");
+        require (_tokenIdentity[_token] == address(0), "token already linked to an identity");
         address identity = _deployIdentity(tokenIdSalt, _implementationAuthority, _owner);
         _saltTaken[tokenIdSalt] = true;
-        _userIdentity[_token] = identity;
-        _wallets[identity].push(_token);
+        _tokenIdentity[_token] = identity;
+        _tokenAddress[identity] = _token;
         emit TokenLinked(_token, identity);
         return identity;
     }
@@ -98,6 +104,7 @@ contract IdFactory is IIdFactory, Ownable {
         require(_newWallet != address(0), "invalid argument - zero address");
         require(_userIdentity[msg.sender] != address(0), "wallet not linked to an identity contract");
         require(_userIdentity[_newWallet] == address(0), "new wallet already linked");
+        require(_tokenIdentity[_newWallet] == address(0), "invalid argument - token address");
         address identity = _userIdentity[msg.sender];
         require(_wallets[identity].length <= 100, "not more than 100 _wallets linked");
         _userIdentity[_newWallet] = identity;
@@ -129,7 +136,12 @@ contract IdFactory is IIdFactory, Ownable {
      *  @dev See {IdFactory-getIdentity}.
      */
     function getIdentity(address _wallet) external override view returns (address) {
-        return _userIdentity[_wallet];
+        if(_tokenIdentity[_wallet] != address(0)) {
+            return _tokenIdentity[_wallet];
+        }
+        else {
+            return _userIdentity[_wallet];
+        }
     }
 
     /**
@@ -144,6 +156,13 @@ contract IdFactory is IIdFactory, Ownable {
      */
     function getWallets(address _identity) external override view returns (address[] memory) {
         return _wallets[_identity];
+    }
+
+    /**
+     *  @dev See {IdFactory-getToken}.
+     */
+    function getToken(address _identity) external override view returns (address) {
+        return _tokenAddress[_identity];
     }
 
     /**
