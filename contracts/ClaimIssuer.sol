@@ -15,9 +15,6 @@ contract ClaimIssuer is IClaimIssuer, Identity {
      */
     function revokeClaimBySignature(bytes calldata signature) external override delegatedOnly onlyManager {
         require(!revokedClaims[signature], "Conflict: Claim already revoked");
-        if (msg.sender != address(this)) {
-            require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 1), "Permissions: Sender does not have management key");
-        }
 
         revokedClaims[signature] = true;
 
