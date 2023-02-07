@@ -54,9 +54,113 @@ contract Identity is Storage, IIdentity, Version {
      *
      * @param initialManagementKey The ethereum address to be set as the management key of the ONCHAINID.
      */
-    function initialize(address initialManagementKey) public {
+    function initialize(address initialManagementKey) external {
         require(initialManagementKey != address(0), "invalid argument - zero address");
         __Identity_init(initialManagementKey);
+    }
+
+    /**
+     * @notice Passes an execution instruction to the keymanager.
+     * If the sender is an ACTION key and the destination address is not the identity contract itself, then the
+     * execution is immediately approved and performed.
+     * If the destination address is the identity itself, then the execution would be performed immediately only if
+     * the sender is a MANAGEMENT key.
+     * Otherwise, the execute method triggers an ExecutionRequested event, and the execution request must be approved
+     * using the `approve` method.
+     *
+     * @return executionId to use in the approve function, to approve or reject this execution.
+     */
+    function execute(address _to, uint256 _value, bytes memory _data)
+    external
+    delegatedOnly
+    override
+    payable
+    returns (uint256 executionId)
+    {
+        uint256 _executionId = _executionNonce;
+        require(!_executions[_executionId].executed, "Already executed");
+        _executions[_executionId].to = _to;
+        _executions[_executionId].value = _value;
+        _executions[_executionId].data = _data;
+        _executionNonce++;
+
+        emit ExecutionRequested(_executionId, _to, _value, _data);
+
+        if (keyHasPurpose(keccak256(abi.encode(msg.sender)), 1)) {
+            approve(_executionId, true);
+        }
+        else if (_to != address(this) && keyHasPurpose(keccak256(abi.encode(msg.sender)), 2)){
+            approve(_executionId, true);
+        }
+
+        return _executionId;
+    }
+
+    /**
+     * @notice Implementation of the getKey function from the ERC-734 standard
+     *
+     * @param _key The public key.  for non-hex and long keys, its the Keccak256 hash of the key
+     *
+     * @return purposes Returns the full key data, if present in the identity.
+     * @return keyType Returns the full key data, if present in the identity.
+     * @return key Returns the full key data, if present in the identity.
+     */
+    function getKey(bytes32 _key)
+    external
+    override
+    view
+    returns(uint256[] memory purposes, uint256 keyType, bytes32 key)
+    {
+        return (_keys[_key].purposes, _keys[_key].keyType, _keys[_key].key);
+    }
+
+    /**
+    * @notice gets the purposes of a key
+    *
+    * @param _key The public key.  for non-hex and long keys, its the Keccak256 hash of the key
+    *
+    * @return _purposes Returns the purposes of the specified key
+    */
+    function getKeyPurposes(bytes32 _key)
+    external
+    override
+    view
+    returns(uint256[] memory _purposes)
+    {
+        return (_keys[_key].purposes);
+    }
+
+    /**
+        * @notice gets all the keys with a specific purpose from an identity
+        *
+        * @param _purpose a uint256[] Array of the key types, like 1 = MANAGEMENT, 2 = ACTION, 3 = CLAIM, 4 = ENCRYPTION
+        *
+        * @return keys Returns an array of public key bytes32 hold by this identity and having the specified purpose
+        */
+    function getKeysByPurpose(uint256 _purpose)
+    external
+    override
+    view
+    returns(bytes32[] memory keys)
+    {
+        return _keysByPurpose[_purpose];
+    }
+
+    /**
+    * @notice Implementation of the getClaimIdsByTopic function from the ERC-735 standard.
+    * used to get all the claims from the specified topic
+    *
+    * @param _topic The identity of the claim i.e. keccak256(abi.encode(_issuer, _topic))
+    *
+    * @return claimIds Returns an array of claim IDs by topic.
+    */
+    function getClaimIdsByTopic(uint256 _topic)
+    external
+    override
+    view
+    returns(bytes32[] memory claimIds)
+    {
+        return _claimsByTopic[_topic];
     }
 
     /**
@@ -164,43 +268,6 @@ contract Identity is Storage, IIdentity, Version {
     }
 
     /**
-     * @notice Passes an execution instruction to the keymanager.
-     * If the sender is an ACTION key and the destination address is not the identity contract itself, then the
-     * execution is immediately approved and performed.
-     * If the destination address is the identity itself, then the execution would be performed immediately only if
-     * the sender is a MANAGEMENT key.
-     * Otherwise, the execute method triggers an ExecutionRequested event, and the execution request must be approved
-     * using the `approve` method.
-     *
-     * @return executionId to use in the approve function, to approve or reject this execution.
-     */
-    function execute(address _to, uint256 _value, bytes memory _data)
-    public
-    delegatedOnly
-    override
-    payable
-    returns (uint256 executionId)
-    {
-        uint256 _executionId = _executionNonce;
-        require(!_executions[_executionId].executed, "Already executed");
-        _executions[_executionId].to = _to;
-        _executions[_executionId].value = _value;
-        _executions[_executionId].data = _data;
-        _executionNonce++;
-
-        emit ExecutionRequested(_executionId, _to, _value, _data);
-
-        if (keyHasPurpose(keccak256(abi.encode(msg.sender)), 1)) {
-            approve(_executionId, true);
-        }
-        else if (_to != address(this) && keyHasPurpose(keccak256(abi.encode(msg.sender)), 2)){
-            approve(_executionId, true);
-        }
-
-        return _executionId;
-    }
-
-    /**
     * @notice Remove the purpose from a key.
     */
     function removeKey(bytes32 _key, uint256 _purpose)
@@ -221,7 +288,7 @@ contract Identity is Storage, IIdentity, Version {
                 revert("NonExisting: Key doesn't have such purpose");
             }
         }
-        
+
         _keys[_key].purposes[purposeIndex] = _keys[_key].purposes[_keys[_key].purposes.length - 1];
         _keys[_key].purposes.pop();
 
@@ -398,23 +465,6 @@ contract Identity is Storage, IIdentity, Version {
     }
 
     /**
-    * @notice Implementation of the getClaimIdsByTopic function from the ERC-735 standard.
-    * used to get all the claims from the specified topic
-    *
-    * @param _topic The identity of the claim i.e. keccak256(abi.encode(_issuer, _topic))
-    *
-    * @return claimIds Returns an array of claim IDs by topic.
-    */
-    function getClaimIdsByTopic(uint256 _topic)
-    public
-    override
-    view
-    returns(bytes32[] memory claimIds)
-    {
-        return _claimsByTopic[_topic];
-    }
-
-    /**
     * @notice Returns true if the key has MANAGEMENT purpose or the specified purpose.
     */
     function keyHasPurpose(bytes32 _key, uint256 _purpose)
@@ -433,56 +483,6 @@ contract Identity is Storage, IIdentity, Version {
         }
 
         return false;
-    }
-
-    /**
-     * @notice Implementation of the getKey function from the ERC-734 standard
-     *
-     * @param _key The public key.  for non-hex and long keys, its the Keccak256 hash of the key
-     *
-     * @return purposes Returns the full key data, if present in the identity.
-     * @return keyType Returns the full key data, if present in the identity.
-     * @return key Returns the full key data, if present in the identity.
-     */
-    function getKey(bytes32 _key)
-    public
-    override
-    view
-    returns(uint256[] memory purposes, uint256 keyType, bytes32 key)
-    {
-        return (_keys[_key].purposes, _keys[_key].keyType, _keys[_key].key);
-    }
-
-    /**
-    * @notice gets the purposes of a key
-    *
-    * @param _key The public key.  for non-hex and long keys, its the Keccak256 hash of the key
-    *
-    * @return _purposes Returns the purposes of the specified key
-    */
-    function getKeyPurposes(bytes32 _key)
-    public
-    override
-    view
-    returns(uint256[] memory _purposes)
-    {
-        return (_keys[_key].purposes);
-    }
-
-    /**
-        * @notice gets all the keys with a specific purpose from an identity
-        *
-        * @param _purpose a uint256[] Array of the key types, like 1 = MANAGEMENT, 2 = ACTION, 3 = CLAIM, 4 = ENCRYPTION
-        *
-        * @return keys Returns an array of public key bytes32 hold by this identity and having the specified purpose
-        */
-    function getKeysByPurpose(uint256 _purpose)
-    public
-    override
-    view
-    returns(bytes32[] memory keys)
-    {
-        return _keysByPurpose[_purpose];
     }
 
     /**

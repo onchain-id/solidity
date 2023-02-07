@@ -17,19 +17,19 @@ contract ImplementationAuthority is IImplementationAuthority, Ownable {
     }
 
     /**
+     *  @dev See {IImplementationAuthority-updateImplementation}.
+     */
+    function updateImplementation(address _newImplementation) external override onlyOwner {
+        require(_newImplementation != address(0), "invalid argument - zero address");
+        _implementation = _newImplementation;
+        emit UpdatedImplementation(_newImplementation);
+    }
+
+    /**
      *  @dev See {IImplementationAuthority-getImplementation}.
      */
     function getImplementation() external override view returns(address) {
         return _implementation;
-    }
-
-    /**
-     *  @dev See {IImplementationAuthority-updateImplementation}.
-     */
-    function updateImplementation(address _newImplementation) public override onlyOwner {
-        require(_newImplementation != address(0), "invalid argument - zero address");
-        _implementation = _newImplementation;
-        emit UpdatedImplementation(_newImplementation);
     }
 }
 
