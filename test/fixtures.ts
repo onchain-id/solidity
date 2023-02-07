@@ -22,6 +22,7 @@ export async function deployFactoryFixture() {
   return {
     identityFactory,
     identityImplementation,
+    implementationAuthority,
     aliceWallet,
     bobWallet,
     carolWallet,
@@ -32,10 +33,10 @@ export async function deployFactoryFixture() {
 }
 
 export async function deployIdentityFixture() {
-  const [deployerWallet, claimIssuerWallet, aliceWallet, bobWallet, carolWallet, davidWallet] =
+  const [deployerWallet, claimIssuerWallet, aliceWallet, bobWallet, carolWallet, davidWallet, tokenOwnerWallet] =
     await ethers.getSigners();
 
-  const { identityFactory, identityImplementation } = await deployFactoryFixture();
+  const { identityFactory, identityImplementation, implementationAuthority } = await deployFactoryFixture();
 
   const ClaimIssuer = await ethers.getContractFactory('ClaimIssuer');
   const claimIssuer = await ClaimIssuer.connect(claimIssuerWallet).deploy(claimIssuerWallet.address);
@@ -73,9 +74,13 @@ export async function deployIdentityFixture() {
   await identityFactory.connect(deployerWallet).createIdentity(bobWallet.address, 'bob');
   const bobIdentity = await ethers.getContractAt('Identity', await identityFactory.getIdentity(bobWallet.address));
 
+  const tokenAddress = '0xdEE019486810C7C620f6098EEcacA0244b0fa3fB';
+  await identityFactory.connect(deployerWallet).createTokenIdentity(tokenAddress, tokenOwnerWallet.address, 'tokenOwner');
+
   return {
     identityFactory,
     identityImplementation,
+    implementationAuthority,
     claimIssuer,
     aliceWallet,
     bobWallet,
@@ -83,8 +88,10 @@ export async function deployIdentityFixture() {
     davidWallet,
     deployerWallet,
     claimIssuerWallet,
+    tokenOwnerWallet,
     aliceIdentity,
     bobIdentity,
     aliceClaim666,
+    tokenAddress
   };
 }
