@@ -106,7 +106,7 @@ contract IdFactory is IIdFactory, Ownable {
         require(_userIdentity[_newWallet] == address(0), "new wallet already linked");
         require(_tokenIdentity[_newWallet] == address(0), "invalid argument - token address");
         address identity = _userIdentity[msg.sender];
-        require(_wallets[identity].length <= 100, "max amount of wallets per ID exceeded");
+        require(_wallets[identity].length < 101, "max amount of wallets per ID exceeded");
         _userIdentity[_newWallet] = identity;
         _wallets[identity].push(_newWallet);
         emit WalletLinked(_newWallet, identity);

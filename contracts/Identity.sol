@@ -217,13 +217,11 @@ contract Identity is Storage, IIdentity, Version {
         while (_purposes[purposeIndex] != _purpose) {
             purposeIndex++;
 
-            if (purposeIndex >= _purposes.length) {
-                break;
+            if (purposeIndex == _purposes.length) {
+                revert("NonExisting: Key doesn't have such purpose");
             }
         }
-
-        require(purposeIndex < _purposes.length, "NonExisting: Key doesn't have such purpose");
-
+        
         _keys[_key].purposes[purposeIndex] = _keys[_key].purposes[_keys[_key].purposes.length - 1];
         _keys[_key].purposes.pop();
 
