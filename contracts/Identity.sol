@@ -41,6 +41,7 @@ contract Identity is Storage, IIdentity, Version {
     }
 
     constructor(address initialManagementKey, bool _isLibrary) {
+        require(initialManagementKey != address(0), "invalid argument - zero address");
         if (!_isLibrary) {
             __Identity_init(initialManagementKey);
         } else {
@@ -54,6 +55,7 @@ contract Identity is Storage, IIdentity, Version {
      * @param initialManagementKey The ethereum address to be set as the management key of the ONCHAINID.
      */
     function initialize(address initialManagementKey) public {
+        require(initialManagementKey != address(0), "invalid argument - zero address");
         __Identity_init(initialManagementKey);
     }
 

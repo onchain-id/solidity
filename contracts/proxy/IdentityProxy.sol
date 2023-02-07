@@ -8,6 +8,8 @@ contract IdentityProxy {
     address public implementationAuthority;
 
     constructor(address _implementationAuthority, address initialManagementKey) {
+        require(_implementationAuthority != address(0), "invalid argument - zero address");
+        require(initialManagementKey != address(0), "invalid argument - zero address");
         implementationAuthority = _implementationAuthority;
 
         address logic = IImplementationAuthority(implementationAuthority).getImplementation();
