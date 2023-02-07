@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Add typechain-types (targeting ethers v5).
 - Add tests cases for `execute` and `approve` methods.
+- Add method `revokeClaimBySignature(bytes signature)` in ClaimIssuer, prefer using this method instead of the now
+deprecated `revokeClaim` method.
+- Add checks on ClaimIssuer to prevent revoking an already revoked claim.
 
 ### Updated
 - Switch development tooling to hardhat.
