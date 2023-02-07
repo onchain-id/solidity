@@ -38,7 +38,7 @@ contract IdFactory is IIdFactory, Ownable {
     /**
      *  @dev See {IdFactory-addTokenFactory}.
      */
-    function addTokenFactory (address _factory) external override onlyOwner {
+    function addTokenFactory(address _factory) external override onlyOwner {
         require(_factory != address(0), "invalid argument - zero address");
         require(!isTokenFactory(_factory), "already a factory");
         _tokenFactories[_factory] = true;
@@ -48,7 +48,7 @@ contract IdFactory is IIdFactory, Ownable {
     /**
      *  @dev See {IdFactory-removeTokenFactory}.
      */
-    function removeTokenFactory (address _factory) external override onlyOwner {
+    function removeTokenFactory(address _factory) external override onlyOwner {
         require(isTokenFactory(_factory), "not a factory");
         _tokenFactories[_factory] = false;
         emit TokenFactoryRemoved(_factory);
@@ -168,7 +168,7 @@ contract IdFactory is IIdFactory, Ownable {
     /**
      *  @dev See {IdFactory-isTokenFactory}.
      */
-    function isTokenFactory (address _factory) public override view returns(bool) {
+    function isTokenFactory(address _factory) public override view returns(bool) {
         return _tokenFactories[_factory];
     }
 

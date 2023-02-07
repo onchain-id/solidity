@@ -78,7 +78,7 @@ interface IIdFactory {
      *  _factory cannot be registered yet
      *  once the factory has been registered it can deploy token identities
      */
-    function addTokenFactory (address _factory) external;
+    function addTokenFactory(address _factory) external;
 
     /**
      *  @dev function used to unregister an address previously registered as a token factory
@@ -87,7 +87,7 @@ interface IIdFactory {
      *  _factory has to be registered previously
      *  once the factory has been unregistered it cannot deploy token identities anymore
      */
-    function removeTokenFactory (address _factory) external;
+    function removeTokenFactory(address _factory) external;
 
     /**
      *  @dev getter for OID contract corresponding to a wallet/token
@@ -114,7 +114,7 @@ interface IIdFactory {
      *  @param _factory the address of the factory
      *  returns true if the address corresponds to a registered factory
      */
-    function isTokenFactory (address _factory) external view returns(bool);
+    function isTokenFactory(address _factory) external view returns(bool);
 
     /**
      *  @dev getter to know if a salt is taken for the create2 deployment
