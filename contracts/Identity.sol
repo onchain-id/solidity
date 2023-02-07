@@ -350,23 +350,18 @@ contract Identity is Storage, IIdentity, Version {
     {
         require(IClaimIssuer(_issuer).isClaimValid(IIdentity(address(this)), _topic, _signature, _data), "invalid claim");
         bytes32 claimId = keccak256(abi.encode(_issuer, _topic));
+        _claims[claimId].topic = _topic;
+        _claims[claimId].scheme = _scheme;
+        _claims[claimId].signature = _signature;
+        _claims[claimId].data = _data;
+        _claims[claimId].uri = _uri;
         if (_claims[claimId].issuer != _issuer) {
             _claimsByTopic[_topic].push(claimId);
-            _claims[claimId].topic = _topic;
-            _claims[claimId].scheme = _scheme;
             _claims[claimId].issuer = _issuer;
-            _claims[claimId].signature = _signature;
-            _claims[claimId].data = _data;
-            _claims[claimId].uri = _uri;
             emit ClaimAdded(claimId, _topic, _scheme, _issuer, _signature, _data, _uri);
-        } else {
-            _claims[claimId].topic = _topic;
-            _claims[claimId].scheme = _scheme;
+        }
+        else {
             _claims[claimId].issuer = _issuer;
-            _claims[claimId].signature = _signature;
-            _claims[claimId].data = _data;
-            _claims[claimId].uri = _uri;
-
             emit ClaimChanged(claimId, _topic, _scheme, _issuer, _signature, _data, _uri);
         }
         return claimId;
