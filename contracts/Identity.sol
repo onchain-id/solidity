@@ -22,10 +22,34 @@ contract Identity is Storage, IIdentity, Version {
         _;
     }
 
-    constructor(address initialManagementKey, bool _isLibrary) {
-        _canInteract = !_isLibrary;
+    /**
+     * @notice requires management key to call this function, or internal call
+     */
+    modifier onlyManager() {
+        require(msg.sender == address(this) || keyHasPurpose(keccak256(abi.encode(msg.sender)), 1)
+        , "Permissions: Sender does not have management key");
+        _;
+    }
 
-        if (_canInteract) {
+    /**
+     * @notice requires claim key to call this function, or internal call
+     */
+    modifier onlyClaimKey() {
+        require(msg.sender == address(this) || keyHasPurpose(keccak256(abi.encode(msg.sender)), 3)
+        , "Permissions: Sender does not have claim signer key");
+        _;
+    }
+
+    /**
+     * @notice constructor of the Identity contract
+     * @param initialManagementKey the address of the management key at deployment
+     * @param _isLibrary boolean value stating if the contract is library or not
+     * calls __Identity_init if contract is not library
+     */
+    constructor(address initialManagementKey, bool _isLibrary) {
+        require(initialManagementKey != address(0), "invalid argument - zero address");
+
+        if (!_isLibrary) {
             __Identity_init(initialManagementKey);
         } else {
             _initialized = true;
@@ -38,7 +62,108 @@ contract Identity is Storage, IIdentity, Version {
      * @param initialManagementKey The ethereum address to be set as the management key of the ONCHAINID.
      */
     function initialize(address initialManagementKey) public {
+        require(initialManagementKey != address(0), "invalid argument - zero address");
         __Identity_init(initialManagementKey);
+    }
+
+    /**
+     * @dev See {IERC734-execute}.
+     * @notice Passes an execution instruction to the keymanager.
+     * If the sender is an ACTION key and the destination address is not the identity contract itself, then the
+     * execution is immediately approved and performed.
+     * If the destination address is the identity itself, then the execution would be performed immediately only if
+     * the sender is a MANAGEMENT key.
+     * Otherwise, the execute method triggers an ExecutionRequested event, and the execution request must be approved
+     * using the `approve` method.
+     * @return executionId to use in the approve function, to approve or reject this execution.
+     */
+    function execute(address _to, uint256 _value, bytes memory _data)
+    external
+    delegatedOnly
+    override
+    payable
+    returns (uint256 executionId)
+    {
+        uint256 _executionId = _executionNonce;
+        require(!_executions[_executionId].executed, "Already executed");
+        _executions[_executionId].to = _to;
+        _executions[_executionId].value = _value;
+        _executions[_executionId].data = _data;
+        _executionNonce++;
+
+        emit ExecutionRequested(_executionId, _to, _value, _data);
+
+        if (keyHasPurpose(keccak256(abi.encode(msg.sender)), 1)) {
+            approve(_executionId, true);
+        }
+        else if (_to != address(this) && keyHasPurpose(keccak256(abi.encode(msg.sender)), 2)){
+            approve(_executionId, true);
+        }
+
+        return _executionId;
+    }
+
+    /**
+     * @dev See {IERC734-getKey}.
+     * @notice Implementation of the getKey function from the ERC-734 standard
+     * @param _key The public key.  for non-hex and long keys, its the Keccak256 hash of the key
+     * @return purposes Returns the full key data, if present in the identity.
+     * @return keyType Returns the full key data, if present in the identity.
+     * @return key Returns the full key data, if present in the identity.
+     */
+    function getKey(bytes32 _key)
+    external
+    override
+    view
+    returns(uint256[] memory purposes, uint256 keyType, bytes32 key)
+    {
+        return (_keys[_key].purposes, _keys[_key].keyType, _keys[_key].key);
+    }
+
+    /**
+    * @dev See {IERC734-getKeyPurposes}.
+    * @notice gets the purposes of a key
+    * @param _key The public key.  for non-hex and long keys, its the Keccak256 hash of the key
+    * @return _purposes Returns the purposes of the specified key
+    */
+    function getKeyPurposes(bytes32 _key)
+    external
+    override
+    view
+    returns(uint256[] memory _purposes)
+    {
+        return (_keys[_key].purposes);
+    }
+
+    /**
+    * @dev See {IERC734-getKeysByPurpose}.
+    * @notice gets all the keys with a specific purpose from an identity
+    * @param _purpose a uint256[] Array of the key types, like 1 = MANAGEMENT, 2 = ACTION, 3 = CLAIM, 4 = ENCRYPTION
+    * @return keys Returns an array of public key bytes32 hold by this identity and having the specified purpose
+    */
+    function getKeysByPurpose(uint256 _purpose)
+    external
+    override
+    view
+    returns(bytes32[] memory keys)
+    {
+        return _keysByPurpose[_purpose];
+    }
+
+    /**
+    * @dev See {IERC735-getClaimIdsByTopic}.
+    * @notice Implementation of the getClaimIdsByTopic function from the ERC-735 standard.
+    * used to get all the claims from the specified topic
+    * @param _topic The identity of the claim i.e. keccak256(abi.encode(_issuer, _topic))
+    * @return claimIds Returns an array of claim IDs by topic.
+    */
+    function getClaimIdsByTopic(uint256 _topic)
+    external
+    override
+    view
+    returns(bytes32[] memory claimIds)
+    {
+        return _claimsByTopic[_topic];
     }
 
     /**
@@ -50,26 +175,23 @@ contract Identity is Storage, IIdentity, Version {
     * 4: ENCRYPTION keys, used to encrypt data e.g. hold in claims.
     * MUST only be done by keys of purpose 1, or the identity itself.
     * If its the identity itself, the approval process will determine its approval.
-    *
     * @param _key keccak256 representation of an ethereum address
     * @param _type type of key used, which would be a uint256 for different key types. e.g. 1 = ECDSA, 2 = RSA, etc.
-    * @param _purpose a uint256[] Array of the key types, like 1 = MANAGEMENT, 2 = ACTION, 3 = CLAIM, 4 = ENCRYPTION
+    * @param _purpose a uint256 specifying the key type, like 1 = MANAGEMENT, 2 = ACTION, 3 = CLAIM, 4 = ENCRYPTION
     *
     * @return success Returns TRUE if the addition was successful and FALSE if not
     */
     function addKey(bytes32 _key, uint256 _purpose, uint256 _type)
     public
     delegatedOnly
+    onlyManager
     override
     returns (bool success)
     {
-        if (msg.sender != address(this)) {
-            require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 1), "Permissions: Sender does not have management key");
-        }
-
         if (_keys[_key].key == _key) {
-            for (uint keyPurposeIndex = 0; keyPurposeIndex < _keys[_key].purposes.length; keyPurposeIndex++) {
-                uint256 purpose = _keys[_key].purposes[keyPurposeIndex];
+            uint256[] memory _purposes = _keys[_key].purposes;
+            for (uint keyPurposeIndex = 0; keyPurposeIndex < _purposes.length; keyPurposeIndex++) {
+                uint256 purpose = _purposes[keyPurposeIndex];
 
                 if (purpose == _purpose) {
                     revert("Conflict: Key already has purpose");
@@ -91,11 +213,12 @@ contract Identity is Storage, IIdentity, Version {
     }
 
     /**
-     * @notice Approves an execution or claim addition.
-     * If the sender is an ACTION key and the destination address is not the identity contract itself, then the
-     * approval is authorized and the operation would be performed.
-     * If the destination address is the identity itself, then the execution would be authorized and performed only
-     * if the sender is a MANAGEMENT key.
+     *  @dev See {IERC734-approve}.
+     *  @notice Approves an execution or claim addition.
+     *  If the sender is an ACTION key and the destination address is not the identity contract itself, then the
+     *  approval is authorized and the operation would be performed.
+     *  If the destination address is the identity itself, then the execution would be authorized and performed only
+     *  if the sender is a MANAGEMENT key.
      */
     function approve(uint256 _id, bool _approve)
     public
@@ -150,67 +273,25 @@ contract Identity is Storage, IIdentity, Version {
     }
 
     /**
-     * @notice Passes an execution instruction to the keymanager.
-     * If the sender is an ACTION key and the destination address is not the identity contract itself, then the
-     * execution is immediately approved and performed.
-     * If the destination address is the identity itself, then the execution would be performed immediately only if
-     * the sender is a MANAGEMENT key.
-     * Otherwise, the execute method triggers an ExecutionRequested event, and the execution request must be approved
-     * using the `approve` method.
-     *
-     * @return executionId to use in the approve function, to approve or reject this execution.
-     */
-    function execute(address _to, uint256 _value, bytes memory _data)
-    public
-    delegatedOnly
-    override
-    payable
-    returns (uint256 executionId)
-    {
-        uint256 _executionId = _executionNonce;
-        require(!_executions[_executionId].executed, "Already executed");
-        _executions[_executionId].to = _to;
-        _executions[_executionId].value = _value;
-        _executions[_executionId].data = _data;
-        _executionNonce++;
-
-        emit ExecutionRequested(_executionId, _to, _value, _data);
-
-        if (keyHasPurpose(keccak256(abi.encode(msg.sender)), 1)) {
-            approve(_executionId, true);
-        }
-        else if (_to != address(this) && keyHasPurpose(keccak256(abi.encode(msg.sender)), 2)){
-            approve(_executionId, true);
-        }
-
-        return _executionId;
-    }
-
-    /**
+    * @dev See {IERC734-removeKey}.
     * @notice Remove the purpose from a key.
     */
     function removeKey(bytes32 _key, uint256 _purpose)
     public
     delegatedOnly
+    onlyManager
     override
     returns (bool success)
     {
         require(_keys[_key].key == _key, "NonExisting: Key isn't registered");
-
-        if (msg.sender != address(this)) {
-            require(
-                keyHasPurpose(keccak256(abi.encode(msg.sender)), 1)
-                , "Permissions: Sender does not have management key");
-        }
-
-        require(_keys[_key].purposes.length > 0, "NonExisting: Key doesn't have such purpose");
+        uint256[] memory _purposes = _keys[_key].purposes;
 
         uint purposeIndex = 0;
-        while (_keys[_key].purposes[purposeIndex] != _purpose) {
+        while (_purposes[purposeIndex] != _purpose) {
             purposeIndex++;
 
-            if (purposeIndex >= _keys[_key].purposes.length) {
-                break;
+            if (purposeIndex == _purposes.length) {
+                revert("NonExisting: Key doesn't have such purpose");
             }
         }
 
@@ -223,6 +304,10 @@ contract Identity is Storage, IIdentity, Version {
 
         while (_keysByPurpose[_purpose][keyIndex] != _key) {
             keyIndex++;
+
+            if (keyIndex >= _keysByPurpose[_purpose].length) {
+                break;
+            }
         }
 
         _keysByPurpose[_purpose][keyIndex] = _keysByPurpose[_purpose][_keysByPurpose[_purpose].length - 1];
@@ -240,6 +325,7 @@ contract Identity is Storage, IIdentity, Version {
     }
 
     /**
+    * @dev See {IERC735-addClaim}.
     * @notice Implementation of the addClaim function from the ERC-735 standard
     *  Require that the msg.sender has claim signer key.
     *
@@ -267,6 +353,7 @@ contract Identity is Storage, IIdentity, Version {
     )
     public
     delegatedOnly
+    onlyClaimKey
     override
     returns (bytes32 claimRequestId)
     {
@@ -275,25 +362,20 @@ contract Identity is Storage, IIdentity, Version {
         }
 
         bytes32 claimId = keccak256(abi.encode(_issuer, _topic));
-        if (msg.sender != address(this)) {
-            require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 3), "Permissions: Sender does not have claim signer key");
-        }
+        _claims[claimId].topic = _topic;
+        _claims[claimId].scheme = _scheme;
+        _claims[claimId].signature = _signature;
+        _claims[claimId].data = _data;
+        _claims[claimId].uri = _uri;
+
         if (_claims[claimId].issuer != _issuer) {
             _claimsByTopic[_topic].push(claimId);
-            _claims[claimId].topic = _topic;
-            _claims[claimId].scheme = _scheme;
+
             _claims[claimId].issuer = _issuer;
-            _claims[claimId].signature = _signature;
-            _claims[claimId].data = _data;
-            _claims[claimId].uri = _uri;
+
             emit ClaimAdded(claimId, _topic, _scheme, _issuer, _signature, _data, _uri);
         } else {
-            _claims[claimId].topic = _topic;
-            _claims[claimId].scheme = _scheme;
             _claims[claimId].issuer = _issuer;
-            _claims[claimId].signature = _signature;
-            _claims[claimId].data = _data;
-            _claims[claimId].uri = _uri;
 
             emit ClaimChanged(claimId, _topic, _scheme, _issuer, _signature, _data, _uri);
         }
@@ -301,6 +383,7 @@ contract Identity is Storage, IIdentity, Version {
     }
 
     /**
+    * @dev See {IERC735-removeClaim}.
     * @notice Implementation of the removeClaim function from the ERC-735 standard
     * Require that the msg.sender has management key.
     * Can only be removed by the claim issuer, or the claim holder itself.
@@ -310,27 +393,28 @@ contract Identity is Storage, IIdentity, Version {
     * @return success Returns TRUE when the claim was removed.
     * triggers ClaimRemoved event
     */
-    function removeClaim(bytes32 _claimId) public delegatedOnly override returns (bool success) {
-        if (msg.sender != address(this)) {
-            require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 3), "Permissions: Sender does not have CLAIM key");
-        }
-
-        if (_claims[_claimId].topic == 0) {
+    function removeClaim(bytes32 _claimId) public delegatedOnly onlyClaimKey override returns (bool success) {
+        uint256 _topic = _claims[_claimId].topic;
+        if (_topic == 0) {
             revert("NonExisting: There is no claim with this ID");
         }
 
         uint claimIndex = 0;
-        while (_claimsByTopic[_claims[_claimId].topic][claimIndex] != _claimId) {
+        while (_claimsByTopic[_topic][claimIndex] != _claimId) {
             claimIndex++;
+
+            if (claimIndex >= _claimsByTopic[_topic].length) {
+                break;
+            }
         }
 
-        _claimsByTopic[_claims[_claimId].topic][claimIndex] =
-        _claimsByTopic[_claims[_claimId].topic][_claimsByTopic[_claims[_claimId].topic].length - 1];
-        _claimsByTopic[_claims[_claimId].topic].pop();
+        _claimsByTopic[_topic][claimIndex] =
+        _claimsByTopic[_topic][_claimsByTopic[_topic].length - 1];
+        _claimsByTopic[_topic].pop();
 
         emit ClaimRemoved(
             _claimId,
-            _claims[_claimId].topic,
+                _topic,
             _claims[_claimId].scheme,
             _claims[_claimId].issuer,
             _claims[_claimId].signature,
@@ -344,6 +428,7 @@ contract Identity is Storage, IIdentity, Version {
     }
 
     /**
+    * @dev See {IERC735-getClaim}.
     * @notice Implementation of the getClaim function from the ERC-735 standard.
     *
     * @param _claimId The identity of the claim i.e. keccak256(abi.encode(_issuer, _topic))
@@ -385,23 +470,7 @@ contract Identity is Storage, IIdentity, Version {
     }
 
     /**
-    * @notice Implementation of the getClaimIdsByTopic function from the ERC-735 standard.
-    * used to get all the claims from the specified topic
-    *
-    * @param _topic The identity of the claim i.e. keccak256(abi.encode(_issuer, _topic))
-    *
-    * @return claimIds Returns an array of claim IDs by topic.
-    */
-    function getClaimIdsByTopic(uint256 _topic)
-    public
-    override
-    view
-    returns(bytes32[] memory claimIds)
-    {
-        return _claimsByTopic[_topic];
-    }
-
-    /**
+    * @dev See {IERC734-keyHasPurpose}.
     * @notice Returns true if the key has MANAGEMENT purpose or the specified purpose.
     */
     function keyHasPurpose(bytes32 _key, uint256 _purpose)
@@ -420,56 +489,6 @@ contract Identity is Storage, IIdentity, Version {
         }
 
         return false;
-    }
-
-    /**
-     * @notice Implementation of the getKey function from the ERC-734 standard
-     *
-     * @param _key The public key.  for non-hex and long keys, its the Keccak256 hash of the key
-     *
-     * @return purposes Returns the full key data, if present in the identity.
-     * @return keyType Returns the full key data, if present in the identity.
-     * @return key Returns the full key data, if present in the identity.
-     */
-    function getKey(bytes32 _key)
-    public
-    override
-    view
-    returns(uint256[] memory purposes, uint256 keyType, bytes32 key)
-    {
-        return (_keys[_key].purposes, _keys[_key].keyType, _keys[_key].key);
-    }
-
-    /**
-    * @notice gets the purposes of a key
-    *
-    * @param _key The public key.  for non-hex and long keys, its the Keccak256 hash of the key
-    *
-    * @return _purposes Returns the purposes of the specified key
-    */
-    function getKeyPurposes(bytes32 _key)
-    public
-    override
-    view
-    returns(uint256[] memory _purposes)
-    {
-        return (_keys[_key].purposes);
-    }
-
-    /**
-        * @notice gets all the keys with a specific purpose from an identity
-        *
-        * @param _purpose a uint256[] Array of the key types, like 1 = MANAGEMENT, 2 = ACTION, 3 = CLAIM, 4 = ENCRYPTION
-        *
-        * @return keys Returns an array of public key bytes32 hold by this identity and having the specified purpose
-        */
-    function getKeysByPurpose(uint256 _purpose)
-    public
-    override
-    view
-    returns(bytes32[] memory keys)
-    {
-        return _keysByPurpose[_purpose];
     }
 
     /**

@@ -21,6 +21,7 @@ export async function deployFactoryFixture() {
 
   return {
     identityFactory,
+    identityImplementation,
     aliceWallet,
     bobWallet,
     carolWallet,
@@ -34,7 +35,7 @@ export async function deployIdentityFixture() {
   const [deployerWallet, claimIssuerWallet, aliceWallet, bobWallet, carolWallet, davidWallet] =
     await ethers.getSigners();
 
-  const { identityFactory } = await deployFactoryFixture();
+  const { identityFactory, identityImplementation } = await deployFactoryFixture();
 
   const ClaimIssuer = await ethers.getContractFactory('ClaimIssuer');
   const claimIssuer = await ClaimIssuer.connect(claimIssuerWallet).deploy(claimIssuerWallet.address);
@@ -46,7 +47,7 @@ export async function deployIdentityFixture() {
     1,
   );
 
-  await identityFactory.connect(aliceWallet).createIdentity(aliceWallet.address, 'alice');
+  await identityFactory.connect(deployerWallet).createIdentity(aliceWallet.address, 'alice');
   const aliceIdentity = await ethers.getContractAt('Identity', await identityFactory.getIdentity(aliceWallet.address));
   await aliceIdentity.connect(aliceWallet).addKey(ethers.utils.keccak256(
     ethers.utils.defaultAbiCoder.encode(['address'], [carolWallet.address])
@@ -69,11 +70,12 @@ export async function deployIdentityFixture() {
 
   await aliceIdentity.connect(aliceWallet).addClaim(aliceClaim666.topic, aliceClaim666.scheme, aliceClaim666.issuer, aliceClaim666.signature, aliceClaim666.data, aliceClaim666.uri);
 
-  await identityFactory.connect(bobWallet).createIdentity(bobWallet.address, 'bob');
+  await identityFactory.connect(deployerWallet).createIdentity(bobWallet.address, 'bob');
   const bobIdentity = await ethers.getContractAt('Identity', await identityFactory.getIdentity(bobWallet.address));
 
   return {
     identityFactory,
+    identityImplementation,
     claimIssuer,
     aliceWallet,
     bobWallet,

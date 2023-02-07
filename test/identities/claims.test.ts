@@ -268,7 +268,7 @@ describe('Identity', () => {
 
           const claimId = ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address', 'uint256'], [claimIssuer.address, 42]));
 
-          await expect(aliceIdentity.connect(bobWallet).removeClaim(claimId)).to.be.revertedWith('Permissions: Sender does not have CLAIM key');
+          await expect(aliceIdentity.connect(bobWallet).removeClaim(claimId)).to.be.revertedWith('Permissions: Sender does not have claim signer key');
         });
       });
 

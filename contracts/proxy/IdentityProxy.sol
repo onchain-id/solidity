@@ -5,9 +5,19 @@ pragma solidity 0.8.17;
 import "../interface/IImplementationAuthority.sol";
 
 contract IdentityProxy {
+    // address of the implementationAuthority contract linked to this proxy
     address public implementationAuthority;
 
+    /**
+     *  @dev constructor of the proxy Identity contract
+     *  @param _implementationAuthority the implementation Authority contract address
+     *  @param initialManagementKey the management key at deployment
+     *  the proxy is going to use the logic deployed on the implementation contract
+     *  deployed at an address listed in the ImplementationAuthority contract
+     */
     constructor(address _implementationAuthority, address initialManagementKey) {
+        require(_implementationAuthority != address(0), "invalid argument - zero address");
+        require(initialManagementKey != address(0), "invalid argument - zero address");
         implementationAuthority = _implementationAuthority;
 
         address logic = IImplementationAuthority(implementationAuthority).getImplementation();
@@ -17,6 +27,12 @@ contract IdentityProxy {
         require(success, "Initialization failed.");
     }
 
+    /**
+     *  @dev fallback proxy function used for any transaction call that is made using
+     *  the Identity contract ABI and called on the proxy contract
+     *  The proxy will update its local storage depending on the behaviour requested
+     *  by the implementation contract given by the Implementation Authority
+     */
     // solhint-disable-next-line no-complex-fallback
     fallback() external payable {
         address logic = IImplementationAuthority(implementationAuthority).getImplementation();

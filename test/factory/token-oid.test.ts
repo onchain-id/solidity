@@ -62,7 +62,7 @@ describe('IdFactory', () => {
 
       expect(await identityFactory.isSaltTaken('Tokensalt1')).to.be.true;
       expect(await identityFactory.isSaltTaken('Tokensalt2')).to.be.false;
-      expect(await identityFactory.getWallets(tokenIdentityAddress)).to.deep.equal([aliceWallet.address]);
+      expect(await identityFactory.getToken(tokenIdentityAddress)).to.deep.equal(aliceWallet.address);
 
       await expect(identityFactory.connect(deployerWallet).createTokenIdentity(aliceWallet.address, aliceWallet.address, 'salt1')).to.be.revertedWith('salt already taken');
       await expect(identityFactory.connect(deployerWallet).createTokenIdentity(aliceWallet.address, aliceWallet.address, 'salt2')).to.be.revertedWith('token already linked to an identity');

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.17;
 
-import "../interface/IImplementationAuthority.sol";
 import "../proxy/IdentityProxy.sol";
 import "./IIdFactory.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -11,7 +10,7 @@ contract IdFactory is IIdFactory, Ownable {
     mapping(address => bool) private _tokenFactories;
 
     // address of the _implementationAuthority contract making the link to the implementation contract
-    address private _implementationAuthority;
+    address private immutable _implementationAuthority;
 
     // as it is not possible to deploy 2 times the same contract address, this mapping allows us to check which
     // salt is taken and which is not
@@ -23,16 +22,23 @@ contract IdFactory is IIdFactory, Ownable {
     // wallets currently linked to an ONCHAINID
     mapping(address => address[]) private _wallets;
 
+    // ONCHAINID of the token
+    mapping(address => address) private _tokenIdentity;
+
+    // token linked to an ONCHAINID
+    mapping(address => address) private _tokenAddress;
+
 
     // setting
     constructor (address implementationAuthority) {
+        require(implementationAuthority != address(0), "invalid argument - zero address");
         _implementationAuthority = implementationAuthority;
     }
 
     /**
      *  @dev See {IdFactory-addTokenFactory}.
      */
-    function addTokenFactory (address _factory) external override onlyOwner {
+    function addTokenFactory(address _factory) external override onlyOwner {
         require(_factory != address(0), "invalid argument - zero address");
         require(!isTokenFactory(_factory), "already a factory");
         _tokenFactories[_factory] = true;
@@ -42,7 +48,7 @@ contract IdFactory is IIdFactory, Ownable {
     /**
      *  @dev See {IdFactory-removeTokenFactory}.
      */
-    function removeTokenFactory (address _factory) external override onlyOwner {
+    function removeTokenFactory(address _factory) external override onlyOwner {
         require(_factory != address(0), "invalid argument - zero address");
         require(isTokenFactory(_factory), "not a factory");
         _tokenFactories[_factory] = false;
@@ -55,7 +61,7 @@ contract IdFactory is IIdFactory, Ownable {
     function createIdentity(
         address _wallet,
         string memory _salt)
-    external override returns (address) {
+    external onlyOwner override returns (address) {
         require(_wallet != address(0), "invalid argument - zero address");
         require(keccak256(abi.encode(_salt)) != keccak256(abi.encode("")), "invalid argument - empty string");
         string memory oidSalt = string.concat("OID",_salt);
@@ -74,20 +80,20 @@ contract IdFactory is IIdFactory, Ownable {
      */
     function createTokenIdentity(
         address _token,
-        address _owner,
+        address _tokenOwner,
         string memory _salt)
     external override returns (address) {
         require(isTokenFactory(msg.sender) || msg.sender == owner(), "only Factory or owner can call");
         require(_token != address(0), "invalid argument - zero address");
-        require(_owner != address(0), "invalid argument - zero address");
+        require(_tokenOwner != address(0), "invalid argument - zero address");
         require(keccak256(abi.encode(_salt)) != keccak256(abi.encode("")), "invalid argument - empty string");
         string memory tokenIdSalt = string.concat("Token",_salt);
-        require (!_saltTaken[tokenIdSalt], "salt already taken");
-        require (_userIdentity[_token] == address(0), "token already linked to an identity");
-        address identity = _deployIdentity(tokenIdSalt, _implementationAuthority, _owner);
+        require(!_saltTaken[tokenIdSalt], "salt already taken");
+        require(_tokenIdentity[_token] == address(0), "token already linked to an identity");
+        address identity = _deployIdentity(tokenIdSalt, _implementationAuthority, _tokenOwner);
         _saltTaken[tokenIdSalt] = true;
-        _userIdentity[_token] = identity;
-        _wallets[identity].push(_token);
+        _tokenIdentity[_token] = identity;
+        _tokenAddress[identity] = _token;
         emit TokenLinked(_token, identity);
         return identity;
     }
@@ -99,8 +105,9 @@ contract IdFactory is IIdFactory, Ownable {
         require(_newWallet != address(0), "invalid argument - zero address");
         require(_userIdentity[msg.sender] != address(0), "wallet not linked to an identity contract");
         require(_userIdentity[_newWallet] == address(0), "new wallet already linked");
+        require(_tokenIdentity[_newWallet] == address(0), "invalid argument - token address");
         address identity = _userIdentity[msg.sender];
-        require(_wallets[identity].length <= 100, "not more than 100 _wallets linked");
+        require(_wallets[identity].length < 101, "max amount of wallets per ID exceeded");
         _userIdentity[_newWallet] = identity;
         _wallets[identity].push(_newWallet);
         emit WalletLinked(_newWallet, identity);
@@ -130,7 +137,12 @@ contract IdFactory is IIdFactory, Ownable {
      *  @dev See {IdFactory-getIdentity}.
      */
     function getIdentity(address _wallet) external override view returns (address) {
-        return _userIdentity[_wallet];
+        if(_tokenIdentity[_wallet] != address(0)) {
+            return _tokenIdentity[_wallet];
+        }
+        else {
+            return _userIdentity[_wallet];
+        }
     }
 
     /**
@@ -148,9 +160,16 @@ contract IdFactory is IIdFactory, Ownable {
     }
 
     /**
+     *  @dev See {IdFactory-getToken}.
+     */
+    function getToken(address _identity) external override view returns (address) {
+        return _tokenAddress[_identity];
+    }
+
+    /**
      *  @dev See {IdFactory-isTokenFactory}.
      */
-    function isTokenFactory (address _factory) public override view returns(bool) {
+    function isTokenFactory(address _factory) public override view returns(bool) {
         return _tokenFactories[_factory];
     }
 
