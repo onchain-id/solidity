@@ -51,6 +51,6 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN_FOR_GPR}}
       - name: Build application
-        run: sudo npm run build
+        run: npm run build
       - name: Run tests
         run: npm run coverage
