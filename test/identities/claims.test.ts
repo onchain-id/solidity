@@ -2,7 +2,7 @@ import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from "chai";
 import {ethers} from "hardhat";
 
-import { deployIdentityFixture } from './fixture';
+import { deployIdentityFixture } from '../fixtures';
 
 describe('Identity', () => {
   describe('Claims', () => {

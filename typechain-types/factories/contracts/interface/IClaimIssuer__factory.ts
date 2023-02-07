@@ -230,6 +230,19 @@ const _abi = [
     inputs: [
       {
         indexed: true,
+        internalType: "bytes",
+        name: "signature",
+        type: "bytes",
+      },
+    ],
+    name: "ClaimRevoked",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
         internalType: "uint256",
         name: "executionId",
         type: "uint256",
@@ -808,6 +821,19 @@ const _abi = [
         type: "bool",
       },
     ],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes",
+        name: "signature",
+        type: "bytes",
+      },
+    ],
+    name: "revokeClaimBySignature",
+    outputs: [],
     stateMutability: "nonpayable",
     type: "function",
   },

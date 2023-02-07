@@ -2,7 +2,7 @@ import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from "chai";
 import {ethers} from "hardhat";
 
-import { deployIdentityFixture } from './fixture';
+import { deployIdentityFixture } from '../fixtures';
 
 describe('Identity', () => {
   describe('Execute', () => {
@@ -158,7 +158,7 @@ describe('Identity', () => {
       it('should revert for execution request not found', async () => {
         const { aliceIdentity, aliceWallet } = await loadFixture(deployIdentityFixture);
 
-        await expect(aliceIdentity.connect(aliceWallet).approve(0, true)).to.be.revertedWith('Cannot approve a non-existing execution');
+        await expect(aliceIdentity.connect(aliceWallet).approve(2, true)).to.be.revertedWith('Cannot approve a non-existing execution');
       });
     });
 

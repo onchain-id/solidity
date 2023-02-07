@@ -47,6 +47,7 @@ export interface ClaimIssuerInterface extends utils.Interface {
     "removeClaim(bytes32)": FunctionFragment;
     "removeKey(bytes32,uint256)": FunctionFragment;
     "revokeClaim(bytes32,address)": FunctionFragment;
+    "revokeClaimBySignature(bytes)": FunctionFragment;
     "revokedClaims(bytes)": FunctionFragment;
     "version()": FunctionFragment;
   };
@@ -70,6 +71,7 @@ export interface ClaimIssuerInterface extends utils.Interface {
       | "removeClaim"
       | "removeKey"
       | "revokeClaim"
+      | "revokeClaimBySignature"
       | "revokedClaims"
       | "version"
   ): FunctionFragment;
@@ -163,6 +165,10 @@ export interface ClaimIssuerInterface extends utils.Interface {
     values: [PromiseOrValue<BytesLike>, PromiseOrValue<string>]
   ): string;
   encodeFunctionData(
+    functionFragment: "revokeClaimBySignature",
+    values: [PromiseOrValue<BytesLike>]
+  ): string;
+  encodeFunctionData(
     functionFragment: "revokedClaims",
     values: [PromiseOrValue<BytesLike>]
   ): string;
@@ -213,6 +219,10 @@ export interface ClaimIssuerInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "revokeClaimBySignature",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "revokedClaims",
     data: BytesLike
   ): Result;
@@ -224,6 +234,7 @@ export interface ClaimIssuerInterface extends utils.Interface {
     "ClaimChanged(bytes32,uint256,uint256,address,bytes,bytes,string)": EventFragment;
     "ClaimRemoved(bytes32,uint256,uint256,address,bytes,bytes,string)": EventFragment;
     "ClaimRequested(uint256,uint256,uint256,address,bytes,bytes,string)": EventFragment;
+    "ClaimRevoked(bytes)": EventFragment;
     "Executed(uint256,address,uint256,bytes)": EventFragment;
     "ExecutionFailed(uint256,address,uint256,bytes)": EventFragment;
     "ExecutionRequested(uint256,address,uint256,bytes)": EventFragment;
@@ -237,6 +248,7 @@ export interface ClaimIssuerInterface extends utils.Interface {
   getEvent(nameOrSignatureOrTopic: "ClaimChanged"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "ClaimRemoved"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "ClaimRequested"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "ClaimRevoked"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Executed"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "ExecutionFailed"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "ExecutionRequested"): EventFragment;
@@ -319,6 +331,13 @@ export type ClaimRequestedEvent = TypedEvent<
 >;
 
 export type ClaimRequestedEventFilter = TypedEventFilter<ClaimRequestedEvent>;
+
+export interface ClaimRevokedEventObject {
+  signature: string;
+}
+export type ClaimRevokedEvent = TypedEvent<[string], ClaimRevokedEventObject>;
+
+export type ClaimRevokedEventFilter = TypedEventFilter<ClaimRevokedEvent>;
 
 export interface ExecutedEventObject {
   executionId: BigNumber;
@@ -540,6 +559,11 @@ export interface ClaimIssuer extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
 
+    revokeClaimBySignature(
+      signature: PromiseOrValue<BytesLike>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
+
     revokedClaims(
       arg0: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
@@ -662,6 +686,11 @@ export interface ClaimIssuer extends BaseContract {
   revokeClaim(
     _claimId: PromiseOrValue<BytesLike>,
     _identity: PromiseOrValue<string>,
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
+
+  revokeClaimBySignature(
+    signature: PromiseOrValue<BytesLike>,
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
@@ -790,6 +819,11 @@ export interface ClaimIssuer extends BaseContract {
       overrides?: CallOverrides
     ): Promise<boolean>;
 
+    revokeClaimBySignature(
+      signature: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
     revokedClaims(
       arg0: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
@@ -883,6 +917,13 @@ export interface ClaimIssuer extends BaseContract {
       data?: null,
       uri?: null
     ): ClaimRequestedEventFilter;
+
+    "ClaimRevoked(bytes)"(
+      signature?: PromiseOrValue<BytesLike> | null
+    ): ClaimRevokedEventFilter;
+    ClaimRevoked(
+      signature?: PromiseOrValue<BytesLike> | null
+    ): ClaimRevokedEventFilter;
 
     "Executed(uint256,address,uint256,bytes)"(
       executionId?: PromiseOrValue<BigNumberish> | null,
@@ -1058,6 +1099,11 @@ export interface ClaimIssuer extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
+    revokeClaimBySignature(
+      signature: PromiseOrValue<BytesLike>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
+
     revokedClaims(
       arg0: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
@@ -1166,6 +1212,11 @@ export interface ClaimIssuer extends BaseContract {
     revokeClaim(
       _claimId: PromiseOrValue<BytesLike>,
       _identity: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+
+    revokeClaimBySignature(
+      signature: PromiseOrValue<BytesLike>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 

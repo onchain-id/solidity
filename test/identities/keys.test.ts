@@ -2,7 +2,7 @@ import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from "chai";
 import {ethers} from "hardhat";
 
-import { deployIdentityFixture } from './fixture';
+import { deployIdentityFixture } from '../fixtures';
 
 describe('Identity', () => {
   describe('Key Management', () => {
@@ -150,6 +150,17 @@ describe('Identity', () => {
           expect(aliceKey.key).to.equal('0x0000000000000000000000000000000000000000000000000000000000000000');
           expect(aliceKey.purposes).to.deep.equal([]);
           expect(aliceKey.keyType).to.equal(0);
+        });
+
+        it('should revert because key does not exists', async () => {
+          const { aliceIdentity, aliceWallet, bobWallet } = await loadFixture(deployIdentityFixture);
+
+          const bobKeyHash = ethers.utils.keccak256(
+            ethers.utils.defaultAbiCoder.encode(['address'], [bobWallet.address])
+          );
+          await expect(
+            aliceIdentity.connect(aliceWallet).removeKey(bobKeyHash, 2)
+          ).to.be.revertedWith("NonExisting: Key isn't registered");
         });
 
         it('should revert because key does not have the purpose', async () => {
