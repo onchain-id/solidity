@@ -78,13 +78,13 @@ interface IERC734 {
     function removeKey(bytes32 _key, uint256 _purpose) external returns (bool success);
 
     /**
-     * @dev Passes an execution instruction to an ERC725 identity.
+     * @dev Passes an execution instruction to an ERC734 identity.
+     * How the execution is handled is up to the identity implementation:
+     * An execution COULD be requested and require `approve` to be called with one or more keys of purpose 1 or 2 to
+     * approve this execution.
+     * Execute COULD be used as the only accessor for `addKey` and `removeKey`.
      *
      * Triggers Event: `ExecutionRequested`, `Executed`
-     *
-     * Specification:
-     * SHOULD require approve to be called with one or more keys of purpose 1 or 2 to approve this execution.
-     * Execute COULD be used as the only accessor for `addKey` and `removeKey`.
      */
     function execute(address _to, uint256 _value, bytes calldata _data) external payable returns (uint256 executionId);
 

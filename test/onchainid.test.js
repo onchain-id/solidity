@@ -1,4 +1,5 @@
 require('chai').use(require('chai-as-promised')).should();
+
 const EVMRevert = require('./helpers/VMExceptionRevert');
 const {
   Factory,
@@ -25,6 +26,8 @@ contract('ONCHAINID', (accounts) => {
   const tokenFactory = accounts[4];
   const tokenOwner = accounts[5];
   const user1SecondaryWallet = accounts[6];
+  const user1ActionAccount = accounts[7];
+  const unauthorizedAccount = accounts[8];
   const token1 = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
   const token2 = '0xc2132D05D31c914a87C6611C10748AEb04B58e8F';
   const zeroAddress = '0x0000000000000000000000000000000000000000';
@@ -319,6 +322,234 @@ contract('ONCHAINID', (accounts) => {
         hexedData1
       );
       claimValidity.should.equal(false);
+    });
+  });
+
+  describe('Testing approve/execute', () => {
+    describe('When the sender is a MANAGEMENT key', () => {
+      it('should immediately approves the execution', async () => {
+        const currentBalance = await web3.eth.getBalance(user2);
+        await web3.eth
+          .getBalance(user1Identity.address)
+          .should.eventually.equal('0');
+        await user1Identity.execute(user2, 10, '0x', {
+          value: 10,
+          from: user1,
+        }).should.be.fulfilled;
+        const newBalance = await web3.eth.getBalance(user2);
+        newBalance.should.equal(
+          web3.utils.toBN(currentBalance).add(web3.utils.toBN('10')).toString()
+        );
+        await web3.eth
+          .getBalance(user1Identity.address)
+          .should.eventually.equal('0');
+      });
+    });
+
+    describe('When the sender is a ACTION key', () => {
+      it('should immediately approves the execution', async () => {
+        await user1Identity.addKey(
+          web3.utils.keccak256(
+            web3.eth.abi.encodeParameter('address', user1ActionAccount)
+          ),
+          2,
+          2,
+          { from: user1 }
+        );
+
+        const currentBalance = await web3.eth.getBalance(user2);
+        await web3.eth
+          .getBalance(user1Identity.address)
+          .should.eventually.equal('0');
+        await user1Identity.execute(user2, 10, '0x', {
+          value: 10,
+          from: user1ActionAccount,
+        }).should.be.fulfilled;
+        await web3.eth
+          .getBalance(user1Identity.address)
+          .should.eventually.equal('0');
+        const newBalance = await web3.eth.getBalance(user2);
+
+        newBalance.should.equal(
+          web3.utils.toBN(currentBalance).add(web3.utils.toBN('10')).toString()
+        );
+
+        await user1Identity.removeKey(
+          web3.utils.keccak256(
+            web3.eth.abi.encodeParameter('address', user1ActionAccount)
+          ),
+          2,
+          { from: user1 }
+        );
+      });
+    });
+
+    describe('When the sender is an unknown key', () => {
+      it('should store a pending approval', async () => {
+        const currentBalance = await web3.eth.getBalance(user1);
+        await web3.eth
+          .getBalance(user1Identity.address)
+          .should.eventually.equal('0');
+        await user1Identity.execute(user2, 10, '0x', {
+          from: user2,
+          value: 10,
+        }).should.be.fulfilled;
+        await web3.eth
+          .getBalance(user1Identity.address)
+          .should.eventually.equal('10');
+        const newBalance = await web3.eth.getBalance(user1);
+
+        newBalance.should.equal(currentBalance);
+      });
+
+      describe('When approving as an unauthorized key', () => {
+        it('should revert the approval', async () => {
+          const currentBalance = await web3.eth.getBalance(user2);
+          await web3.eth
+            .getBalance(user1Identity.address)
+            .should.eventually.equal('10');
+          await user1Identity
+            .approve(2, true, {
+              from: unauthorizedAccount,
+            })
+            .should.be.rejectedWith(EVMRevert);
+          await web3.eth
+            .getBalance(user1Identity.address)
+            .should.eventually.equal('10');
+          const newBalance = await web3.eth.getBalance(user2);
+
+          newBalance.should.equal(currentBalance);
+        });
+      });
+
+      describe('When not approving as a MANAGEMENT key', () => {
+        it('should be a no-op, leaving the approval status at false', async () => {
+          await user1Identity.approve(2, false, {
+            from: user1,
+          }).should.be.fulfilled;
+        });
+      });
+
+      describe('When approving as a MANAGEMENT key', () => {
+        it('should approve the execution', async () => {
+          const currentBalance = await web3.eth.getBalance(user2);
+          await web3.eth
+            .getBalance(user1Identity.address)
+            .should.eventually.equal('10');
+          await user1Identity.approve(2, true, {
+            from: user1,
+          }).should.be.fulfilled;
+          await web3.eth
+            .getBalance(user1Identity.address)
+            .should.eventually.equal('0');
+          const newBalance = await web3.eth.getBalance(user2);
+
+          newBalance.should.equal(
+            web3.utils
+              .toBN(currentBalance)
+              .add(web3.utils.toBN('10'))
+              .toString()
+          );
+        });
+      });
+    });
+
+    describe('When approving with an execution ID that is not assigned yet', () => {
+      it('should revert for non-existing execution ID', async () => {
+        await user1Identity
+          .approve(100, true, {
+            from: user1,
+          })
+          .should.be.rejectedWith(EVMRevert);
+      });
+    });
+
+    describe('When executing an action over the identity itself', () => {
+      describe('When signing with an ACTION key', () => {
+        it('should revert the approval for non-authorized', async () => {
+          const addKeyData = web3.eth.abi.encodeFunctionCall(
+            {
+              inputs: [
+                {
+                  internalType: 'bytes32',
+                  name: '_key',
+                  type: 'bytes32',
+                },
+                {
+                  internalType: 'uint256',
+                  name: '_purpose',
+                  type: 'uint256',
+                },
+                {
+                  internalType: 'uint256',
+                  name: '_type',
+                  type: 'uint256',
+                },
+              ],
+              name: 'addKey',
+              outputs: [
+                {
+                  internalType: 'bool',
+                  name: 'success',
+                  type: 'bool',
+                },
+              ],
+              stateMutability: 'nonpayable',
+              type: 'function',
+            },
+            [
+              web3.utils.keccak256(
+                web3.eth.abi.encodeParameter(
+                  'address',
+                  '0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199'
+                )
+              ),
+              2,
+              1,
+            ]
+          );
+
+          await user1Identity.execute(user1Identity.address, 0, addKeyData, {
+            from: unauthorizedAccount,
+          });
+
+          await user1Identity
+            .approve(3, true, {
+              from: user1ActionAccount,
+            })
+            .should.be.rejectedWith('Sender does not have management key');
+        });
+      });
+
+      describe('When signing with a MANAGEMENT key', () => {
+        it('should execute the pending request', async () => {
+          await user1Identity.approve(3, true, {
+            from: user1,
+          }).should.be.fulfilled;
+
+          await user1Identity.keyHasPurpose(
+            web3.utils.keccak256(
+              web3.eth.abi.encodeParameter(
+                'address',
+                '0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199'
+              )
+            ),
+            2
+          ).should.eventually.be.true;
+        });
+      });
+
+      describe('When the execution should fail', () => {
+        it('should revert the approval', async () => {
+          await user1Identity.execute(user1Identity.address, 0, '0x001009473', {
+            from: user1ActionAccount,
+          });
+
+          await user1Identity
+            .approve(4, true, { from: user1 })
+            .should.be.rejectedWith('Execution failed.');
+        });
+      });
     });
   });
 });
