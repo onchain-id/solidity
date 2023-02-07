@@ -40,6 +40,12 @@ contract Identity is Storage, IIdentity, Version {
         _;
     }
 
+    /**
+     * @notice constructor of the Identity contract
+     * @param initialManagementKey the address of the management key at deployment
+     * @param _isLibrary boolean value stating if the contract is library or not
+     * calls __Identity_init if contract is not library
+     */
     constructor(address initialManagementKey, bool _isLibrary) {
         require(initialManagementKey != address(0), "invalid argument - zero address");
         if (!_isLibrary) {
@@ -60,6 +66,7 @@ contract Identity is Storage, IIdentity, Version {
     }
 
     /**
+     * @dev See {IERC734-execute}.
      * @notice Passes an execution instruction to the keymanager.
      * If the sender is an ACTION key and the destination address is not the identity contract itself, then the
      * execution is immediately approved and performed.
@@ -67,7 +74,6 @@ contract Identity is Storage, IIdentity, Version {
      * the sender is a MANAGEMENT key.
      * Otherwise, the execute method triggers an ExecutionRequested event, and the execution request must be approved
      * using the `approve` method.
-     *
      * @return executionId to use in the approve function, to approve or reject this execution.
      */
     function execute(address _to, uint256 _value, bytes memory _data)
@@ -97,10 +103,9 @@ contract Identity is Storage, IIdentity, Version {
     }
 
     /**
+     * @dev See {IERC734-getKey}.
      * @notice Implementation of the getKey function from the ERC-734 standard
-     *
      * @param _key The public key.  for non-hex and long keys, its the Keccak256 hash of the key
-     *
      * @return purposes Returns the full key data, if present in the identity.
      * @return keyType Returns the full key data, if present in the identity.
      * @return key Returns the full key data, if present in the identity.
@@ -115,10 +120,9 @@ contract Identity is Storage, IIdentity, Version {
     }
 
     /**
+    * @dev See {IERC734-getKeyPurposes}.
     * @notice gets the purposes of a key
-    *
     * @param _key The public key.  for non-hex and long keys, its the Keccak256 hash of the key
-    *
     * @return _purposes Returns the purposes of the specified key
     */
     function getKeyPurposes(bytes32 _key)
@@ -131,12 +135,11 @@ contract Identity is Storage, IIdentity, Version {
     }
 
     /**
-        * @notice gets all the keys with a specific purpose from an identity
-        *
-        * @param _purpose a uint256[] Array of the key types, like 1 = MANAGEMENT, 2 = ACTION, 3 = CLAIM, 4 = ENCRYPTION
-        *
-        * @return keys Returns an array of public key bytes32 hold by this identity and having the specified purpose
-        */
+    * @dev See {IERC734-getKeysByPurpose}.
+    * @notice gets all the keys with a specific purpose from an identity
+    * @param _purpose a uint256[] Array of the key types, like 1 = MANAGEMENT, 2 = ACTION, 3 = CLAIM, 4 = ENCRYPTION
+    * @return keys Returns an array of public key bytes32 hold by this identity and having the specified purpose
+    */
     function getKeysByPurpose(uint256 _purpose)
     external
     override
@@ -147,11 +150,10 @@ contract Identity is Storage, IIdentity, Version {
     }
 
     /**
+    * @dev See {IERC735-getClaimIdsByTopic}.
     * @notice Implementation of the getClaimIdsByTopic function from the ERC-735 standard.
     * used to get all the claims from the specified topic
-    *
     * @param _topic The identity of the claim i.e. keccak256(abi.encode(_issuer, _topic))
-    *
     * @return claimIds Returns an array of claim IDs by topic.
     */
     function getClaimIdsByTopic(uint256 _topic)
@@ -164,6 +166,7 @@ contract Identity is Storage, IIdentity, Version {
     }
 
     /**
+    * @dev See {IERC734-addKey}.
     * @notice implementation of the addKey function of the ERC-734 standard
     * Adds a _key to the identity. The _purpose specifies the purpose of key. Initially we propose four purposes:
     * 1: MANAGEMENT keys, which can manage the identity
@@ -172,11 +175,9 @@ contract Identity is Storage, IIdentity, Version {
     * 4: ENCRYPTION keys, used to encrypt data e.g. hold in claims.
     * MUST only be done by keys of purpose 1, or the identity itself.
     * If its the identity itself, the approval process will determine its approval.
-    *
     * @param _key keccak256 representation of an ethereum address
     * @param _type type of key used, which would be a uint256 for different key types. e.g. 1 = ECDSA, 2 = RSA, etc.
     * @param _purpose a uint256 specifying the key type, like 1 = MANAGEMENT, 2 = ACTION, 3 = CLAIM, 4 = ENCRYPTION
-    *
     * @return success Returns TRUE if the addition was successful and FALSE if not
     */
     function addKey(bytes32 _key, uint256 _purpose, uint256 _type)
@@ -211,11 +212,12 @@ contract Identity is Storage, IIdentity, Version {
     }
 
     /**
+     *  @dev See {IERC734-approve}.
      *  @notice Approves an execution or claim addition.
-     * If the sender is an ACTION key and the destination address is not the identity contract itself, then the
-     * approval is authorized and the operation would be performed.
-     * If the destination address is the identity itself, then the execution would be authorized and performed only
-     * if the sender is a MANAGEMENT key.
+     *  If the sender is an ACTION key and the destination address is not the identity contract itself, then the
+     *  approval is authorized and the operation would be performed.
+     *  If the destination address is the identity itself, then the execution would be authorized and performed only
+     *  if the sender is a MANAGEMENT key.
      */
     function approve(uint256 _id, bool _approve)
     public
@@ -268,6 +270,7 @@ contract Identity is Storage, IIdentity, Version {
     }
 
     /**
+    * @dev See {IERC734-removeKey}.
     * @notice Remove the purpose from a key.
     */
     function removeKey(bytes32 _key, uint256 _purpose)
@@ -317,6 +320,7 @@ contract Identity is Storage, IIdentity, Version {
     }
 
     /**
+    * @dev See {IERC735-addClaim}.
     * @notice Implementation of the addClaim function from the ERC-735 standard
     *  Require that the msg.sender has claim signer key.
     *
@@ -368,6 +372,7 @@ contract Identity is Storage, IIdentity, Version {
     }
 
     /**
+    * @dev See {IERC735-removeClaim}.
     * @notice Implementation of the removeClaim function from the ERC-735 standard
     * Require that the msg.sender has management key.
     * Can only be removed by the claim issuer, or the claim holder itself.
@@ -419,6 +424,7 @@ contract Identity is Storage, IIdentity, Version {
     }
 
     /**
+    * @dev See {IERC735-getClaim}.
     * @notice Implementation of the getClaim function from the ERC-735 standard.
     *
     * @param _claimId The identity of the claim i.e. keccak256(abi.encode(_issuer, _topic))
@@ -460,6 +466,7 @@ contract Identity is Storage, IIdentity, Version {
     }
 
     /**
+    * @dev See {IERC734-keyHasPurpose}.
     * @notice Returns true if the key has MANAGEMENT purpose or the specified purpose.
     */
     function keyHasPurpose(bytes32 _key, uint256 _purpose)

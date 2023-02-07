@@ -27,6 +27,11 @@ interface IERC734 {
      */
     event ExecutionRequested(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data);
 
+    /**
+     * @dev Emitted when an execute operation was called and failed
+     *
+     * Specification: MUST be triggered when execute call failed
+     */
     event ExecutionFailed(uint256 indexed executionId, address indexed to, uint256 indexed value, bytes data);
 
     /**
