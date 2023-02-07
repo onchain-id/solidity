@@ -6,6 +6,7 @@ const {
   ImplementationAuthority,
   Identity,
   ClaimIssuer,
+  IdentityProxy,
 } = require('./helpers/artifacts');
 
 contract('ONCHAINID', (accounts) => {
@@ -51,6 +52,61 @@ contract('ONCHAINID', (accounts) => {
     });
   });
 
+  describe('Testing Identity', () => {
+    it('cannot interact with library contract', async () => {
+      await identityImplem
+        .execute(token1, 0, '0x001009473', {
+          from: deployer,
+        })
+        .should.be.rejectedWith(EVMRevert);
+    });
+    it('initial key cannot be zero address', async () => {
+      await Identity.new(zeroAddress, true, {
+        from: deployer,
+      }).should.be.rejectedWith(EVMRevert);
+      await identityImplem
+        .initialize(zeroAddress, { from: deployer })
+        .should.be.rejectedWith(EVMRevert);
+      await identityImplem
+        .initialize(deployer, { from: deployer })
+        .should.be.rejectedWith(EVMRevert);
+    });
+    it('version should be 2.0.0', async () => {
+      const idVersion = await identityImplem.version();
+      idVersion.should.equal('2.0.0');
+    });
+  });
+
+  describe('Testing proxy', () => {
+    it('cannot deploy a proxy with no Implementation', async () => {
+      await IdentityProxy.new(zeroAddress, deployer, {
+        from: deployer,
+      }).should.be.rejectedWith(EVMRevert);
+    });
+    it('initial proxy key cannot be zero address', async () => {
+      await IdentityProxy.new(implementationAuthority, zeroAddress, {
+        from: deployer,
+      }).should.be.rejected;
+    });
+    it('update implementation address', async () => {
+      await implementationAuthority
+        .updateImplementation(zeroAddress, { from: deployer })
+        .should.be.rejectedWith(EVMRevert);
+      const newIdentityImplem = await Identity.new(deployer, true, {
+        from: deployer,
+      });
+      await implementationAuthority.updateImplementation(
+        newIdentityImplem.address,
+        { from: deployer }
+      ).should.be.fulfilled;
+    });
+    it('implementation address cannot be zero on Authority contract', async () => {
+      await ImplementationAuthority.new(zeroAddress, {
+        from: deployer,
+      }).should.be.rejectedWith(EVMRevert);
+    });
+  });
+
   describe('Testing Factory', () => {
     it('deploy 2 identities from the factory', async () => {
       await factory
@@ -82,6 +138,9 @@ contract('ONCHAINID', (accounts) => {
       result3.should.equal(true);
       const result4 = await factory.isSaltTaken('user2');
       result4.should.equal(false);
+      await Factory.new(zeroAddress, { from: deployer }).should.be.rejectedWith(
+        EVMRevert
+      );
     });
 
     it('add/remove token Factory address', async () => {
@@ -155,7 +214,11 @@ contract('ONCHAINID', (accounts) => {
       const result4 = await factory.isSaltTaken('usdt');
       result4.should.equal(false);
       const addressTokenId1 = await factory.getIdentity(token1);
+      const addressTokenRecovered1 = await factory.getToken(addressTokenId1);
+      addressTokenRecovered1.should.equal(token1);
       const addressTokenId2 = await factory.getIdentity(token2);
+      const addressTokenRecovered2 = await factory.getToken(addressTokenId2);
+      addressTokenRecovered2.should.equal(token2);
       token1Identity = await Identity.at(addressTokenId1);
       token2Identity = await Identity.at(addressTokenId2);
       await token1Identity.getKeysByPurpose(1);
@@ -168,6 +231,9 @@ contract('ONCHAINID', (accounts) => {
         .should.be.rejectedWith(EVMRevert);
       await factory
         .linkWallet(zeroAddress, { from: user1 })
+        .should.be.rejectedWith(EVMRevert);
+      await factory
+        .linkWallet(token1, { from: user1 })
         .should.be.rejectedWith(EVMRevert);
       await factory.linkWallet(user1SecondaryWallet, { from: user1 }).should.be
         .fulfilled;
@@ -439,6 +505,11 @@ contract('ONCHAINID', (accounts) => {
           await user1Identity.approve(2, true, {
             from: user1,
           }).should.be.fulfilled;
+          await user1Identity
+            .approve(2, true, {
+              from: user1,
+            })
+            .should.be.rejectedWith(EVMRevert);
           await web3.eth
             .getBalance(user1Identity.address)
             .should.eventually.equal('0');
