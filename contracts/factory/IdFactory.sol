@@ -79,17 +79,17 @@ contract IdFactory is IIdFactory, Ownable {
      */
     function createTokenIdentity(
         address _token,
-        address _owner,
+        address _tokenOwner,
         string memory _salt)
     external override returns (address) {
         require(isTokenFactory(msg.sender) || msg.sender == owner(), "only Factory or owner can call");
         require(_token != address(0), "invalid argument - zero address");
-        require(_owner != address(0), "invalid argument - zero address");
+        require(_tokenOwner != address(0), "invalid argument - zero address");
         require(keccak256(abi.encode(_salt)) != keccak256(abi.encode("")), "invalid argument - empty string");
         string memory tokenIdSalt = string.concat("Token",_salt);
         require (!_saltTaken[tokenIdSalt], "salt already taken");
         require (_tokenIdentity[_token] == address(0), "token already linked to an identity");
-        address identity = _deployIdentity(tokenIdSalt, _implementationAuthority, _owner);
+        address identity = _deployIdentity(tokenIdSalt, _implementationAuthority, _tokenOwner);
         _saltTaken[tokenIdSalt] = true;
         _tokenIdentity[_token] = identity;
         _tokenAddress[identity] = _token;

@@ -42,14 +42,14 @@ interface IIdFactory {
     /**
      *  @dev function used to create a new Token Identity proxy from the factory
      *  @param _token the address of the token contract
-     *  @param _owner the owner address of the token
+     *  @param _tokenOwner the owner address of the token
      *  @param _salt the salt used by create2 to issue the contract
      *  requires a new salt for each deployment
      *  _token cannot be linked to another ONCHAINID
      *  only Token factory or owner can call (owner should only use its privilege
      *  for tokens not issued by a Token factory onchain
      */
-    function createTokenIdentity(address _token, address _owner, string memory _salt) external returns (address);
+    function createTokenIdentity(address _token, address _tokenOwner, string memory _salt) external returns (address);
 
     /**
      *  @dev function used to link a new wallet to an existing identity
