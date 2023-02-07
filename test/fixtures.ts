@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat';
 
-export async function deployIdentityFixture() {
+export async function deployFactoryFixture() {
   const [deployerWallet, claimIssuerWallet, aliceWallet, bobWallet, carolWallet, davidWallet] =
     await ethers.getSigners();
 
@@ -12,12 +12,29 @@ export async function deployIdentityFixture() {
   );
   const implementationAuthority = await ImplementationAuthority.connect(deployerWallet).deploy(
     identityImplementation.address,
-    );
+  );
 
   const IdentityFactory = await ethers.getContractFactory('IdFactory');
   const identityFactory = await IdentityFactory.connect(deployerWallet).deploy(
     implementationAuthority.address,
   );
+
+  return {
+    identityFactory,
+    aliceWallet,
+    bobWallet,
+    carolWallet,
+    davidWallet,
+    deployerWallet,
+    claimIssuerWallet,
+  };
+}
+
+export async function deployIdentityFixture() {
+  const [deployerWallet, claimIssuerWallet, aliceWallet, bobWallet, carolWallet, davidWallet] =
+    await ethers.getSigners();
+
+  const { identityFactory } = await deployFactoryFixture();
 
   const ClaimIssuer = await ethers.getContractFactory('ClaimIssuer');
   const claimIssuer = await ClaimIssuer.connect(claimIssuerWallet).deploy(claimIssuerWallet.address);
