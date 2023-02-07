@@ -213,8 +213,6 @@ contract Identity is Storage, IIdentity, Version {
         require(_keys[_key].key == _key, "NonExisting: Key isn't registered");
         uint256[] memory _purposes = _keys[_key].purposes;
 
-        require(_purposes.length > 0, "NonExisting: Key doesn't have such purpose");
-
         uint purposeIndex = 0;
         while (_purposes[purposeIndex] != _purpose) {
             purposeIndex++;

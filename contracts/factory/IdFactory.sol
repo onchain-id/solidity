@@ -43,7 +43,6 @@ contract IdFactory is IIdFactory, Ownable {
      *  @dev See {IdFactory-removeTokenFactory}.
      */
     function removeTokenFactory (address _factory) external override onlyOwner {
-        require(_factory != address(0), "invalid argument - zero address");
         require(isTokenFactory(_factory), "not a factory");
         _tokenFactories[_factory] = false;
         emit TokenFactoryRemoved(_factory);
