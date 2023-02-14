@@ -1,13 +1,15 @@
-const IClaimIssuer = require('./build/contracts/IClaimIssuer');
-const IERC734 = require('./build/contracts/IERC734');
-const IERC735 = require('./build/contracts/IERC735');
-const IIdentity = require('./build/contracts/IClaimIssuer');
-const IImplementationAuthority = require('./build/contracts/IImplementationAuthority');
+const IClaimIssuer = require('./artifacts/contracts/interface/IClaimIssuer.sol/IClaimIssuer.json');
+const IERC734 = require('./artifacts/contracts/interface/IERC734.sol/IERC734.json');
+const IERC735 = require('./artifacts/contracts/interface/IERC735.sol/IERC735.json');
+const IIdentity = require('./artifacts/contracts/interface/IIdentity.sol/IIdentity.json');
+const IImplementationAuthority = require('./artifacts/contracts/interface/IImplementationAuthority.sol/IImplementationAuthority.json');
 
-const ClaimIssuer = require('./build/contracts/ClaimIssuer');
-const Identity = require('./build/contracts/Identity');
-const ImplementationAuthority = require('./build/contracts/ImplementationAuthority');
-const IdentityProxy = require('./build/contracts/IdentityProxy');
+const ClaimIssuer = require('./artifacts/contracts/ClaimIssuer.sol/ClaimIssuer.json');
+const Identity = require('./artifacts/contracts/Identity.sol/Identity.json');
+const ImplementationAuthority = require('./artifacts/contracts/proxy/ImplementationAuthority.sol/ImplementationAuthority.json');
+const IdentityProxy = require('./artifacts/contracts/proxy/IdentityProxy.sol/IdentityProxy.json');
+
+const types = require('./typechain-types');
 
 module.exports = {
   contracts: {
@@ -23,4 +25,5 @@ module.exports = {
     IIdentity,
     IImplementationAuthority,
   },
+  types,
 };
