@@ -61,7 +61,7 @@ contract Identity is Storage, IIdentity, Version {
      *
      * @param initialManagementKey The ethereum address to be set as the management key of the ONCHAINID.
      */
-    function initialize(address initialManagementKey) public {
+    function initialize(address initialManagementKey) external {
         require(initialManagementKey != address(0), "invalid argument - zero address");
         __Identity_init(initialManagementKey);
     }
