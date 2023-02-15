@@ -178,7 +178,6 @@ contract Identity is Storage, IIdentity, Version {
     * @param _key keccak256 representation of an ethereum address
     * @param _type type of key used, which would be a uint256 for different key types. e.g. 1 = ECDSA, 2 = RSA, etc.
     * @param _purpose a uint256 specifying the key type, like 1 = MANAGEMENT, 2 = ACTION, 3 = CLAIM, 4 = ENCRYPTION
-    *
     * @return success Returns TRUE if the addition was successful and FALSE if not
     */
     function addKey(bytes32 _key, uint256 _purpose, uint256 _type)
@@ -246,8 +245,6 @@ contract Identity is Storage, IIdentity, Version {
             (success,) = _executions[_id].to.call{value:(_executions[_id].value)}(_executions[_id].data);
 
             if (success) {
-                _executions[_id].executed = true;
-
                 emit Executed(
                     _id,
                     _executions[_id].to,
@@ -294,8 +291,6 @@ contract Identity is Storage, IIdentity, Version {
                 revert("NonExisting: Key doesn't have such purpose");
             }
         }
-
-        require(purposeIndex < _keys[_key].purposes.length, "NonExisting: Key doesn't have such purpose");
 
         _keys[_key].purposes[purposeIndex] = _keys[_key].purposes[_keys[_key].purposes.length - 1];
         _keys[_key].purposes.pop();
@@ -370,11 +365,11 @@ contract Identity is Storage, IIdentity, Version {
 
         if (_claims[claimId].issuer != _issuer) {
             _claimsByTopic[_topic].push(claimId);
-
             _claims[claimId].issuer = _issuer;
 
             emit ClaimAdded(claimId, _topic, _scheme, _issuer, _signature, _data, _uri);
-        } else {
+        }
+        else {
             _claims[claimId].issuer = _issuer;
 
             emit ClaimChanged(claimId, _topic, _scheme, _issuer, _signature, _data, _uri);
@@ -393,7 +388,13 @@ contract Identity is Storage, IIdentity, Version {
     * @return success Returns TRUE when the claim was removed.
     * triggers ClaimRemoved event
     */
-    function removeClaim(bytes32 _claimId) public delegatedOnly onlyClaimKey override returns (bool success) {
+    function removeClaim(bytes32 _claimId)
+    public
+    delegatedOnly
+    onlyClaimKey
+    override
+    returns
+    (bool success) {
         uint256 _topic = _claims[_claimId].topic;
         if (_topic == 0) {
             revert("NonExisting: There is no claim with this ID");
@@ -414,7 +415,7 @@ contract Identity is Storage, IIdentity, Version {
 
         emit ClaimRemoved(
             _claimId,
-                _topic,
+            _topic,
             _claims[_claimId].scheme,
             _claims[_claimId].issuer,
             _claims[_claimId].signature,
