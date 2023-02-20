@@ -84,7 +84,6 @@ contract Identity is Storage, IIdentity, Version {
     returns (uint256 executionId)
     {
         uint256 _executionId = _executionNonce;
-        require(!_executions[_executionId].executed, "Already executed");
         _executions[_executionId].to = _to;
         _executions[_executionId].value = _value;
         _executions[_executionId].data = _data;
@@ -227,7 +226,7 @@ contract Identity is Storage, IIdentity, Version {
         require(_id < _executionNonce, "Cannot approve a non-existing execution");
         require(!_executions[_id].executed, "Request already executed");
 
-        if(_executions[_id].to == address(this)) {
+        if(_executions[_id].to == address( this)) {
             require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 1), "Sender does not have management key");
         }
         else {
