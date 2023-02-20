@@ -73,8 +73,7 @@ contract Identity is Storage, IIdentity, Version {
      * execution is immediately approved and performed.
      * If the destination address is the identity itself, then the execution would be performed immediately only if
      * the sender is a MANAGEMENT key.
-     * Otherwise, the execute method triggers an ExecutionRequested event, and the execution request must be approved
-     * using the `approve` method.
+     * Otherwise the execution request must be approved via the `approve` method.
      * @return executionId to use in the approve function, to approve or reject this execution.
      */
     function execute(address _to, uint256 _value, bytes memory _data)
@@ -213,7 +212,7 @@ contract Identity is Storage, IIdentity, Version {
 
     /**
      *  @dev See {IERC734-approve}.
-     *  @notice Approves an execution or claim addition.
+     *  @notice Approves an execution.
      *  If the sender is an ACTION key and the destination address is not the identity contract itself, then the
      *  approval is authorized and the operation would be performed.
      *  If the destination address is the identity itself, then the execution would be authorized and performed only
