@@ -62,12 +62,6 @@ interface IERC734 {
     * @dev Approves an execution or claim addition.
     *
     * Triggers Event: `Approved`, `Executed`
-    *
-    * Specification:
-    * This SHOULD require n of m approvals of keys purpose 1, if the _to of the execution
-    * is the identity contract itself, to successfully approve an execution.
-    * And COULD require n of m approvals of keys purpose 2, if the _to of the execution
-    * is another contract, to successfully approve an execution.
     */
     function approve(uint256 _id, bool _approve) external returns (bool success);
 
