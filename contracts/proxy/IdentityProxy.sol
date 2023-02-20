@@ -5,8 +5,7 @@ pragma solidity 0.8.17;
 import "../interface/IImplementationAuthority.sol";
 
 contract IdentityProxy {
-
-    /// address of the implementationAuthority contract linked to this proxy
+    // address of the implementationAuthority contract linked to this proxy
     address public implementationAuthority;
 
     /**

@@ -49,6 +49,7 @@ contract IdFactory is IIdFactory, Ownable {
      *  @dev See {IdFactory-removeTokenFactory}.
      */
     function removeTokenFactory(address _factory) external override onlyOwner {
+        require(_factory != address(0), "invalid argument - zero address");
         require(isTokenFactory(_factory), "not a factory");
         _tokenFactories[_factory] = false;
         emit TokenFactoryRemoved(_factory);
@@ -87,8 +88,8 @@ contract IdFactory is IIdFactory, Ownable {
         require(_tokenOwner != address(0), "invalid argument - zero address");
         require(keccak256(abi.encode(_salt)) != keccak256(abi.encode("")), "invalid argument - empty string");
         string memory tokenIdSalt = string.concat("Token",_salt);
-        require (!_saltTaken[tokenIdSalt], "salt already taken");
-        require (_tokenIdentity[_token] == address(0), "token already linked to an identity");
+        require(!_saltTaken[tokenIdSalt], "salt already taken");
+        require(_tokenIdentity[_token] == address(0), "token already linked to an identity");
         address identity = _deployIdentity(tokenIdSalt, _implementationAuthority, _tokenOwner);
         _saltTaken[tokenIdSalt] = true;
         _tokenIdentity[_token] = identity;

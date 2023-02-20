@@ -48,6 +48,7 @@ contract Identity is Storage, IIdentity, Version {
      */
     constructor(address initialManagementKey, bool _isLibrary) {
         require(initialManagementKey != address(0), "invalid argument - zero address");
+
         if (!_isLibrary) {
             __Identity_init(initialManagementKey);
         } else {
@@ -166,7 +167,6 @@ contract Identity is Storage, IIdentity, Version {
     }
 
     /**
-    * @dev See {IERC734-addKey}.
     * @notice implementation of the addKey function of the ERC-734 standard
     * Adds a _key to the identity. The _purpose specifies the purpose of key. Initially we propose four purposes:
     * 1: MANAGEMENT keys, which can manage the identity
@@ -265,8 +265,8 @@ contract Identity is Storage, IIdentity, Version {
             }
         } else {
             _executions[_id].approved = false;
-            return false;
         }
+        return false;
     }
 
     /**
@@ -352,20 +352,26 @@ contract Identity is Storage, IIdentity, Version {
     override
     returns (bytes32 claimRequestId)
     {
-        require(IClaimIssuer(_issuer).isClaimValid(IIdentity(address(this)), _topic, _signature, _data), "invalid claim");
+        if (_issuer != address(this)) {
+            require(IClaimIssuer(_issuer).isClaimValid(IIdentity(address(this)), _topic, _signature, _data), "invalid claim");
+        }
+
         bytes32 claimId = keccak256(abi.encode(_issuer, _topic));
         _claims[claimId].topic = _topic;
         _claims[claimId].scheme = _scheme;
         _claims[claimId].signature = _signature;
         _claims[claimId].data = _data;
         _claims[claimId].uri = _uri;
+
         if (_claims[claimId].issuer != _issuer) {
             _claimsByTopic[_topic].push(claimId);
             _claims[claimId].issuer = _issuer;
+
             emit ClaimAdded(claimId, _topic, _scheme, _issuer, _signature, _data, _uri);
         }
         else {
             _claims[claimId].issuer = _issuer;
+
             emit ClaimChanged(claimId, _topic, _scheme, _issuer, _signature, _data, _uri);
         }
         return claimId;
@@ -389,7 +395,6 @@ contract Identity is Storage, IIdentity, Version {
     override
     returns
     (bool success) {
-
         uint256 _topic = _claims[_claimId].topic;
         if (_topic == 0) {
             revert("NonExisting: There is no claim with this ID");

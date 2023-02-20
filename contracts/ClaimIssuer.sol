@@ -11,23 +11,32 @@ contract ClaimIssuer is IClaimIssuer, Identity {
     constructor(address initialManagementKey) Identity(initialManagementKey, false) {}
 
     /**
+     *  @dev See {IClaimIssuer-revokeClaimBySignature}.
+     */
+    function revokeClaimBySignature(bytes calldata signature) external override delegatedOnly onlyManager {
+        require(!revokedClaims[signature], "Conflict: Claim already revoked");
+
+        revokedClaims[signature] = true;
+
+        emit ClaimRevoked(signature);
+    }
+
+    /**
      *  @dev See {IClaimIssuer-revokeClaim}.
      */
-    function revokeClaim(bytes32 _claimId, address _identity)
-    external
-    override
-    delegatedOnly
-    onlyManager
-    returns(bool) {
+    function revokeClaim(bytes32 _claimId, address _identity) external override delegatedOnly onlyManager returns(bool) {
         uint256 foundClaimTopic;
         uint256 scheme;
         address issuer;
-        bytes memory  sig;
-        bytes  memory data;
+        bytes memory sig;
+        bytes memory data;
 
         ( foundClaimTopic, scheme, issuer, sig, data, ) = Identity(_identity).getClaim(_claimId);
 
+        require(!revokedClaims[sig], "Conflict: Claim already revoked");
+
         revokedClaims[sig] = true;
+        emit ClaimRevoked(sig);
         return true;
     }
 

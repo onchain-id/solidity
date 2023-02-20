@@ -32,5 +32,3 @@ contract ImplementationAuthority is IImplementationAuthority, Ownable {
         return _implementation;
     }
 }
-
-

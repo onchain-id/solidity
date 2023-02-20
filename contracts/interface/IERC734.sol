@@ -48,7 +48,6 @@ interface IERC734 {
      */
     event KeyRemoved(bytes32 indexed key, uint256 indexed purpose, uint256 indexed keyType);
 
-
     /**
      * @dev Adds a _key to the identity. The _purpose specifies the purpose of the key.
      *
