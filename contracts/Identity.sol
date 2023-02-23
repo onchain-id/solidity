@@ -291,25 +291,27 @@ contract Identity is Storage, IIdentity, Version {
             }
         }
 
-        _keys[_key].purposes[purposeIndex] = _keys[_key].purposes[_keys[_key].purposes.length - 1];
+        _purposes[purposeIndex] = _purposes[_purposes.length - 1];
+        _keys[_key].purposes = _purposes;
         _keys[_key].purposes.pop();
 
         uint keyIndex = 0;
+        uint arrayLength = _keysByPurpose[_purpose].length;
 
         while (_keysByPurpose[_purpose][keyIndex] != _key) {
             keyIndex++;
 
-            if (keyIndex >= _keysByPurpose[_purpose].length) {
+            if (keyIndex >= arrayLength) {
                 break;
             }
         }
 
-        _keysByPurpose[_purpose][keyIndex] = _keysByPurpose[_purpose][_keysByPurpose[_purpose].length - 1];
+        _keysByPurpose[_purpose][keyIndex] = _keysByPurpose[_purpose][arrayLength - 1];
         _keysByPurpose[_purpose].pop();
 
         uint keyType = _keys[_key].keyType;
 
-        if (_keys[_key].purposes.length == 0) {
+        if (_purposes.length - 1 == 0) {
             delete _keys[_key];
         }
 
@@ -369,8 +371,6 @@ contract Identity is Storage, IIdentity, Version {
             emit ClaimAdded(claimId, _topic, _scheme, _issuer, _signature, _data, _uri);
         }
         else {
-            _claims[claimId].issuer = _issuer;
-
             emit ClaimChanged(claimId, _topic, _scheme, _issuer, _signature, _data, _uri);
         }
         return claimId;
@@ -400,16 +400,17 @@ contract Identity is Storage, IIdentity, Version {
         }
 
         uint claimIndex = 0;
+        uint arrayLength = _claimsByTopic[_topic].length;
         while (_claimsByTopic[_topic][claimIndex] != _claimId) {
             claimIndex++;
 
-            if (claimIndex >= _claimsByTopic[_topic].length) {
+            if (claimIndex >= arrayLength) {
                 break;
             }
         }
 
         _claimsByTopic[_topic][claimIndex] =
-        _claimsByTopic[_topic][_claimsByTopic[_topic].length - 1];
+        _claimsByTopic[_topic][arrayLength - 1];
         _claimsByTopic[_topic].pop();
 
         emit ClaimRemoved(

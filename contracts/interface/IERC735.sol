@@ -37,7 +37,7 @@ interface IERC735 {
     /**
      * @dev Emitted when a claim was changed.
      *
-     * Specification: MUST be triggered when changeClaim was successfully called.
+     * Specification: MUST be triggered when addClaim was successfully called on an existing claimId.
      */
     event ClaimChanged(
         bytes32 indexed claimId,
