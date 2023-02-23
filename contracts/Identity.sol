@@ -73,8 +73,7 @@ contract Identity is Storage, IIdentity, Version {
      * execution is immediately approved and performed.
      * If the destination address is the identity itself, then the execution would be performed immediately only if
      * the sender is a MANAGEMENT key.
-     * Otherwise, the execute method triggers an ExecutionRequested event, and the execution request must be approved
-     * using the `approve` method.
+     * Otherwise the execution request must be approved via the `approve` method.
      * @return executionId to use in the approve function, to approve or reject this execution.
      */
     function execute(address _to, uint256 _value, bytes memory _data)
@@ -85,7 +84,6 @@ contract Identity is Storage, IIdentity, Version {
     returns (uint256 executionId)
     {
         uint256 _executionId = _executionNonce;
-        require(!_executions[_executionId].executed, "Already executed");
         _executions[_executionId].to = _to;
         _executions[_executionId].value = _value;
         _executions[_executionId].data = _data;
@@ -213,7 +211,7 @@ contract Identity is Storage, IIdentity, Version {
 
     /**
      *  @dev See {IERC734-approve}.
-     *  @notice Approves an execution or claim addition.
+     *  @notice Approves an execution.
      *  If the sender is an ACTION key and the destination address is not the identity contract itself, then the
      *  approval is authorized and the operation would be performed.
      *  If the destination address is the identity itself, then the execution would be authorized and performed only
@@ -239,12 +237,13 @@ contract Identity is Storage, IIdentity, Version {
 
         if (_approve == true) {
             _executions[_id].approved = true;
-            _executions[_id].executed = true;
 
             // solhint-disable-next-line avoid-low-level-calls
             (success,) = _executions[_id].to.call{value:(_executions[_id].value)}(_executions[_id].data);
 
             if (success) {
+                _executions[_id].executed = true;
+
                 emit Executed(
                     _id,
                     _executions[_id].to,
@@ -261,7 +260,7 @@ contract Identity is Storage, IIdentity, Version {
                     _executions[_id].data
                 );
 
-                revert("Execution failed.");
+                return false;
             }
         } else {
             _executions[_id].approved = false;

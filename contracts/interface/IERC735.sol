@@ -53,7 +53,7 @@ interface IERC735 {
      *
      * Triggers Event: `ClaimAdded`, `ClaimChanged`
      *
-     * Specification: ADDITION or CHANGE of a claim from an issuer.
+     * Specification: Add or update a claim from an issuer.
      *
      * _signature is a signed message of the following structure:
      * `keccak256(abi.encode(address identityHolder_address, uint256 topic, bytes data))`.

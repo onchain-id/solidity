@@ -6,7 +6,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.0.O] - (unreleased)
 ### Breaking changes
-- When calling `approve`, if the execution fails, then the method would now revert instead of returning `false`.
 
 ## Deprecation Notice
 - ClaimIssuer `revokeClaim` is now deprecated, usage of `revokeClaimBySignature(bytes signature)` is preferred.
