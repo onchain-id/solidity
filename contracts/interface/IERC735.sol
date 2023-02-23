@@ -53,15 +53,11 @@ interface IERC735 {
      *
      * Triggers Event: `ClaimAdded`, `ClaimChanged`
      *
-     * Specification: Requests the ADDITION or the CHANGE of a claim from an issuer.
-     * Claims can requested to be added by anybody, including the claim holder itself (self issued).
+     * Specification: ADDITION or CHANGE of a claim from an issuer.
      *
      * _signature is a signed message of the following structure:
      * `keccak256(abi.encode(address identityHolder_address, uint256 topic, bytes data))`.
      * Claim IDs are generated using `keccak256(abi.encode(address issuer_address + uint256 topic))`.
-     *
-     * This COULD implement an approval process for pending claims, or add them right away.
-     * MUST return a claimRequestId (use claim ID) that COULD be sent to the approve function.
      */
     function addClaim(
         uint256 _topic,
