@@ -292,7 +292,7 @@ contract Identity is Storage, IIdentity, Version {
             }
         }
 
-        _keys[_key].purposes[purposeIndex] = _keys[_key].purposes[_keys[_key].purposes.length - 1];
+        _keys[_key].purposes[purposeIndex] = _purposes[_purposes.length - 1];
         _keys[_key].purposes.pop();
 
         uint keyIndex = 0;
@@ -310,7 +310,7 @@ contract Identity is Storage, IIdentity, Version {
 
         uint keyType = _keys[_key].keyType;
 
-        if (_keys[_key].purposes.length == 0) {
+        if (_purposes.length == 0) {
             delete _keys[_key];
         }
 
