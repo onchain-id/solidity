@@ -372,8 +372,6 @@ contract Identity is Storage, IIdentity, Version {
             emit ClaimAdded(claimId, _topic, _scheme, _issuer, _signature, _data, _uri);
         }
         else {
-            _claims[claimId].issuer = _issuer;
-
             emit ClaimChanged(claimId, _topic, _scheme, _issuer, _signature, _data, _uri);
         }
         return claimId;
