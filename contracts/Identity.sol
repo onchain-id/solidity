@@ -292,25 +292,27 @@ contract Identity is Storage, IIdentity, Version {
             }
         }
 
-        _keys[_key].purposes[purposeIndex] = _purposes[_purposes.length - 1];
+        _purposes[purposeIndex] = _purposes[_purposes.length - 1];
+        _keys[_key].purposes = _purposes;
         _keys[_key].purposes.pop();
 
         uint keyIndex = 0;
+        uint arrayLength = _keysByPurpose[_purpose].length;
 
         while (_keysByPurpose[_purpose][keyIndex] != _key) {
             keyIndex++;
 
-            if (keyIndex >= _keysByPurpose[_purpose].length) {
+            if (keyIndex >= arrayLength) {
                 break;
             }
         }
 
-        _keysByPurpose[_purpose][keyIndex] = _keysByPurpose[_purpose][_keysByPurpose[_purpose].length - 1];
+        _keysByPurpose[_purpose][keyIndex] = _keysByPurpose[_purpose][arrayLength - 1];
         _keysByPurpose[_purpose].pop();
 
         uint keyType = _keys[_key].keyType;
 
-        if (_purposes.length == 0) {
+        if (_purposes.length - 1 == 0) {
             delete _keys[_key];
         }
 
