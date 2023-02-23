@@ -403,16 +403,17 @@ contract Identity is Storage, IIdentity, Version {
         }
 
         uint claimIndex = 0;
+        uint arrayLength = _claimsByTopic[_topic].length;
         while (_claimsByTopic[_topic][claimIndex] != _claimId) {
             claimIndex++;
 
-            if (claimIndex >= _claimsByTopic[_topic].length) {
+            if (claimIndex >= arrayLength) {
                 break;
             }
         }
 
         _claimsByTopic[_topic][claimIndex] =
-        _claimsByTopic[_topic][_claimsByTopic[_topic].length - 1];
+        _claimsByTopic[_topic][arrayLength - 1];
         _claimsByTopic[_topic].pop();
 
         emit ClaimRemoved(
