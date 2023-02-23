@@ -51,7 +51,7 @@ interface IERC735 {
     /**
      * @dev Add or update a claim.
      *
-     * Triggers Event: `ClaimRequested`, `ClaimAdded`, `ClaimChanged`
+     * Triggers Event: `ClaimAdded`, `ClaimChanged`
      *
      * Specification: Requests the ADDITION or the CHANGE of a claim from an issuer.
      * Claims can requested to be added by anybody, including the claim holder itself (self issued).
