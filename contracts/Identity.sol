@@ -226,7 +226,7 @@ contract Identity is Storage, IIdentity, Version {
         require(_id < _executionNonce, "Cannot approve a non-existing execution");
         require(!_executions[_id].executed, "Request already executed");
 
-        if(_executions[_id].to == address( this)) {
+        if(_executions[_id].to == address(this)) {
             require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 1), "Sender does not have management key");
         }
         else {
