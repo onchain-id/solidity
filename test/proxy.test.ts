@@ -14,7 +14,7 @@ describe('Proxy', () => {
   it('should revert because implementation is not an identity', async () => {
     const [deployerWallet, identityOwnerWallet] = await ethers.getSigners();
 
-    const claimIssuer = await ethers.deployContract('Migrations');
+    const claimIssuer = await ethers.deployContract('Test');
 
     const authority = await ethers.deployContract('ImplementationAuthority', [claimIssuer.address]);
 
