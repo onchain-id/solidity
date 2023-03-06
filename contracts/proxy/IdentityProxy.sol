@@ -5,8 +5,6 @@ pragma solidity 0.8.17;
 import "../interface/IImplementationAuthority.sol";
 
 contract IdentityProxy {
-    // address of the implementationAuthority contract linked to this proxy
-    address public implementationAuthority;
 
     /**
      *  @dev constructor of the proxy Identity contract
@@ -18,9 +16,13 @@ contract IdentityProxy {
     constructor(address _implementationAuthority, address initialManagementKey) {
         require(_implementationAuthority != address(0), "invalid argument - zero address");
         require(initialManagementKey != address(0), "invalid argument - zero address");
-        implementationAuthority = _implementationAuthority;
 
-        address logic = IImplementationAuthority(implementationAuthority).getImplementation();
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            sstore(0xc5f16f0fcc639fa48a6947836d9850f504798523bf8c9a3a87d5876cf622bcf7, _implementationAuthority)
+        }
+
+        address logic = IImplementationAuthority(_implementationAuthority).getImplementation();
 
         // solhint-disable-next-line avoid-low-level-calls
         (bool success,) = logic.delegatecall(abi.encodeWithSignature("initialize(address)", initialManagementKey));
@@ -35,7 +37,7 @@ contract IdentityProxy {
      */
     // solhint-disable-next-line no-complex-fallback
     fallback() external payable {
-        address logic = IImplementationAuthority(implementationAuthority).getImplementation();
+        address logic = IImplementationAuthority(implementationAuthority()).getImplementation();
 
         // solhint-disable-next-line no-inline-assembly
         assembly {
@@ -51,5 +53,14 @@ contract IdentityProxy {
                 return(0, retSz)
             }
         }
+    }
+
+    function implementationAuthority() public view returns(address) {
+        address implemAuth;
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            implemAuth := sload(0xc5f16f0fcc639fa48a6947836d9850f504798523bf8c9a3a87d5876cf622bcf7)
+        }
+        return implemAuth;
     }
 }

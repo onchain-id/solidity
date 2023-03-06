@@ -3,9 +3,6 @@ pragma solidity 0.8.17;
 import "./Structs.sol";
 
 contract Storage is Structs {
-    // Gap for implementation authority.
-    address internal _implementationAuthorityGap;
-
     // nonce used by the execute/approve function
     uint256 internal _executionNonce;
 
