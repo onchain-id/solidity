@@ -4,7 +4,7 @@
 
 Smart Contracts for secure Blockchain Identities, implementation of the ERC734 and ERC735 proposal standards.
 
-Learn more about OnchainID and Blockchain Identities on the official OnchainID website: [https://onchainid.com](https://onchainid.com). 
+Learn more about OnchainID and Blockchain Identities on the official OnchainID website: [https://onchainid.com](https://onchainid.com).
 
 ## Usage
 
@@ -21,15 +21,13 @@ Learn more about OnchainID and Blockchain Identities on the official OnchainID w
 
 ## Development
 
-- Install dev dependencies `npm i`
+- Install dev dependencies `npm install`
 - Update interfaces and contracts code.
 - Run lint `npm run lint`
 - Compile code `npm run compile`
 
 ### Testing
 
-- Install [Ganache](https://www.trufflesuite.com/ganache) or run another blockchain network.
-  
-  > The contracts WILL NOT WORK without at least version 2 of Ganache!
-  
+- Run `npm install`
 - Run `npm test`
+  - Test will be executed against a local Hardhat network.
