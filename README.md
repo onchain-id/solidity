@@ -1,5 +1,15 @@
 ![OnchainID Smart Contracts](./onchainid_logo_final.png)
+---
 
+![GitHub](https://img.shields.io/github/license/onchain-id/solidity?color=green)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/onchain-id/solidity)
+![GitHub Workflow Status (branch)](https://img.shields.io/github/actions/workflow/status/onchain-id/solidity/publish-release.yml)
+![GitHub repo size](https://img.shields.io/github/repo-size/onchain-id/solidity)
+![GitHub Release Date](https://img.shields.io/github/release-date/onchain-id/solidity)
+
+----
+
+---
 # OnchainID Smart Contracts
 
 Smart Contracts for secure Blockchain Identities, implementation of the ERC734 and ERC735 proposal standards.
