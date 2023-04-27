@@ -31,3 +31,11 @@ Learn more about OnchainID and Blockchain Identities on the official OnchainID w
 - Run `npm ci`
 - Run `npm test`
   - Test will be executed against a local Hardhat network.
+
+---
+
+<div style="padding: 16px;">
+   <a href="https://tokeny.com/wp-content/uploads/2023/04/Tokeny_ONCHAINID_SC-Audit_Report.pdf" target="_blank">
+       <img src="https://hacken.io/wp-content/uploads/2023/02/ColorWBTypeSmartContractAuditBackFilled.png" alt="Proofed by Hacken - Smart contract audit" style="width: 258px; height: 100px;">
+   </a>
+</div>
