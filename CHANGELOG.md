@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0]
+
+Version 2.0.0 Audited by Hacken, more details [here](https://tokeny.com/wp-content/uploads/2023/04/Tokeny_ONCHAINID_SC-Audit_Report.pdf)
+
+### Breaking changes
+
+## Deprecation Notice
+- ClaimIssuer `revokeClaim` is now deprecated, usage of `revokeClaimBySignature(bytes signature)` is preferred.
+
+### Added
+- Add typechain-types (targeting ethers v5).
+- Add tests cases for `execute` and `approve` methods.
+- Add method `revokeClaimBySignature(bytes signature)` in ClaimIssuer, prefer using this method instead of the now
+deprecated `revokeClaim` method.
+- Add checks on ClaimIssuer to prevent revoking an already revoked claim.
+- Added Factory for ONCHAINIDs
+
+### Updated
+- Switch development tooling to hardhat.
+- Implemented tests for hardhat (using fixture for faster testing time).
+- Prevent calling `approve` method with a non-request execute nonce (added a require on `executionNone`).
+- Update NatSpec of `execute` and `approve` methods.
+
 ## [1.4.0] - 2021-01-26
 ### Updated
 - Remove constructor's visibility

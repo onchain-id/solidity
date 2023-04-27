@@ -1,10 +1,18 @@
-![OnchainID Smart Contracts](./onchainid_logo_small.png)
+![OnchainID Smart Contracts](./onchainid_logo_final.png)
+---
 
+![GitHub](https://img.shields.io/github/license/onchain-id/solidity?color=green)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/onchain-id/solidity)
+![GitHub Workflow Status (branch)](https://img.shields.io/github/actions/workflow/status/onchain-id/solidity/publish-release.yml)
+![GitHub repo size](https://img.shields.io/github/repo-size/onchain-id/solidity)
+![GitHub Release Date](https://img.shields.io/github/release-date/onchain-id/solidity)
+
+---
 # OnchainID Smart Contracts
 
 Smart Contracts for secure Blockchain Identities, implementation of the ERC734 and ERC735 proposal standards.
 
-Learn more about OnchainID and Blockchain Identities on the official OnchainID website: [https://onchainid.com](https://onchainid.com). 
+Learn more about OnchainID and Blockchain Identities on the official OnchainID website: [https://onchainid.com](https://onchainid.com).
 
 ## Usage
 
@@ -21,15 +29,21 @@ Learn more about OnchainID and Blockchain Identities on the official OnchainID w
 
 ## Development
 
-- Install dev dependencies `npm i`
+- Install dev dependencies `npm ci`
 - Update interfaces and contracts code.
 - Run lint `npm run lint`
 - Compile code `npm run compile`
 
 ### Testing
 
-- Install [Ganache](https://www.trufflesuite.com/ganache) or run another blockchain network.
-  
-  > The contracts WILL NOT WORK without at least version 2 of Ganache!
-  
+- Run `npm ci`
 - Run `npm test`
+  - Test will be executed against a local Hardhat network.
+
+---
+
+<div style="padding: 16px;">
+   <a href="https://tokeny.com/wp-content/uploads/2023/04/Tokeny_ONCHAINID_SC-Audit_Report.pdf" target="_blank">
+       <img src="https://hacken.io/wp-content/uploads/2023/02/ColorWBTypeSmartContractAuditBackFilled.png" alt="Proofed by Hacken - Smart contract audit" style="width: 258px; height: 100px;">
+   </a>
+</div>

@@ -17,3 +17,9 @@ build/
 # IDE
 .idea
 .vscode
+
+# Artifacts
+artifacts
+coverage.json
+cache
+typechain-types

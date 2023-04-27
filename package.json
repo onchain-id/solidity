@@ -1,21 +1,19 @@
 {
   "name": "@onchain-id/solidity",
-  "version": "1.4.0",
-  "description": "Ethereum solidity smart contracts for Blockchain OnchainID identities.",
+  "version": "2.0.0",
+  "description": "EVM solidity smart contracts for Blockchain OnchainID identities.",
   "files": [
-    "build",
+    "artifacts",
     "contracts",
     "index.js",
-    "index.d.ts"
+    "index.d.ts",
+    "typechain-types"
   ],
   "scripts": {
-    "build": "truffle compile",
-    "console": "truffle console",
-    "coverage": "truffle run coverage",
-    "docgen": "solidity-docgen ./ contracts/ docs/api",
-    "lint": "npm run lint:sol",
-    "lint:sol": "solhint --max-warnings 0 \"contracts/**/*.sol\"",
-    "test": "truffle test"
+    "build": "npx hardhat compile",
+    "coverage": "npx hardhat coverage",
+    "lint": "npx hardhat check",
+    "test": "hardhat test"
   },
   "repository": {
     "type": "git",
@@ -37,23 +35,11 @@
   },
   "homepage": "https://github.com/onchain-id/solidity#readme",
   "devDependencies": {
-    "@openzeppelin/contracts": "^3.3.0",
-    "ansi-colors": "^4.1.1",
-    "chai": "^4.2.0",
-    "chai-as-promised": "^7.1.1",
-    "chai-bignumber": "^3.0.0",
-    "chai-bn": "^0.2.1",
-    "eslint": "^7.18.0",
-    "eslint-config-airbnb-base": "^14.2.1",
-    "eslint-config-prettier": "^7.2.0",
-    "eslint-plugin-import": "^2.22.1",
-    "eslint-plugin-prettier": "^3.3.1",
-    "ethereumjs-abi": "^0.6.8",
-    "ethereumjs-util": "^7.0.7",
-    "prettier": "^2.2.1",
-    "solhint": "^3.3.2",
-    "solidity-coverage": "^0.7.14",
-    "solidity-docgen": "^0.5.11",
-    "truffle": "^5.1.63"
+    "@nomicfoundation/hardhat-toolbox": "^2.0.1",
+    "@nomiclabs/hardhat-solhint": "^3.0.0",
+    "@openzeppelin/contracts": "^4.8.3",
+    "hardhat": "^2.12.6",
+    "solhint-plugin-prettier": "^0.0.5",
+    "solidity-coverage": "^0.8.2"
   }
 }
