@@ -7,8 +7,6 @@
 ![GitHub repo size](https://img.shields.io/github/repo-size/onchain-id/solidity)
 ![GitHub Release Date](https://img.shields.io/github/release-date/onchain-id/solidity)
 
-----
-
 ---
 # OnchainID Smart Contracts
 
