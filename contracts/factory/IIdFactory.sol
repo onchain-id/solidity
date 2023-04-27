@@ -33,20 +33,23 @@ interface IIdFactory {
      *  @param _salt the salt used by create2 to issue the contract
      *  requires a new salt for each deployment
      *  _wallet cannot be linked to another ONCHAINID
+     *  only Owner can call => Owner is supposed to be a smart contract, managing the accessibility
+     *  of the function, including calls to oracles for multichain
+     *  deployment security (avoid identity theft), defining payment requirements, etc.
      */
     function createIdentity(address _wallet, string memory _salt) external returns (address);
 
     /**
      *  @dev function used to create a new Token Identity proxy from the factory
      *  @param _token the address of the token contract
-     *  @param _owner the owner address of the token
+     *  @param _tokenOwner the owner address of the token
      *  @param _salt the salt used by create2 to issue the contract
      *  requires a new salt for each deployment
      *  _token cannot be linked to another ONCHAINID
      *  only Token factory or owner can call (owner should only use its privilege
      *  for tokens not issued by a Token factory onchain
      */
-    function createTokenIdentity(address _token, address _owner, string memory _salt) external returns (address);
+    function createTokenIdentity(address _token, address _tokenOwner, string memory _salt) external returns (address);
 
     /**
      *  @dev function used to link a new wallet to an existing identity
@@ -75,7 +78,7 @@ interface IIdFactory {
      *  _factory cannot be registered yet
      *  once the factory has been registered it can deploy token identities
      */
-    function addTokenFactory (address _factory) external;
+    function addTokenFactory(address _factory) external;
 
     /**
      *  @dev function used to unregister an address previously registered as a token factory
@@ -84,7 +87,7 @@ interface IIdFactory {
      *  _factory has to be registered previously
      *  once the factory has been unregistered it cannot deploy token identities anymore
      */
-    function removeTokenFactory (address _factory) external;
+    function removeTokenFactory(address _factory) external;
 
     /**
      *  @dev getter for OID contract corresponding to a wallet/token
@@ -100,11 +103,18 @@ interface IIdFactory {
     function getWallets(address _identity) external view returns (address[] memory);
 
     /**
+     *  @dev getter to fetch the token address linked to an OID contract
+     *  @param _identity the address of the OID contract
+     *  returns the address linked to the OID
+     */
+    function getToken(address _identity) external view returns (address);
+
+    /**
      *  @dev getter to know if an address is registered as token factory or not
      *  @param _factory the address of the factory
      *  returns true if the address corresponds to a registered factory
      */
-    function isTokenFactory (address _factory) external view returns(bool);
+    function isTokenFactory(address _factory) external view returns(bool);
 
     /**
      *  @dev getter to know if a salt is taken for the create2 deployment

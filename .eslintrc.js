@@ -1,11 +1,5 @@
 module.exports = {
-  extends: [
-    'airbnb-base',
-    'plugin:prettier/recommended',
-    'plugin:import/errors',
-    'plugin:import/warnings',
-    'plugin:import/typescript',
-  ],
+  extends: [],
   parserOptions: { ecmaVersion: 2018 },
   root: true,
   rules: {

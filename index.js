@@ -1,13 +1,16 @@
-const IClaimIssuer = require('./build/contracts/IClaimIssuer');
-const IERC734 = require('./build/contracts/IERC734');
-const IERC735 = require('./build/contracts/IERC735');
-const IIdentity = require('./build/contracts/IClaimIssuer');
-const IImplementationAuthority = require('./build/contracts/IImplementationAuthority');
+const IClaimIssuer = require('./artifacts/contracts/interface/IClaimIssuer.sol/IClaimIssuer.json');
+const IERC734 = require('./artifacts/contracts/interface/IERC734.sol/IERC734.json');
+const IERC735 = require('./artifacts/contracts/interface/IERC735.sol/IERC735.json');
+const IFactory = require('./artifacts/contracts/factory/IIdFactory.sol/IIdFactory.json');
+const IIdentity = require('./artifacts/contracts/interface/IIdentity.sol/IIdentity.json');
+const IImplementationAuthority = require('./artifacts/contracts/interface/IImplementationAuthority.sol/IImplementationAuthority.json');
 
-const ClaimIssuer = require('./build/contracts/ClaimIssuer');
-const Identity = require('./build/contracts/Identity');
-const ImplementationAuthority = require('./build/contracts/ImplementationAuthority');
-const IdentityProxy = require('./build/contracts/IdentityProxy');
+const ClaimIssuer = require('./artifacts/contracts/ClaimIssuer.sol/ClaimIssuer.json');
+const Factory = require('./artifacts/contracts/factory/IdFactory.sol/IdFactory.json');
+const Identity = require('./artifacts/contracts/Identity.sol/Identity.json');
+const ImplementationAuthority = require('./artifacts/contracts/proxy/ImplementationAuthority.sol/ImplementationAuthority.json');
+const IdentityProxy = require('./artifacts/contracts/proxy/IdentityProxy.sol/IdentityProxy.json');
+const Version = require('./artifacts/contracts/version/Version.sol/Version.json');
 
 module.exports = {
   contracts: {
@@ -15,6 +18,8 @@ module.exports = {
     Identity,
     ImplementationAuthority,
     IdentityProxy,
+    Version,
+    Factory,
   },
   interfaces: {
     IClaimIssuer,
@@ -22,5 +27,6 @@ module.exports = {
     IERC735,
     IIdentity,
     IImplementationAuthority,
+    IFactory,
   },
 };

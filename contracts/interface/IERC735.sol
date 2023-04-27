@@ -7,20 +7,6 @@ pragma solidity 0.8.17;
 interface IERC735 {
 
     /**
-     * @dev Emitted when a claim request was performed.
-     *
-     * Specification: Is not clear
-     */
-    event ClaimRequested(
-        uint256 indexed claimRequestId,
-        uint256 indexed topic,
-        uint256 scheme,
-        address indexed issuer,
-        bytes signature,
-        bytes data,
-        string uri);
-
-    /**
      * @dev Emitted when a claim was added.
      *
      * Specification: MUST be triggered when a claim was successfully added.
@@ -51,7 +37,7 @@ interface IERC735 {
     /**
      * @dev Emitted when a claim was changed.
      *
-     * Specification: MUST be triggered when changeClaim was successfully called.
+     * Specification: MUST be triggered when addClaim was successfully called on an existing claimId.
      */
     event ClaimChanged(
         bytes32 indexed claimId,
@@ -65,17 +51,13 @@ interface IERC735 {
     /**
      * @dev Add or update a claim.
      *
-     * Triggers Event: `ClaimRequested`, `ClaimAdded`, `ClaimChanged`
+     * Triggers Event: `ClaimAdded`, `ClaimChanged`
      *
-     * Specification: Requests the ADDITION or the CHANGE of a claim from an issuer.
-     * Claims can requested to be added by anybody, including the claim holder itself (self issued).
+     * Specification: Add or update a claim from an issuer.
      *
      * _signature is a signed message of the following structure:
      * `keccak256(abi.encode(address identityHolder_address, uint256 topic, bytes data))`.
      * Claim IDs are generated using `keccak256(abi.encode(address issuer_address + uint256 topic))`.
-     *
-     * This COULD implement an approval process for pending claims, or add them right away.
-     * MUST return a claimRequestId (use claim ID) that COULD be sent to the approve function.
      */
     function addClaim(
         uint256 _topic,
