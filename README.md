@@ -1,4 +1,4 @@
-![OnchainID Smart Contracts](./onchainid_logo_small.png)
+![OnchainID Smart Contracts](./onchainid_logo_final.png)
 
 # OnchainID Smart Contracts
 
@@ -21,13 +21,13 @@ Learn more about OnchainID and Blockchain Identities on the official OnchainID w
 
 ## Development
 
-- Install dev dependencies `npm install`
+- Install dev dependencies `npm ci`
 - Update interfaces and contracts code.
 - Run lint `npm run lint`
 - Compile code `npm run compile`
 
 ### Testing
 
-- Run `npm install`
+- Run `npm ci`
 - Run `npm test`
   - Test will be executed against a local Hardhat network.
