@@ -1,7 +1,7 @@
 {
   "name": "@onchain-id/solidity",
-  "version": "2.0.0-beta-3",
-  "description": "Ethereum solidity smart contracts for Blockchain OnchainID identities.",
+  "version": "2.0.0",
+  "description": "EVM solidity smart contracts for Blockchain OnchainID identities.",
   "files": [
     "artifacts",
     "contracts",
@@ -37,7 +37,7 @@
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^2.0.1",
     "@nomiclabs/hardhat-solhint": "^3.0.0",
-    "@openzeppelin/contracts": "^4.8.1",
+    "@openzeppelin/contracts": "^4.8.3",
     "hardhat": "^2.12.6",
     "solhint-plugin-prettier": "^0.0.5",
     "solidity-coverage": "^0.8.2"

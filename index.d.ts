@@ -3,6 +3,7 @@ export namespace contracts {
   export const Identity: any;
   export const ImplementationAuthority: any;
   export const IdentityProxy: any;
+  export const Factory: any;
 }
 
 export namespace interfaces {
@@ -11,4 +12,5 @@ export namespace interfaces {
   export const IERC735: any;
   export const IIdentity: any;
   export const IImplementationAuthority: any;
+  export const IFactory: any;
 }
