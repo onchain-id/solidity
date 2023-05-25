@@ -3,6 +3,7 @@ pragma solidity 0.8.17;
 
 import "../proxy/IdentityProxy.sol";
 import "./IIdFactory.sol";
+import "../interface/IERC734.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract IdFactory is IIdFactory, Ownable {
@@ -72,6 +73,45 @@ contract IdFactory is IIdFactory, Ownable {
         _userIdentity[_wallet] = identity;
         _wallets[identity].push(_wallet);
         emit WalletLinked(_wallet, identity);
+        return identity;
+    }
+
+    /**
+     *  @dev See {IdFactory-createIdentityWithManagementKeys}.
+     */
+    function createIdentityWithManagementKeys(
+        address _wallet,
+        string memory _salt,
+        bytes32[] memory _managementKeys
+    ) external onlyOwner override returns (address) {
+        require(_wallet != address(0), "invalid argument - zero address");
+        require(keccak256(abi.encode(_salt)) != keccak256(abi.encode("")), "invalid argument - empty string");
+        string memory oidSalt = string.concat("OID",_salt);
+        require (!_saltTaken[oidSalt], "salt already taken");
+        require (_userIdentity[_wallet] == address(0), "wallet already linked to an identity");
+        require(_managementKeys.length > 0, "invalid argument - empty list of keys");
+
+        address identity = _deployIdentity(oidSalt, _implementationAuthority, address(this));
+
+        for (uint i = 0; i < _managementKeys.length; i++) {
+            require(_managementKeys[i] != keccak256(abi.encode(_wallet)), "invalid argument - wallet is also listed in management keys");
+            IERC734(identity).addKey(
+                _managementKeys[i],
+                1,
+                1
+            );
+        }
+
+        IERC734(identity).removeKey(
+            keccak256(abi.encode(address(this))),
+            1
+        );
+
+        _saltTaken[oidSalt] = true;
+        _userIdentity[_wallet] = identity;
+        _wallets[identity].push(_wallet);
+        emit WalletLinked(_wallet, identity);
+
         return identity;
     }
 
