@@ -110,4 +110,52 @@ describe('IdFactory', () => {
       });
     });
   });
+
+  describe('createIdentityWithManagementKeys()', () => {
+    describe('when no management keys are provided', () => {
+      it('should revert', async () => {
+        const {identityFactory, deployerWallet, davidWallet} = await loadFixture(deployIdentityFixture);
+
+        await expect(identityFactory.connect(deployerWallet).createIdentityWithManagementKeys(davidWallet.address, 'salt1', [])).to.be.revertedWith('invalid argument - empty list of keys');
+      });
+    });
+
+    describe('when the wallet is included in the management keys listed', () => {
+      it('should revert', async () => {
+        const {identityFactory, deployerWallet, aliceWallet, davidWallet} = await loadFixture(deployIdentityFixture);
+
+        await expect(identityFactory.connect(deployerWallet).createIdentityWithManagementKeys(davidWallet.address, 'salt1', [
+          ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address])),
+          ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address'], [davidWallet.address])),
+        ])).to.be.revertedWith('invalid argument - wallet is also listed in management keys');
+      });
+    });
+
+    describe('when other management keys are specified', () => {
+      it('should deploy the identity proxy, set keys and wallet as management, and link wallet to identity', async () => {
+        const {identityFactory, deployerWallet, aliceWallet, davidWallet} = await loadFixture(deployIdentityFixture);
+
+        const tx = await identityFactory.connect(deployerWallet).createIdentityWithManagementKeys(davidWallet.address, 'salt1', [ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address]))]);
+
+        await expect(tx).to.emit(identityFactory, 'WalletLinked');
+        await expect(tx).to.emit(identityFactory, 'Deployed');
+
+        const identity = await ethers.getContractAt('Identity', await identityFactory.getIdentity(davidWallet.address));
+
+        await expect(tx).to.emit(identity, 'KeyAdded').withArgs(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address])), 1, 1);
+        await expect(identity.keyHasPurpose(
+          ethers.utils.defaultAbiCoder.encode(['address'], [identityFactory.address]),
+          1
+        )).to.eventually.be.false;
+        await expect(identity.keyHasPurpose(
+          ethers.utils.defaultAbiCoder.encode(['address'], [davidWallet.address]),
+          1
+        )).to.eventually.be.false;
+        await expect(identity.keyHasPurpose(
+          ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address]),
+          1
+        )).to.eventually.be.false;
+      });
+    });
+  });
 });
