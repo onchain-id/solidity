@@ -94,7 +94,9 @@ contract IdFactory is IIdFactory, Ownable {
         address identity = _deployIdentity(oidSalt, _implementationAuthority, address(this));
 
         for (uint i = 0; i < _managementKeys.length; i++) {
-            require(_managementKeys[i] != keccak256(abi.encode(_wallet)), "invalid argument - wallet is also listed in management keys");
+            require(
+                _managementKeys[i] != keccak256(abi.encode(_wallet))
+                , "invalid argument - wallet is also listed in management keys");
             IERC734(identity).addKey(
                 _managementKeys[i],
                 1,
