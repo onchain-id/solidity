@@ -21,6 +21,8 @@ error UnsignedDeployment();
 error UnapprovedSigner();
 /// A requested ONCHAINID deployment was requested with a signature revoked.
 error RevokedSignature();
+/// A requested ONCHAINID deployment was requested with a signature that expired.
+error ExpiredSignature();
 /// Attempted to revoke a signature that was already revoked.
 error SignatureAlreadyRevoked();
 /// Attempted to approve a signature that was not revoked.
@@ -103,15 +105,14 @@ contract Gateway is Ownable {
      *  @param salt to use for the deployment.
      *  @param signature the approval containing the salt and the identityOwner address.
      */
-    function deployIdentity(address identityOwner, string memory salt, bytes calldata signature) external returns (address) {
+    function deployIdentity(address identityOwner, string memory salt, uint256 signatureExpiry, bytes calldata signature) external returns (address) {
         if (identityOwner == address(0)) {
             revert ZeroAddress();
         }
 
         if (requireSignatures) {
-            uint256 chainId;
-            assembly {
-                chainId := chainid()
+            if (signatureExpiry < block.timestamp) {
+                revert ExpiredSignature();
             }
 
             address signer = ECDSA.recover(
@@ -119,7 +120,8 @@ contract Gateway is Ownable {
                     abi.encode(
                         "Authorize ONCHAINID deployment",
                         identityOwner,
-                        salt
+                        salt,
+                        signatureExpiry
                     )
                 ).toEthSignedMessageHash(),
                 signature
