@@ -4,7 +4,7 @@ import {loadFixture} from "@nomicfoundation/hardhat-network-helpers";
 import {deployFactoryFixture} from "../fixtures";
 import {BigNumber} from "ethers";
 
-describe.only('Gateway', () => {
+describe('Gateway', () => {
   describe('constructor', () => {
     describe('when factory address is not specified', () => {
       it('should revert', async () => {
