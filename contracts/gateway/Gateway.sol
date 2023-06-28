@@ -30,7 +30,6 @@ error SignatureNotAlreadyRevoked();
 
 contract Gateway is Ownable {
     IdFactory private idFactory;
-    bool public requireSignatures;
     mapping(address => bool) private approvedSigners;
     mapping(bytes => bool) private revokedSignatures;
 
@@ -42,10 +41,8 @@ contract Gateway is Ownable {
     /**
      *  @dev Constructor for the ONCHAINID Factory Gateway.
      *  @param idFactoryAddress the address of the factory to operate (the Gateway must be owner of the Factory).
-     *  @param requireSignaturesToDeploy if true, the Gateway will require signatures from approved addresses to deploy
-     *  an ONCHAINID.
      */
-    constructor(address idFactoryAddress, bool requireSignaturesToDeploy, address[] memory signersToApprove) Ownable() {
+    constructor(address idFactoryAddress, address[] memory signersToApprove) Ownable() {
         if (idFactoryAddress == address(0)) {
             revert ZeroAddress();
         }
@@ -58,7 +55,6 @@ contract Gateway is Ownable {
         }
 
         idFactory = IdFactory(idFactoryAddress);
-        requireSignatures = requireSignaturesToDeploy;
     }
 
     /**
@@ -100,45 +96,60 @@ contract Gateway is Ownable {
     }
 
     /**
-     *  @dev Deploy an ONCHAINID using a factory. Is the Gateway requires signatures, the transaction must be signed by
-     *  an approved public key.
+     *  @dev Deploy an ONCHAINID using a factory. The operation must be signed by
+     *  an approved public key. This method allow to deploy an ONCHAINID using a custom salt.
      *  @param identityOwner the address to set as a management key.
      *  @param salt to use for the deployment.
+     *  @param signatureExpiry the block timestamp where the signature will expire.
      *  @param signature the approval containing the salt and the identityOwner address.
      */
-    function deployIdentity(address identityOwner, string memory salt, uint256 signatureExpiry, bytes calldata signature) external returns (address) {
+    function deployIdentityWithSalt(address identityOwner, string memory salt, uint256 signatureExpiry, bytes calldata signature) external returns (address) {
         if (identityOwner == address(0)) {
             revert ZeroAddress();
         }
 
-        if (requireSignatures) {
-            if (signatureExpiry != 0 && signatureExpiry < block.timestamp) {
-                revert ExpiredSignature();
-            }
+        if (signatureExpiry != 0 && signatureExpiry < block.timestamp) {
+            revert ExpiredSignature();
+        }
 
-            address signer = ECDSA.recover(
-                keccak256(
-                    abi.encode(
-                        "Authorize ONCHAINID deployment",
-                        identityOwner,
-                        salt,
-                        signatureExpiry
-                    )
-                ).toEthSignedMessageHash(),
-                signature
-            );
+        address signer = ECDSA.recover(
+            keccak256(
+                abi.encode(
+                    "Authorize ONCHAINID deployment",
+                    identityOwner,
+                    salt,
+                    signatureExpiry
+                )
+            ).toEthSignedMessageHash(),
+            signature
+        );
 
-            if (!approvedSigners[signer]) {
-                revert UnapprovedSigner();
-            }
+        if (!approvedSigners[signer]) {
+            revert UnapprovedSigner();
+        }
 
-            if (revokedSignatures[signature]) {
-                revert RevokedSignature();
-            }
+        if (revokedSignatures[signature]) {
+            revert RevokedSignature();
         }
 
         return idFactory.createIdentity(identityOwner, salt);
     }
+
+    /**
+     *  @dev Deploy an ONCHAINID using a factory using the identityOwner address as salt.
+     *  @param identityOwner the address to set as a management key.
+     */
+    function deployIdentityForWallet(address identityOwner) external returns (address) {
+        if (identityOwner == address(0)) {
+            revert ZeroAddress();
+        }
+        if (identityOwner != msg.sender) {
+            revert UnapprovedSigner();
+        }
+
+        return idFactory.createIdentity(identityOwner, Strings.toHexString(identityOwner));
+    }
+
 
     /**
      *  @dev Revoke a signature, if the signature is used to deploy an ONCHAINID, the deployment would be rejected.
