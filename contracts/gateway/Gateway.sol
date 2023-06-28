@@ -64,6 +64,7 @@ contract Gateway is Ownable {
     /**
      *  @dev Approve a signer to sign ONCHAINID deployments. If the Gateway is setup to require signature, only
      *  deployments requested with a valid signature from an approved signer will be accepted.
+     *  If the gateway does not require a signature,
      *  @param signer the signer address to approve.
      */
     function approveSigner(address signer) external onlyOwner {
@@ -111,7 +112,7 @@ contract Gateway is Ownable {
         }
 
         if (requireSignatures) {
-            if (signatureExpiry < block.timestamp) {
+            if (signatureExpiry != 0 && signatureExpiry < block.timestamp) {
                 revert ExpiredSignature();
             }
 
