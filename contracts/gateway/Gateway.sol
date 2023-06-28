@@ -26,7 +26,7 @@ error ExpiredSignature();
 /// Attempted to revoke a signature that was already revoked.
 error SignatureAlreadyRevoked();
 /// Attempted to approve a signature that was not revoked.
-error SignatureNotAlreadyRevoked();
+error SignatureNotRevoked();
 
 contract Gateway is Ownable {
     IdFactory private idFactory;
@@ -170,7 +170,7 @@ contract Gateway is Ownable {
      */
     function approveSignature(bytes calldata signature) external onlyOwner {
         if (!revokedSignatures[signature]) {
-            revert SignatureNotAlreadyRevoked();
+            revert SignatureNotRevoked();
         }
 
         delete revokedSignatures[signature];

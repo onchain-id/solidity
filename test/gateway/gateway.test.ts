@@ -11,9 +11,25 @@ describe('Gateway', () => {
         await expect(ethers.deployContract('Gateway', [ethers.constants.AddressZero, []])).to.be.reverted;
       });
     });
+
+    describe('when specifying more than 10 signer', () => {
+      it('should revert', async () => {
+        const {identityFactory, carolWallet} = await loadFixture(deployFactoryFixture);
+        await expect(ethers.deployContract('Gateway', [identityFactory.address, Array(11).fill(ethers.constants.AddressZero)])).to.be.reverted;
+      });
+    });
   });
 
   describe('.deployIdentityWithSalt()', () => {
+    describe('when input address is the zero address', () => {
+      it('should revert', async () => {
+        const {identityFactory, carolWallet} = await loadFixture(deployFactoryFixture);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
+
+        await expect(gateway.deployIdentityWithSalt(ethers.constants.AddressZero, 'saltToUse', BigNumber.from(new Date().getTime()).div(1000).add(365 * 24 * 60 * 60), ethers.utils.randomBytes(65))).to.be.reverted;
+      });
+    });
+
     describe('when signature is not valid', () => {
       it('should revert with UnsignedDeployment', async () => {
         const {identityFactory, aliceWallet, carolWallet} = await loadFixture(deployFactoryFixture);
@@ -169,6 +185,15 @@ describe('Gateway', () => {
   });
 
   describe('deployIdentityForWallet', () => {
+    describe('when input address is the zero address', () => {
+      it('should revert', async () => {
+        const {identityFactory, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.address);
+        await expect(gateway.deployIdentityForWallet(ethers.constants.AddressZero)).to.revertedWithCustomError(gateway, 'ZeroAddress');
+      });
+    });
+
     describe('when sender is not the desired identity owner', () => {
       it('should revert', async () => {
         const {identityFactory, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
@@ -226,6 +251,224 @@ describe('Gateway', () => {
         await identityFactory.transferOwnership(gateway.address);
 
         await expect(gateway.connect(aliceWallet).transferFactoryOwnership(bobWallet.address)).to.be.revertedWith('Ownable: caller is not the owner')
+      });
+    });
+  });
+
+  describe('.revokeSignature', () => {
+    describe('when calling not as owner', () => {
+      it('should revert', async () => {
+        const {identityFactory, deployerWallet, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.address);
+
+        const digest =
+          ethers.utils.keccak256(
+            ethers.utils.defaultAbiCoder.encode(
+              ['string', 'address', 'string', 'uint256'],
+              ['Authorize ONCHAINID deployment', aliceWallet.address, 'saltToUse', BigNumber.from(new Date().getTime()).div(1000).add(365 * 24 * 60 * 60)],
+            ),
+          );
+        const signature = await carolWallet.signMessage(
+          ethers.utils.arrayify(
+            digest,
+          ),
+        );
+
+        await expect(gateway.connect(aliceWallet).revokeSignature(signature)).to.be.revertedWith('Ownable: caller is not the owner');
+      });
+    });
+
+    describe('when signature was already revoked', () => {
+      it('should revert', async () => {
+        const {identityFactory, deployerWallet, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.address);
+
+        const digest =
+          ethers.utils.keccak256(
+            ethers.utils.defaultAbiCoder.encode(
+              ['string', 'address', 'string', 'uint256'],
+              ['Authorize ONCHAINID deployment', aliceWallet.address, 'saltToUse', BigNumber.from(new Date().getTime()).div(1000).add(365 * 24 * 60 * 60)],
+            ),
+          );
+        const signature = await carolWallet.signMessage(
+          ethers.utils.arrayify(
+            digest,
+          ),
+        );
+
+        await gateway.revokeSignature(signature);
+
+        await expect(gateway.revokeSignature(signature)).to.be.revertedWithCustomError(gateway, 'SignatureAlreadyRevoked');
+      });
+    })
+  });
+
+  describe('.approveSignature', () => {
+    describe('when calling not as owner', () => {
+      it('should revert', async () => {
+        const {identityFactory, deployerWallet, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.address);
+
+        const digest =
+          ethers.utils.keccak256(
+            ethers.utils.defaultAbiCoder.encode(
+              ['string', 'address', 'string', 'uint256'],
+              ['Authorize ONCHAINID deployment', aliceWallet.address, 'saltToUse', BigNumber.from(new Date().getTime()).div(1000).add(365 * 24 * 60 * 60)],
+            ),
+          );
+        const signature = await carolWallet.signMessage(
+          ethers.utils.arrayify(
+            digest,
+          ),
+        );
+
+        await expect(gateway.connect(aliceWallet).approveSignature(signature)).to.be.revertedWith('Ownable: caller is not the owner');
+      });
+    });
+
+    describe('when signature is not revoked', () => {
+      it('should revert', async () => {
+        const {identityFactory, deployerWallet, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.address);
+
+        const digest =
+          ethers.utils.keccak256(
+            ethers.utils.defaultAbiCoder.encode(
+              ['string', 'address', 'string', 'uint256'],
+              ['Authorize ONCHAINID deployment', aliceWallet.address, 'saltToUse', BigNumber.from(new Date().getTime()).div(1000).add(365 * 24 * 60 * 60)],
+            ),
+          );
+        const signature = await carolWallet.signMessage(
+          ethers.utils.arrayify(
+            digest,
+          ),
+        );
+
+        await expect(gateway.approveSignature(signature)).to.be.revertedWithCustomError(gateway, 'SignatureNotRevoked');
+      });
+    });
+
+    describe('when signature is revoked', () => {
+      it('should approve the signature', async () => {
+        const {identityFactory, deployerWallet, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.address);
+
+        const digest =
+          ethers.utils.keccak256(
+            ethers.utils.defaultAbiCoder.encode(
+              ['string', 'address', 'string', 'uint256'],
+              ['Authorize ONCHAINID deployment', aliceWallet.address, 'saltToUse', BigNumber.from(new Date().getTime()).div(1000).add(365 * 24 * 60 * 60)],
+            ),
+          );
+        const signature = await carolWallet.signMessage(
+          ethers.utils.arrayify(
+            digest,
+          ),
+        );
+
+        await gateway.revokeSignature(signature);
+
+        const tx = await gateway.approveSignature(signature);
+
+        expect(tx).to.emit(gateway, "SignatureApproved").withArgs(signature);
+      });
+    });
+  });
+
+  describe('.approveSigner', () => {
+    describe('when signer address is zero', () => {
+      it('should revert', async () => {
+        const {identityFactory, deployerWallet, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.address);
+
+        await expect(gateway.approveSigner(ethers.constants.AddressZero)).to.be.revertedWithCustomError(gateway, 'ZeroAddress');
+      });
+    });
+
+    describe('when calling not as owner', () => {
+      it('should revert', async () => {
+        const {identityFactory, deployerWallet, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.address);
+
+        await expect(gateway.connect(aliceWallet).approveSigner(bobWallet.address)).to.be.revertedWith('Ownable: caller is not the owner');
+      });
+    });
+
+    describe('when signer is already approved', () => {
+      it('should revert', async () => {
+        const {identityFactory, deployerWallet, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.address);
+
+        await gateway.approveSigner(bobWallet.address);
+
+        await expect(gateway.approveSigner(bobWallet.address)).to.be.revertedWithCustomError(gateway, 'SignerAlreadyApproved');
+      });
+    });
+
+    describe('when signer is not approved', () => {
+      it('should approve the signer', async () => {
+        const {identityFactory, deployerWallet, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.address);
+
+        const tx = await gateway.approveSigner(bobWallet.address);
+
+        expect(tx).to.emit(gateway, "SignerApproved").withArgs(bobWallet.address);
+      });
+    });
+  });
+
+  describe('.revokeSigner', () => {
+    describe('when signer address is zero', () => {
+      it('should revert', async () => {
+        const {identityFactory, deployerWallet, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [aliceWallet.address]]);
+        await identityFactory.transferOwnership(gateway.address);
+
+        await expect(gateway.revokeSigner(ethers.constants.AddressZero)).to.be.revertedWithCustomError(gateway, 'ZeroAddress');
+      });
+    });
+
+    describe('when calling not as owner', () => {
+      it('should revert', async () => {
+        const {identityFactory, deployerWallet, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [bobWallet.address]]);
+        await identityFactory.transferOwnership(gateway.address);
+
+        await expect(gateway.connect(aliceWallet).revokeSigner(bobWallet.address)).to.be.revertedWith('Ownable: caller is not the owner');
+      });
+    });
+
+    describe('when signer is not approved', () => {
+      it('should revert', async () => {
+        const {identityFactory, deployerWallet, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [aliceWallet.address]]);
+        await identityFactory.transferOwnership(gateway.address);
+
+        await expect(gateway.revokeSigner(bobWallet.address)).to.be.revertedWithCustomError(gateway, 'SignerAlreadyNotApproved');
+      });
+    });
+
+    describe('when signer is approved', () => {
+      it('should revoke the signer', async () => {
+        const {identityFactory, deployerWallet, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [bobWallet.address]]);
+        await identityFactory.transferOwnership(gateway.address);
+
+        const tx = await gateway.revokeSigner(bobWallet.address);
+
+        expect(tx).to.emit(gateway, "SignerRevoked").withArgs(bobWallet.address);
       });
     });
   });
