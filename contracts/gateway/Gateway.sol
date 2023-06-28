@@ -150,7 +150,6 @@ contract Gateway is Ownable {
         return idFactory.createIdentity(identityOwner, Strings.toHexString(identityOwner));
     }
 
-
     /**
      *  @dev Revoke a signature, if the signature is used to deploy an ONCHAINID, the deployment would be rejected.
      *  @param signature the signature to revoke.
@@ -177,5 +176,13 @@ contract Gateway is Ownable {
         delete revokedSignatures[signature];
 
         emit SignatureApproved(signature);
+    }
+
+    /**
+     *  @dev Transfer the ownership of the factory to a new owner.
+     *  @param newOwner the new owner of the factory.
+     */
+    function transferFactoryOwnership(address newOwner) external onlyOwner {
+        idFactory.transferOwnership(newOwner);
     }
 }

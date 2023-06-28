@@ -206,4 +206,27 @@ describe.only('Gateway', () => {
       });
     });
   });
+
+  describe('.transferFactoryOwnership', () => {
+    describe('when called by the owner', () => {
+      it('should transfer ownership of the factory to the specified address', async () => {
+        const {identityFactory, deployerWallet, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.address);
+
+        await expect(gateway.transferFactoryOwnership(bobWallet.address)).to.emit(identityFactory, "OwnershipTransferred").withArgs(gateway.address, bobWallet.address);
+        expect(await identityFactory.owner()).to.be.equal(bobWallet.address);
+      });
+    });
+
+    describe('when not called by the owner', () => {
+      it('should revert', async () => {
+        const {identityFactory, deployerWallet, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.address);
+
+        await expect(gateway.connect(aliceWallet).transferFactoryOwnership(bobWallet.address)).to.be.revertedWith('Ownable: caller is not the owner')
+      });
+    });
+  });
 });
