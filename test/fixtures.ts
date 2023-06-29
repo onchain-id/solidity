@@ -95,3 +95,7 @@ export async function deployIdentityFixture() {
     tokenAddress
   };
 }
+
+export async function deployVerifierFixture() {
+
+}
