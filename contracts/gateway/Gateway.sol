@@ -29,9 +29,9 @@ error SignatureAlreadyRevoked();
 error SignatureNotRevoked();
 
 contract Gateway is Ownable {
-    IdFactory private idFactory;
-    mapping(address => bool) private approvedSigners;
-    mapping(bytes => bool) private revokedSignatures;
+    IdFactory public idFactory;
+    mapping(address => bool) public approvedSigners;
+    mapping(bytes => bool) public revokedSignatures;
 
     event SignerApproved(address signer);
     event SignerRevoked(address signer);
@@ -103,7 +103,12 @@ contract Gateway is Ownable {
      *  @param signatureExpiry the block timestamp where the signature will expire.
      *  @param signature the approval containing the salt and the identityOwner address.
      */
-    function deployIdentityWithSalt(address identityOwner, string memory salt, uint256 signatureExpiry, bytes calldata signature) external returns (address) {
+    function deployIdentityWithSalt(
+        address identityOwner,
+        string memory salt,
+        uint256 signatureExpiry,
+        bytes calldata signature
+    ) external returns (address) {
         if (identityOwner == address(0)) {
             revert ZeroAddress();
         }
