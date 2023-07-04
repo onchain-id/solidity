@@ -235,7 +235,13 @@ describe('Gateway', () => {
   describe('.transferFactoryOwnership', () => {
     describe('when called by the owner', () => {
       it('should transfer ownership of the factory to the specified address', async () => {
-        const {identityFactory, deployerWallet, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+        const {
+          identityFactory,
+          deployerWallet,
+          aliceWallet,
+          bobWallet,
+          carolWallet
+        } = await loadFixture(deployFactoryFixture);
         const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
         await identityFactory.transferOwnership(gateway.address);
 
@@ -246,7 +252,13 @@ describe('Gateway', () => {
 
     describe('when not called by the owner', () => {
       it('should revert', async () => {
-        const {identityFactory, deployerWallet, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+        const {
+          identityFactory,
+          deployerWallet,
+          aliceWallet,
+          bobWallet,
+          carolWallet
+        } = await loadFixture(deployFactoryFixture);
         const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
         await identityFactory.transferOwnership(gateway.address);
 
@@ -258,7 +270,13 @@ describe('Gateway', () => {
   describe('.revokeSignature', () => {
     describe('when calling not as owner', () => {
       it('should revert', async () => {
-        const {identityFactory, deployerWallet, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+        const {
+          identityFactory,
+          deployerWallet,
+          aliceWallet,
+          bobWallet,
+          carolWallet
+        } = await loadFixture(deployFactoryFixture);
         const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
         await identityFactory.transferOwnership(gateway.address);
 
@@ -281,7 +299,13 @@ describe('Gateway', () => {
 
     describe('when signature was already revoked', () => {
       it('should revert', async () => {
-        const {identityFactory, deployerWallet, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+        const {
+          identityFactory,
+          deployerWallet,
+          aliceWallet,
+          bobWallet,
+          carolWallet
+        } = await loadFixture(deployFactoryFixture);
         const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
         await identityFactory.transferOwnership(gateway.address);
 
@@ -308,7 +332,13 @@ describe('Gateway', () => {
   describe('.approveSignature', () => {
     describe('when calling not as owner', () => {
       it('should revert', async () => {
-        const {identityFactory, deployerWallet, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+        const {
+          identityFactory,
+          deployerWallet,
+          aliceWallet,
+          bobWallet,
+          carolWallet
+        } = await loadFixture(deployFactoryFixture);
         const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
         await identityFactory.transferOwnership(gateway.address);
 
@@ -331,7 +361,13 @@ describe('Gateway', () => {
 
     describe('when signature is not revoked', () => {
       it('should revert', async () => {
-        const {identityFactory, deployerWallet, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+        const {
+          identityFactory,
+          deployerWallet,
+          aliceWallet,
+          bobWallet,
+          carolWallet
+        } = await loadFixture(deployFactoryFixture);
         const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
         await identityFactory.transferOwnership(gateway.address);
 
@@ -354,7 +390,13 @@ describe('Gateway', () => {
 
     describe('when signature is revoked', () => {
       it('should approve the signature', async () => {
-        const {identityFactory, deployerWallet, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+        const {
+          identityFactory,
+          deployerWallet,
+          aliceWallet,
+          bobWallet,
+          carolWallet
+        } = await loadFixture(deployFactoryFixture);
         const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
         await identityFactory.transferOwnership(gateway.address);
 
@@ -383,7 +425,13 @@ describe('Gateway', () => {
   describe('.approveSigner', () => {
     describe('when signer address is zero', () => {
       it('should revert', async () => {
-        const {identityFactory, deployerWallet, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+        const {
+          identityFactory,
+          deployerWallet,
+          aliceWallet,
+          bobWallet,
+          carolWallet
+        } = await loadFixture(deployFactoryFixture);
         const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
         await identityFactory.transferOwnership(gateway.address);
 
@@ -393,7 +441,13 @@ describe('Gateway', () => {
 
     describe('when calling not as owner', () => {
       it('should revert', async () => {
-        const {identityFactory, deployerWallet, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+        const {
+          identityFactory,
+          deployerWallet,
+          aliceWallet,
+          bobWallet,
+          carolWallet
+        } = await loadFixture(deployFactoryFixture);
         const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
         await identityFactory.transferOwnership(gateway.address);
 
@@ -403,7 +457,13 @@ describe('Gateway', () => {
 
     describe('when signer is already approved', () => {
       it('should revert', async () => {
-        const {identityFactory, deployerWallet, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+        const {
+          identityFactory,
+          deployerWallet,
+          aliceWallet,
+          bobWallet,
+          carolWallet
+        } = await loadFixture(deployFactoryFixture);
         const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
         await identityFactory.transferOwnership(gateway.address);
 
@@ -415,7 +475,13 @@ describe('Gateway', () => {
 
     describe('when signer is not approved', () => {
       it('should approve the signer', async () => {
-        const {identityFactory, deployerWallet, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+        const {
+          identityFactory,
+          deployerWallet,
+          aliceWallet,
+          bobWallet,
+          carolWallet
+        } = await loadFixture(deployFactoryFixture);
         const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
         await identityFactory.transferOwnership(gateway.address);
 
@@ -429,7 +495,13 @@ describe('Gateway', () => {
   describe('.revokeSigner', () => {
     describe('when signer address is zero', () => {
       it('should revert', async () => {
-        const {identityFactory, deployerWallet, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+        const {
+          identityFactory,
+          deployerWallet,
+          aliceWallet,
+          bobWallet,
+          carolWallet
+        } = await loadFixture(deployFactoryFixture);
 
         const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [aliceWallet.address]]);
         await identityFactory.transferOwnership(gateway.address);
@@ -440,7 +512,13 @@ describe('Gateway', () => {
 
     describe('when calling not as owner', () => {
       it('should revert', async () => {
-        const {identityFactory, deployerWallet, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+        const {
+          identityFactory,
+          deployerWallet,
+          aliceWallet,
+          bobWallet,
+          carolWallet
+        } = await loadFixture(deployFactoryFixture);
         const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [bobWallet.address]]);
         await identityFactory.transferOwnership(gateway.address);
 
@@ -450,7 +528,13 @@ describe('Gateway', () => {
 
     describe('when signer is not approved', () => {
       it('should revert', async () => {
-        const {identityFactory, deployerWallet, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+        const {
+          identityFactory,
+          deployerWallet,
+          aliceWallet,
+          bobWallet,
+          carolWallet
+        } = await loadFixture(deployFactoryFixture);
 
         const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [aliceWallet.address]]);
         await identityFactory.transferOwnership(gateway.address);
@@ -461,7 +545,13 @@ describe('Gateway', () => {
 
     describe('when signer is approved', () => {
       it('should revoke the signer', async () => {
-        const {identityFactory, deployerWallet, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
+        const {
+          identityFactory,
+          deployerWallet,
+          aliceWallet,
+          bobWallet,
+          carolWallet
+        } = await loadFixture(deployFactoryFixture);
 
         const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [bobWallet.address]]);
         await identityFactory.transferOwnership(gateway.address);
@@ -469,6 +559,64 @@ describe('Gateway', () => {
         const tx = await gateway.revokeSigner(bobWallet.address);
 
         expect(tx).to.emit(gateway, "SignerRevoked").withArgs(bobWallet.address);
+      });
+    });
+  });
+
+  describe('.callFactory', () => {
+    describe('when not calling as the owner', () => {
+      it('should revert', async () => {
+        const {
+          identityFactory,
+          deployerWallet,
+          aliceWallet,
+          bobWallet,
+          carolWallet
+        } = await loadFixture(deployFactoryFixture);
+
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [aliceWallet.address]]);
+        await identityFactory.transferOwnership(gateway.address);
+
+        await expect(gateway.connect(aliceWallet).callFactory(
+          new ethers.utils.Interface(['function addTokenFactory(address)']).encodeFunctionData('addTokenFactory', [ethers.constants.AddressZero]))
+        ).to.be.revertedWith('Ownable: caller is not the owner');
+      });
+    });
+
+    describe('when calling as the owner with invalid parameters', () => {
+      it('should revert for Factory error', async () => {
+        const {
+          identityFactory,
+          deployerWallet,
+          aliceWallet,
+          bobWallet,
+          carolWallet
+        } = await loadFixture(deployFactoryFixture);
+
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [aliceWallet.address]]);
+        await identityFactory.transferOwnership(gateway.address);
+
+        await expect(gateway.connect(deployerWallet).callFactory(
+          new ethers.utils.Interface(['function addTokenFactory(address)']).encodeFunctionData('addTokenFactory', [ethers.constants.AddressZero]))
+        ).to.be.revertedWith('Gateway: call to factory failed');
+      });
+    });
+
+    describe('when calling as the owner with correct parameters', () => {
+      it('should execute the function call', async () => {
+        const {
+          identityFactory,
+          deployerWallet,
+          aliceWallet,
+          bobWallet,
+        } = await loadFixture(deployFactoryFixture);
+
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [aliceWallet.address]]);
+        await identityFactory.transferOwnership(gateway.address);
+
+        const tx = await gateway.connect(deployerWallet).callFactory(new ethers.utils.Interface(['function addTokenFactory(address)']).encodeFunctionData('addTokenFactory', [bobWallet.address]));
+
+        expect(tx).to.emit(gateway, "TokenFactoryAdded").withArgs(bobWallet.address);
       });
     });
   });

@@ -190,4 +190,13 @@ contract Gateway is Ownable {
     function transferFactoryOwnership(address newOwner) external onlyOwner {
         idFactory.transferOwnership(newOwner);
     }
+
+    /**
+     *  @dev Call a function on the factory. Only the owner of the Gateway can call this method.
+     *  @param data the data to call on the factory.
+     */
+    function callFactory(bytes memory data) external onlyOwner {
+        (bool success,) = address(idFactory).call(data);
+        require(success, "Gateway: call to factory failed");
+    }
 }
