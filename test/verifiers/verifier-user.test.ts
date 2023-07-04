@@ -1,7 +1,7 @@
 import {ethers} from "hardhat";
 import {expect} from "chai";
 
-describe.only('VerifierUser', () => {
+describe('VerifierUser', () => {
   describe('when calling a verified function not as an identity', () => {
     it('should revert', async () => {
       const verifierUser = await ethers.deployContract('VerifierUser', []);
