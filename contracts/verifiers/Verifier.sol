@@ -6,6 +6,18 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "../interface/IClaimIssuer.sol";
 
 contract Verifier is Ownable {
+    /// @dev All topics of claims required to pass verification.
+    uint256[] public requiredClaimTopics;
+
+    /// @dev Array containing all TrustedIssuers identity contract address allowed to issue claims required.
+    IClaimIssuer[] public trustedIssuers;
+
+    /// @dev Mapping between a trusted issuer address and the topics of claims they are trusted for.
+    mapping(address => uint256[]) public trustedIssuerClaimTopics;
+
+    /// @dev Mapping between a claim topic and the trusted issuers trusted for it.
+    mapping(uint256 => IClaimIssuer[]) public claimTopicsToTrustedIssuers;
+
     /**
      *  this event is emitted when a claim topic has been added to the requirement list
      *  the event is emitted by the 'addClaimTopic' function
@@ -43,81 +55,9 @@ contract Verifier is Ownable {
      */
     event ClaimTopicsUpdated(IClaimIssuer indexed trustedIssuer, uint256[] claimTopics);
 
-    /// @dev All topics of claims required to pass verification.
-    uint256[] public requiredClaimTopics;
-
-    /// @dev Array containing all TrustedIssuers identity contract address allowed to issue claims required.
-    IClaimIssuer[] public trustedIssuers;
-
-    /// @dev Mapping between a trusted issuer address and the topics of claims they are trusted for.
-    mapping(address => uint256[]) public trustedIssuerClaimTopics;
-
-    /// @dev Mapping between a claim topic and the trusted issuers trusted for it.
-    mapping(uint256 => IClaimIssuer[]) public claimTopicsToTrustedIssuers;
-
-
     modifier onlyVerifiedSender() {
         require(verify(_msgSender()), "sender is not verified");
         _;
-    }
-
-
-    constructor() Ownable() {}
-
-    /**
-     * @dev Verify an identity (ONCHAINID) by checking if the identity has at least one valid claim from a trusted
-     * issuer for each required claim topic. Returns true if the identity is compliant, false otherwise.
-     */
-    function verify(address identity) public view returns(bool isVerified) {
-        if (requiredClaimTopics.length == 0) {
-            return true;
-        }
-
-        uint256 foundClaimTopic;
-        uint256 scheme;
-        address issuer;
-        bytes memory sig;
-        bytes memory data;
-        uint256 claimTopic;
-        for (claimTopic = 0; claimTopic < requiredClaimTopics.length; claimTopic++) {
-            IClaimIssuer[] memory trustedIssuersForClaimTopic = this.getTrustedIssuersForClaimTopic(requiredClaimTopics[claimTopic]);
-
-            if (trustedIssuersForClaimTopic.length == 0) {
-                return false;
-            }
-
-            bytes32[] memory claimIds = new bytes32[](trustedIssuersForClaimTopic.length);
-            for (uint256 i = 0; i < trustedIssuersForClaimTopic.length; i++) {
-                claimIds[i] = keccak256(abi.encode(trustedIssuersForClaimTopic[i], requiredClaimTopics[claimTopic]));
-            }
-
-            for (uint256 j = 0; j < claimIds.length; j++) {
-                (foundClaimTopic, scheme, issuer, sig, data, ) = IIdentity(identity).getClaim(claimIds[j]);
-
-                if (foundClaimTopic == requiredClaimTopics[claimTopic]) {
-                    try IClaimIssuer(issuer).isClaimValid(IIdentity(identity), requiredClaimTopics[claimTopic], sig,
-                        data) returns(bool _validity) {
-
-                        if (
-                            _validity
-                        ) {
-                            j = claimIds.length;
-                        }
-                        if (!_validity && j == (claimIds.length - 1)) {
-                            return false;
-                        }
-                    } catch {
-                        if (j == (claimIds.length - 1)) {
-                            return false;
-                        }
-                    }
-                } else if (j == (claimIds.length - 1)) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
     }
 
     /**
@@ -282,5 +222,62 @@ contract Verifier is Ownable {
         }
 
         return false;
+    }
+
+    /**
+     * @dev Verify an identity (ONCHAINID) by checking if the identity has at least one valid claim from a trusted
+     * issuer for each required claim topic. Returns true if the identity is compliant, false otherwise.
+     */
+    function verify(address identity) public view returns(bool isVerified) {
+        if (requiredClaimTopics.length == 0) {
+            return true;
+        }
+
+        uint256 foundClaimTopic;
+        uint256 scheme;
+        address issuer;
+        bytes memory sig;
+        bytes memory data;
+        uint256 claimTopic;
+        for (claimTopic = 0; claimTopic < requiredClaimTopics.length; claimTopic++) {
+            IClaimIssuer[] memory trustedIssuersForClaimTopic =
+                                this.getTrustedIssuersForClaimTopic(requiredClaimTopics[claimTopic]);
+
+            if (trustedIssuersForClaimTopic.length == 0) {
+                return false;
+            }
+
+            bytes32[] memory claimIds = new bytes32[](trustedIssuersForClaimTopic.length);
+            for (uint256 i = 0; i < trustedIssuersForClaimTopic.length; i++) {
+                claimIds[i] = keccak256(abi.encode(trustedIssuersForClaimTopic[i], requiredClaimTopics[claimTopic]));
+            }
+
+            for (uint256 j = 0; j < claimIds.length; j++) {
+                (foundClaimTopic, scheme, issuer, sig, data, ) = IIdentity(identity).getClaim(claimIds[j]);
+
+                if (foundClaimTopic == requiredClaimTopics[claimTopic]) {
+                    try IClaimIssuer(issuer).isClaimValid(IIdentity(identity), requiredClaimTopics[claimTopic], sig,
+                        data) returns(bool _validity) {
+
+                        if (
+                            _validity
+                        ) {
+                            j = claimIds.length;
+                        }
+                        if (!_validity && j == (claimIds.length - 1)) {
+                            return false;
+                        }
+                    } catch {
+                        if (j == (claimIds.length - 1)) {
+                            return false;
+                        }
+                    }
+                } else if (j == (claimIds.length - 1)) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 }
