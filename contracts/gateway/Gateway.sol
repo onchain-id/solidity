@@ -140,6 +140,45 @@ contract Gateway is Ownable {
         return idFactory.createIdentity(identityOwner, salt);
     }
 
+    function deployIdentityWithSaltAndManagementKeys(
+        address identityOwner,
+        string memory salt,
+        bytes32[] calldata managementKeys,
+        uint256 signatureExpiry,
+        bytes calldata signature
+    ) external returns (address) {
+        if (identityOwner == address(0)) {
+            revert ZeroAddress();
+        }
+
+        if (signatureExpiry != 0 && signatureExpiry < block.timestamp) {
+            revert ExpiredSignature();
+        }
+
+        address signer = ECDSA.recover(
+            keccak256(
+                abi.encode(
+                    "Authorize ONCHAINID deployment",
+                    identityOwner,
+                    salt,
+                    managementKeys,
+                    signatureExpiry
+                )
+            ).toEthSignedMessageHash(),
+            signature
+        );
+
+        if (!approvedSigners[signer]) {
+            revert UnapprovedSigner();
+        }
+
+        if (revokedSignatures[signature]) {
+            revert RevokedSignature();
+        }
+
+        return idFactory.createIdentityWithManagementKeys(identityOwner, salt, managementKeys);
+    }
+
     /**
      *  @dev Deploy an ONCHAINID using a factory using the identityOwner address as salt.
      *  @param identityOwner the address to set as a management key.
