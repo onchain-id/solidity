@@ -33,10 +33,10 @@ contract Gateway is Ownable {
     mapping(address => bool) public approvedSigners;
     mapping(bytes => bool) public revokedSignatures;
 
-    event SignerApproved(address signer);
-    event SignerRevoked(address signer);
-    event SignatureRevoked(bytes signature);
-    event SignatureApproved(bytes signature);
+    event SignerApproved(address indexed signer);
+    event SignerRevoked(address indexed signer);
+    event SignatureRevoked(bytes indexed signature);
+    event SignatureApproved(bytes indexed signature);
 
     /**
      *  @dev Constructor for the ONCHAINID Factory Gateway.
