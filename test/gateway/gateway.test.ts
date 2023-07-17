@@ -395,11 +395,19 @@ describe('Gateway', () => {
     });
 
     describe('when sender is not the desired identity owner', () => {
-      it('should revert', async () => {
+      it('should deploy the identity for the identity owner', async () => {
         const {identityFactory, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
         const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
         await identityFactory.transferOwnership(gateway.address);
-        await expect(gateway.deployIdentityForWallet(aliceWallet.address)).to.revertedWithCustomError(gateway, 'UnapprovedSigner');
+
+        const tx = await gateway.connect(bobWallet).deployIdentityForWallet(aliceWallet.address);
+
+        await expect(tx).to.emit(identityFactory, "WalletLinked").withArgs(aliceWallet.address, await identityFactory.getIdentity(aliceWallet.address));
+        await expect(tx).to.emit(identityFactory, "Deployed").withArgs(await identityFactory.getIdentity(aliceWallet.address));
+        const identityAddress = await identityFactory.getIdentity(aliceWallet.address);
+        const identity = await ethers.getContractAt('Identity', identityAddress);
+
+        expect(await identity.keyHasPurpose(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address])), 1)).to.be.true;
       });
     });
 

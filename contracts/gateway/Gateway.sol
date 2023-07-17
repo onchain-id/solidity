@@ -12,21 +12,21 @@ error ZeroAddress();
 /// The maximum number of signers was reached at deployment.
 error TooManySigners();
 /// The signed attempted to add was already approved.
-error SignerAlreadyApproved();
+error SignerAlreadyApproved(address signer);
 /// The signed attempted to remove was not approved.
-error SignerAlreadyNotApproved();
+error SignerAlreadyNotApproved(address signer);
 /// A requested ONCHAINID deployment was requested without a valid signature while the Gateway requires one.
 error UnsignedDeployment();
 /// A requested ONCHAINID deployment was requested and signer by a non approved signer.
-error UnapprovedSigner();
+error UnapprovedSigner(address signer);
 /// A requested ONCHAINID deployment was requested with a signature revoked.
-error RevokedSignature();
+error RevokedSignature(bytes signature);
 /// A requested ONCHAINID deployment was requested with a signature that expired.
-error ExpiredSignature();
+error ExpiredSignature(bytes signature);
 /// Attempted to revoke a signature that was already revoked.
-error SignatureAlreadyRevoked();
+error SignatureAlreadyRevoked(bytes signature);
 /// Attempted to approve a signature that was not revoked.
-error SignatureNotRevoked();
+error SignatureNotRevoked(bytes signature);
 
 contract Gateway is Ownable {
     IdFactory public idFactory;
@@ -69,7 +69,7 @@ contract Gateway is Ownable {
         }
 
         if (approvedSigners[signer]) {
-            revert SignerAlreadyApproved();
+            revert SignerAlreadyApproved(signer);
         }
 
         approvedSigners[signer] = true;
@@ -87,7 +87,7 @@ contract Gateway is Ownable {
         }
 
         if (!approvedSigners[signer]) {
-            revert SignerAlreadyNotApproved();
+            revert SignerAlreadyNotApproved(signer);
         }
 
         delete approvedSigners[signer];
@@ -114,7 +114,7 @@ contract Gateway is Ownable {
         }
 
         if (signatureExpiry != 0 && signatureExpiry < block.timestamp) {
-            revert ExpiredSignature();
+            revert ExpiredSignature(signature);
         }
 
         address signer = ECDSA.recover(
@@ -130,11 +130,11 @@ contract Gateway is Ownable {
         );
 
         if (!approvedSigners[signer]) {
-            revert UnapprovedSigner();
+            revert UnapprovedSigner(signer);
         }
 
         if (revokedSignatures[signature]) {
-            revert RevokedSignature();
+            revert RevokedSignature(signature);
         }
 
         return idFactory.createIdentity(identityOwner, salt);
@@ -152,7 +152,7 @@ contract Gateway is Ownable {
         }
 
         if (signatureExpiry != 0 && signatureExpiry < block.timestamp) {
-            revert ExpiredSignature();
+            revert ExpiredSignature(signature);
         }
 
         address signer = ECDSA.recover(
@@ -169,11 +169,11 @@ contract Gateway is Ownable {
         );
 
         if (!approvedSigners[signer]) {
-            revert UnapprovedSigner();
+            revert UnapprovedSigner(signer);
         }
 
         if (revokedSignatures[signature]) {
-            revert RevokedSignature();
+            revert RevokedSignature(signature);
         }
 
         return idFactory.createIdentityWithManagementKeys(identityOwner, salt, managementKeys);
@@ -187,9 +187,6 @@ contract Gateway is Ownable {
         if (identityOwner == address(0)) {
             revert ZeroAddress();
         }
-        if (identityOwner != msg.sender) {
-            revert UnapprovedSigner();
-        }
 
         return idFactory.createIdentity(identityOwner, Strings.toHexString(identityOwner));
     }
@@ -200,7 +197,7 @@ contract Gateway is Ownable {
      */
     function revokeSignature(bytes calldata signature) external onlyOwner {
         if (revokedSignatures[signature]) {
-            revert SignatureAlreadyRevoked();
+            revert SignatureAlreadyRevoked(signature);
         }
 
         revokedSignatures[signature] = true;
@@ -214,7 +211,7 @@ contract Gateway is Ownable {
      */
     function approveSignature(bytes calldata signature) external onlyOwner {
         if (!revokedSignatures[signature]) {
-            revert SignatureNotRevoked();
+            revert SignatureNotRevoked(signature);
         }
 
         delete revokedSignatures[signature];
