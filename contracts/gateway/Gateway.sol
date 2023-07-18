@@ -140,6 +140,17 @@ contract Gateway is Ownable {
         return idFactory.createIdentity(identityOwner, salt);
     }
 
+    /**
+     *  @dev Deploy an ONCHAINID using a factory. The operation must be signed by
+     *  an approved public key. This method allow to deploy an ONCHAINID using a custom salt and a custom list of
+     *  management keys. Note that the identity Owner address won't be added as a management keys, if this is desired,
+     *  the key hash must be listed in the managementKeys array.
+     *  @param identityOwner the address to set as a management key.
+     *  @param salt to use for the deployment.
+     *  @param managementKeys the list of management keys to add to the ONCHAINID.
+     *  @param signatureExpiry the block timestamp where the signature will expire.
+     *  @param signature the approval containing the salt and the identityOwner address.
+     */
     function deployIdentityWithSaltAndManagementKeys(
         address identityOwner,
         string memory salt,
