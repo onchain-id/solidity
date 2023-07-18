@@ -1,9 +1,11 @@
 export namespace contracts {
   export const ClaimIssuer: any;
+  export const Gateway: any;
   export const Identity: any;
   export const ImplementationAuthority: any;
   export const IdentityProxy: any;
   export const Factory: any;
+  export const Verifier: any;
 }
 
 export namespace interfaces {

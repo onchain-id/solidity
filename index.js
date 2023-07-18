@@ -7,19 +7,23 @@ const IImplementationAuthority = require('./artifacts/contracts/interface/IImple
 
 const ClaimIssuer = require('./artifacts/contracts/ClaimIssuer.sol/ClaimIssuer.json');
 const Factory = require('./artifacts/contracts/factory/IdFactory.sol/IdFactory.json');
+const Gateway = require('./artifacts/contracts/gateway/Gateway.sol/Gateway.json');
 const Identity = require('./artifacts/contracts/Identity.sol/Identity.json');
 const ImplementationAuthority = require('./artifacts/contracts/proxy/ImplementationAuthority.sol/ImplementationAuthority.json');
 const IdentityProxy = require('./artifacts/contracts/proxy/IdentityProxy.sol/IdentityProxy.json');
+const Verifier = require('./artifacts/contracts/verifiers/Verifier.sol/Verifier.json');
 const Version = require('./artifacts/contracts/version/Version.sol/Version.json');
 
 module.exports = {
   contracts: {
     ClaimIssuer,
+    Factory,
+    Gateway,
     Identity,
     ImplementationAuthority,
     IdentityProxy,
     Version,
-    Factory,
+    Verifier,
   },
   interfaces: {
     IClaimIssuer,
