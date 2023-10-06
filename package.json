@@ -1,6 +1,6 @@
 {
   "name": "@onchain-id/solidity",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "EVM solidity smart contracts for Blockchain OnchainID identities.",
   "files": [
     "artifacts",

@@ -25,6 +25,7 @@ describe('Identity', () => {
 
             const tx = await aliceIdentity.connect(aliceWallet).addClaim(claim.topic, claim.scheme, claim.issuer, claim.signature, claim.data, claim.uri);
             await expect(tx).to.emit(aliceIdentity, 'ClaimAdded').withArgs(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address', 'uint256'], [claim.issuer, claim.topic])), claim.topic, claim.scheme, claim.issuer, claim.signature, claim.data, claim.uri);
+            await expect(aliceIdentity.isClaimValid(claim.identity, claim.topic, claim.signature, claim.data)).to.eventually.equal(false);
           });
         });
 
@@ -64,6 +65,7 @@ describe('Identity', () => {
               await expect(tx).to.emit(aliceIdentity, 'ClaimAdded').withArgs(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address', 'uint256'], [claim.issuer, claim.topic])), claim.topic, claim.scheme, claim.issuer, claim.signature, claim.data, claim.uri);
               await expect(tx).to.emit(aliceIdentity, 'Approved');
               await expect(tx).to.emit(aliceIdentity, 'Executed');
+              await expect(aliceIdentity.isClaimValid(claim.identity, claim.topic, claim.signature, claim.data)).to.eventually.equal(true);
             });
           });
 

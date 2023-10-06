@@ -824,7 +824,7 @@ describe('Gateway', () => {
 
         const tx = await gateway.connect(deployerWallet).callFactory(new ethers.utils.Interface(['function addTokenFactory(address)']).encodeFunctionData('addTokenFactory', [bobWallet.address]));
 
-        expect(tx).to.emit(gateway, "TokenFactoryAdded").withArgs(bobWallet.address);
+        expect(tx).to.emit(identityFactory, "TokenFactoryAdded").withArgs(bobWallet.address);
       });
     });
   });
