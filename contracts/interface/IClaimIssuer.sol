@@ -48,12 +48,4 @@ interface IClaimIssuer is IIdentity {
         bytes calldata sig,
         bytes calldata data)
     external view returns (bool);
-
-    /**
-     * @dev returns the address that signed the given data
-     * @param sig the signature of the data
-     * @param dataHash the data that was signed
-     * returns the address that signed dataHash and created the signature sig
-     */
-    function getRecoveredAddress(bytes calldata sig, bytes32 dataHash) external pure returns (address);
 }

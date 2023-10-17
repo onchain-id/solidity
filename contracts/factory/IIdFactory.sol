@@ -139,4 +139,9 @@ interface IIdFactory {
      *  @param _salt the salt used for deployment
      */
     function isSaltTaken(string calldata _salt) external view returns (bool);
+
+    /**
+     * @dev getter for the implementation authority used by this factory.
+     */
+    function implementationAuthority() external view returns (address);
 }

@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0]
+
+### Added
+- Identities are now required to implement the standardized `function isClaimValid(IIdentity _identity, uint256
+claimTopic, bytes calldata sig, bytes calldata data) external view returns (bool)`, used for self-attested claims
+(`_identity` is the address of the Identity contract).
+- Implemented the `isClaimValid` function in the `Identity` contract.
+- IdFactory now implements the `implementationAuthority()` getter.
+
 ## [2.1.0]
 
 ### Added
