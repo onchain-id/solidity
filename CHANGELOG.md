@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 claimTopic, bytes calldata sig, bytes calldata data) external view returns (bool)`, used for self-attested claims
 (`_identity` is the address of the Identity contract).
 - Implemented the `isClaimValid` function in the `Identity` contract.
+- IdFactory now implements the `implementationAuthority()` getter.
 
 ## [2.1.0]
 

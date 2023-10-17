@@ -215,6 +215,13 @@ contract IdFactory is IIdFactory, Ownable {
         return _tokenFactories[_factory];
     }
 
+    /**
+     *  @dev See {IdFactory-implementationAuthority}.
+     */
+    function implementationAuthority() public override view returns (address) {
+        return _implementationAuthority;
+    }
+
     // deploy function with create2 opcode call
     // returns the address of the contract created
     function _deploy(string memory salt, bytes memory bytecode) private returns (address) {
