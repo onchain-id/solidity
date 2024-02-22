@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1]
+
+### Changed
+- Replaced the storage slot used for ImplementationAuthority on the proxies, to avoid conflict with ERC-1822 on
+  block explorers. By using the same storage slot, the explorers were identifying this proxy as an ERC-1822, while
+  it's a different implementation here, the storage slot is not used to store the address of the implementation but
+  the address to ImplementationAuthority contract that references the implementation
+
 ## [2.2.0]
 
 ### Added
