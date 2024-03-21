@@ -32,7 +32,7 @@ Learn more about OnchainID and Blockchain Identities on the official OnchainID w
 - Install dev dependencies `npm ci`
 - Update interfaces and contracts code.
 - Run lint `npm run lint`
-- Compile code `npm run compile`
+- Compile code `npm run build`
 
 ### Testing
 
