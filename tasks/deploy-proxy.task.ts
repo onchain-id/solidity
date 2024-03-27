@@ -12,11 +12,11 @@ task("deploy-proxy", "Deploy an identity as a proxy using a factory")
     const factory = await hre.ethers.getContractAt('IdFactory', args.factory, signer);
     const tx = await factory.createIdentity(args.key, args.salt ?? args.key);
 
-    console.log(`Deploy a new identity as a proxy using factory ${factory.address} . tx: ${tx.hash}`);
+    console.log(`Deploy a new identity as a proxy using factory ${await factory.getAddress()} . tx: ${tx.hash}`);
 
     await tx.wait();
 
     const identityAddress = await factory.getIdentity(args.key);
 
-    console.log(`Deployed a new identity at ${identityAddress} as a proxy using factory ${factory.address} . tx: ${tx.hash}`);
+    console.log(`Deployed a new identity at ${identityAddress} as a proxy using factory ${await factory.getAddress()} . tx: ${tx.hash}`);
   });

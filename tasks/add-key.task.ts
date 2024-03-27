@@ -1,5 +1,6 @@
 import {task} from "hardhat/config";
 import {TaskArguments} from "hardhat/types";
+import { AbiCoder } from 'ethers';
 
 task("add-key", "Add a purpose to a key on an identity")
   .addParam("from", "A MANAGEMENT key on the claim issuer")
@@ -12,8 +13,8 @@ task("add-key", "Add a purpose to a key on an identity")
 
     const identity = await hre.ethers.getContractAt('Identity', args.identity, signer);
 
-    const keyHash = hre.ethers.utils.keccak256(
-      hre.ethers.utils.defaultAbiCoder.encode(['address'], [args.key]),
+    const keyHash = hre.ethers.keccak256(
+      AbiCoder.defaultAbiCoder().encode(['address'], [args.key]),
     );
 
     const tx = await identity.addKey(

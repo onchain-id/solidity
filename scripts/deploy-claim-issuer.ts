@@ -5,11 +5,11 @@ async function main() {
 
   const claimIssuer = await ethers.deployContract("ClaimIssuer", [claimIssuerOwner.address]);
 
-  console.log(`Deploying Claim Issuer at ${claimIssuer.address} ...`);
+  console.log(`Deploying Claim Issuer at ${await claimIssuer.getAddress()} ...`);
 
-  await claimIssuer.deployed();
+  await claimIssuer.waitForDeployment();
 
-  console.log(`Deployed Claim Issuer ${claimIssuer.address} !`);
+  console.log(`Deployed Claim Issuer ${await claimIssuer.getAddress()} !`);
 }
 
 main().catch((error) => {

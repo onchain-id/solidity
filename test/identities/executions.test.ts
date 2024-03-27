@@ -1,6 +1,7 @@
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from "chai";
 import {ethers} from "hardhat";
+import { AbiCoder } from 'ethers';
 
 import { deployIdentityFixture } from '../fixtures';
 
@@ -23,7 +24,7 @@ describe('Identity', () => {
           await expect(tx).to.emit(aliceIdentity, 'Executed');
           const newBalance = await ethers.provider.getBalance(carolWallet.address);
 
-          expect(newBalance).to.equal(previousBalance.add(action.value));
+          expect(newBalance).to.equal(previousBalance + BigInt(action.value));
         });
       });
 
@@ -31,14 +32,14 @@ describe('Identity', () => {
         it('should emit Executed', async () => {
           const { aliceIdentity, aliceWallet } = await loadFixture(deployIdentityFixture);
 
-          const aliceKeyHash = ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address])
+          const aliceKeyHash = ethers.keccak256(
+            AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])
           );
 
           const action = {
-            to: aliceIdentity.address,
+            to: await aliceIdentity.getAddress(),
             value: 0,
-            data: new ethers.utils.Interface(['function addKey(bytes32 key, uint256 purpose, uint256 keyType) returns (bool success)']).encodeFunctionData('addKey', [
+            data: new ethers.Interface(['function addKey(bytes32 key, uint256 purpose, uint256 keyType) returns (bool success)']).encodeFunctionData('addKey', [
               aliceKeyHash,
               3,
               1,
@@ -60,11 +61,11 @@ describe('Identity', () => {
 
           const previousBalance = await ethers.provider.getBalance(carolWallet.address);
           const action = {
-            to: aliceIdentity.address,
+            to: await aliceIdentity.getAddress(),
             value: 0,
-            data: new ethers.utils.Interface(['function addKey(bytes32 key, uint256 purpose, uint256 keyType) returns (bool success)']).encodeFunctionData('addKey', [
-              ethers.utils.keccak256(
-                ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address])
+            data: new ethers.Interface(['function addKey(bytes32 key, uint256 purpose, uint256 keyType) returns (bool success)']).encodeFunctionData('addKey', [
+              ethers.keccak256(
+                AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])
               ),
               1,
               1,
@@ -76,7 +77,7 @@ describe('Identity', () => {
           await expect(tx).to.emit(aliceIdentity, 'ExecutionFailed');
           const newBalance = await ethers.provider.getBalance(carolWallet.address);
 
-          expect(newBalance).to.equal(previousBalance.add(action.value));
+          expect(newBalance).to.equal(previousBalance + BigInt(action.value));
         });
       });
     });
@@ -86,18 +87,18 @@ describe('Identity', () => {
         it('should create an execution request', async () => {
           const { aliceIdentity, aliceWallet, bobWallet, carolWallet } = await loadFixture(deployIdentityFixture);
 
-          const aliceKeyHash = ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address])
+          const aliceKeyHash = ethers.keccak256(
+            AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])
           );
-          const carolKeyHash = ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(['address'], [carolWallet.address])
+          const carolKeyHash = ethers.keccak256(
+            AbiCoder.defaultAbiCoder().encode(['address'], [carolWallet.address])
           );
           await aliceIdentity.connect(aliceWallet).addKey(carolKeyHash, 2, 1);
 
           const action = {
-            to: aliceIdentity.address,
+            to: await aliceIdentity.getAddress(),
             value: 0,
-            data: new ethers.utils.Interface(['function addKey(bytes32 key, uint256 purpose, uint256 keyType) returns (bool success)']).encodeFunctionData('addKey', [
+            data: new ethers.Interface(['function addKey(bytes32 key, uint256 purpose, uint256 keyType) returns (bool success)']).encodeFunctionData('addKey', [
               aliceKeyHash,
               2,
               1,
@@ -113,31 +114,31 @@ describe('Identity', () => {
         it('should emit ExecutionFailed for a failed execution', async () => {
           const { aliceIdentity, aliceWallet, carolWallet, davidWallet, bobIdentity } = await loadFixture(deployIdentityFixture);
 
-          const carolKeyHash = ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(['address'], [carolWallet.address])
+          const carolKeyHash = ethers.keccak256(
+            AbiCoder.defaultAbiCoder().encode(['address'], [carolWallet.address])
           );
           await aliceIdentity.connect(aliceWallet).addKey(carolKeyHash, 2, 1);
 
-          const aliceKeyHash = ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address])
+          const aliceKeyHash = ethers.keccak256(
+            AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])
           );
 
           const action = {
-            to: bobIdentity.address,
+            to: await bobIdentity.getAddress(),
             value: 10,
-            data: new ethers.utils.Interface(['function addKey(bytes32 key, uint256 purpose, uint256 keyType) returns (bool success)']).encodeFunctionData('addKey', [
+            data: new ethers.Interface(['function addKey(bytes32 key, uint256 purpose, uint256 keyType) returns (bool success)']).encodeFunctionData('addKey', [
               aliceKeyHash,
               3,
               1,
             ]),
           };
 
-          const previousBalance = await ethers.provider.getBalance(bobIdentity.address);
+          const previousBalance = await ethers.provider.getBalance(await bobIdentity.getAddress());
 
           const tx = await aliceIdentity.connect(carolWallet).execute(action.to, action.value, action.data, { value: action.value });
           await expect(tx).to.emit(aliceIdentity, 'Approved');
           await expect(tx).to.emit(aliceIdentity, 'ExecutionFailed');
-          const newBalance = await ethers.provider.getBalance(bobIdentity.address);
+          const newBalance = await ethers.provider.getBalance(await bobIdentity.getAddress());
 
           expect(newBalance).to.equal(previousBalance);
         });
@@ -145,8 +146,8 @@ describe('Identity', () => {
         it('should execute immediately the action', async () => {
           const { aliceIdentity, aliceWallet, carolWallet, davidWallet } = await loadFixture(deployIdentityFixture);
 
-          const carolKeyHash = ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(['address'], [carolWallet.address])
+          const carolKeyHash = ethers.keccak256(
+            AbiCoder.defaultAbiCoder().encode(['address'], [carolWallet.address])
           );
           await aliceIdentity.connect(aliceWallet).addKey(carolKeyHash, 2, 1);
 
@@ -162,7 +163,7 @@ describe('Identity', () => {
           await expect(tx).to.emit(aliceIdentity, 'Executed');
           const newBalance = await ethers.provider.getBalance(davidWallet.address);
 
-          expect(newBalance).to.equal(previousBalance.add(action.value));
+          expect(newBalance).to.equal(previousBalance + BigInt(action.value));
         });
       });
     });
@@ -220,7 +221,7 @@ describe('Identity', () => {
       it('should revert for not authorized', async () => {
         const { aliceIdentity, davidWallet, bobWallet } = await loadFixture(deployIdentityFixture);
 
-        await aliceIdentity.connect(bobWallet).execute(aliceIdentity.address, 10, '0x', { value: 10 });
+        await aliceIdentity.connect(bobWallet).execute(await aliceIdentity.getAddress(), 10, '0x', { value: 10 });
 
         await expect(aliceIdentity.connect(davidWallet).approve(0, true)).to.be.revertedWith('Sender does not have management key');
       });
@@ -238,7 +239,7 @@ describe('Identity', () => {
         await expect(tx).to.emit(aliceIdentity, 'Executed');
         const newBalance = await ethers.provider.getBalance(carolWallet.address);
 
-        expect(newBalance).to.equal(previousBalance.add(10));
+        expect(newBalance).to.equal(previousBalance + BigInt(10));
       });
 
       it('should leave approve to false', async () => {

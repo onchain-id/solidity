@@ -1,6 +1,7 @@
 import {loadFixture} from '@nomicfoundation/hardhat-network-helpers';
 import {expect} from "chai";
 import {ethers} from "hardhat";
+import { AbiCoder } from 'ethers';
 
 import {deployIdentityFixture} from '../fixtures';
 
@@ -15,8 +16,8 @@ describe('Identity', () => {
     const {identityImplementation, aliceWallet, deployerWallet} = await loadFixture(deployIdentityFixture);
 
     await expect(identityImplementation.connect(deployerWallet).addKey(
-      ethers.utils.keccak256(
-        ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address])
+      ethers.keccak256(
+        AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])
       ),
       3,
       1,
@@ -30,7 +31,7 @@ describe('Identity', () => {
     const [identityOwnerWallet] = await ethers.getSigners();
 
     const Identity = await ethers.getContractFactory('Identity');
-    await expect(Identity.connect(identityOwnerWallet).deploy(ethers.constants.AddressZero, false)).to.be.revertedWith('invalid argument - zero address');
+    await expect(Identity.connect(identityOwnerWallet).deploy(ethers.ZeroAddress, false)).to.be.revertedWith('invalid argument - zero address');
   });
 
   it('should return the version of the implementation', async () => {
