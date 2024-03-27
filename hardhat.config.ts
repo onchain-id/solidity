@@ -1,6 +1,7 @@
 import "@nomicfoundation/hardhat-toolbox";
 import { HardhatUserConfig } from "hardhat/config";
 import 'solidity-coverage';
+import '@openzeppelin/hardhat-upgrades';
 import "@nomiclabs/hardhat-solhint";
 
 import "./tasks/add-claim.task";

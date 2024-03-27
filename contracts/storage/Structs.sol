@@ -9,7 +9,7 @@ contract Structs {
     *  Specification: Keys are cryptographic public keys, or contract addresses associated with this identity.
     *  The structure should be as follows:
     *  key: A public key owned by this identity
-    *  purposes: uint256[] Array of the key purposes, like 1 = MANAGEMENT, 2 = EXECUTION
+    *  purposes: uint256[] Array of the key purposes, like 1 = MANAGEMENT, 2 = EXECUTION, 42 = UPGRADE
     *  keyType: The type of key used, which would be a uint256 for different key types. e.g. 1 = ECDSA, 2 = RSA, etc.
     *  key: bytes32 The public key. // Its the Keccak256 hash of the key
     */
