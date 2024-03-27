@@ -9,9 +9,9 @@ task("deploy-identity", "Deploy an identity as a standalone contract")
 
     const identity = await hre.ethers.deployContract('Identity', [args.key, false], signer);
 
-    console.log(`Deploy a new identity at ${identity.address} . tx: ${identity.deployTransaction.hash}`);
+    console.log(`Deploy a new identity at ${await identity.getAddress()} . tx: ${identity.deploymentTransaction()?.hash}`);
 
-    await identity.deployed();
+    await identity.waitForDeployment();
 
-    console.log(`Deployed a new identity at ${identity.address} . tx: ${identity.deployTransaction.hash}`);
+    console.log(`Deployed a new identity at ${await identity.getAddress()} . tx: ${identity.deploymentTransaction()?.hash}`);
   });
