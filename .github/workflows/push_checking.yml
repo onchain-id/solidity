@@ -6,11 +6,11 @@ jobs:
   lint:
     name: "Lint"
     runs-on: ubuntu-latest
-    container: node:16
+    container: node:18
 
     strategy:
       matrix:
-        node-version: [16.x]
+        node-version: [18.x]
 
     steps:
       - uses: actions/checkout@v2
@@ -32,11 +32,11 @@ jobs:
   test:
     name: "Build and Test"
     runs-on: ubuntu-latest
-    container: node:16
+    container: node:18
 
     strategy:
       matrix:
-        node-version: [16.x]
+        node-version: [18.x]
 
     steps:
       - uses: actions/checkout@v2
