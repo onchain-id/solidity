@@ -35,7 +35,6 @@ describe('Identity', () => {
 
   it('should return the version of the implementation', async () => {
     const {identityImplementation} = await loadFixture(deployIdentityFixture);
-
     expect(await identityImplementation.version()).to.equal('2.2.2');
   });
 });
