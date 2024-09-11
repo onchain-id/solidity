@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.8.17;
+pragma solidity 0.8.27;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "../factory/IdFactory.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 using ECDSA for bytes32;
+using MessageHashUtils for bytes32;
 
 /// A required parameter was set to the Zero address.
 error ZeroAddress();
@@ -42,7 +45,7 @@ contract Gateway is Ownable {
      *  @dev Constructor for the ONCHAINID Factory Gateway.
      *  @param idFactoryAddress the address of the factory to operate (the Gateway must be owner of the Factory).
      */
-    constructor(address idFactoryAddress, address[] memory signersToApprove) Ownable() {
+    constructor(address idFactoryAddress, address[] memory signersToApprove) Ownable(msg.sender) {
         if (idFactoryAddress == address(0)) {
             revert ZeroAddress();
         }
@@ -117,17 +120,14 @@ contract Gateway is Ownable {
             revert ExpiredSignature(signature);
         }
 
-        address signer = ECDSA.recover(
-            keccak256(
-                abi.encode(
-                    "Authorize ONCHAINID deployment",
-                    identityOwner,
-                    salt,
-                    signatureExpiry
-                )
-            ).toEthSignedMessageHash(),
-            signature
-        );
+        address signer = keccak256(
+            abi.encode(
+                "Authorize ONCHAINID deployment",
+                identityOwner,
+                salt,
+                signatureExpiry
+            )
+        ).toEthSignedMessageHash().recover(signature);
 
         if (!approvedSigners[signer]) {
             revert UnapprovedSigner(signer);

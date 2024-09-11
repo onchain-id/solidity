@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity 0.8.17;
+pragma solidity 0.8.27;
 
 import "../interface/IImplementationAuthority.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -10,7 +10,7 @@ contract ImplementationAuthority is IImplementationAuthority, Ownable {
     // the address of implementation of ONCHAINID
     address internal _implementation;
 
-    constructor(address implementation) {
+    constructor(address implementation) Ownable(msg.sender) {
         require(implementation != address(0), "invalid argument - zero address");
         _implementation = implementation;
         emit UpdatedImplementation(implementation);

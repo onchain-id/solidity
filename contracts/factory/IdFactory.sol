@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.8.17;
+pragma solidity 0.8.27;
 
 import "../proxy/IdentityProxy.sol";
 import "./IIdFactory.sol";
@@ -31,7 +31,7 @@ contract IdFactory is IIdFactory, Ownable {
 
 
     // setting
-    constructor (address implementationAuthority) {
+    constructor (address implementationAuthority) Ownable(msg.sender) {
         require(implementationAuthority != address(0), "invalid argument - zero address");
         _implementationAuthority = implementationAuthority;
     }
