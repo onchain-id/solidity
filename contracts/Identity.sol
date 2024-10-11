@@ -627,7 +627,7 @@ contract Identity is Storage, IIdentity, Version {
 
     function recoverSignerForExecution(address _to, uint256 _value, bytes memory _data, uint256 _keyType, uint8 v, bytes32 r, bytes32 s) internal delegatedOnly view returns(bytes32 keyHash) {
         if (_keyType == 1) {
-            bytes32 dataHash = keccak256(abi.encode(_to, _value, _data));
+            bytes32 dataHash = keccak256(abi.encode(address(this), _to, _value, _data));
             bytes32 prefixedHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash));
             address recovered = ecrecover(prefixedHash, v, r, s);
 

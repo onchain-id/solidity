@@ -278,8 +278,8 @@ describe('Identity', () => {
             };
 
             const signature = await aliceWallet.signMessage(ethers.getBytes(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(
-              ['address', 'uint256', 'bytes'],
-              [action.to, action.value, action.data],
+              ['address', 'address', 'uint256', 'bytes'],
+              [await aliceIdentity.getAddress(), action.to, action.value, action.data],
             ))));
             const signatureParsed = ethers.Signature.from(signature);
 
@@ -309,8 +309,8 @@ describe('Identity', () => {
             };
 
             const signature = await aliceWallet.signMessage(ethers.getBytes(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(
-              ['address', 'uint256', 'bytes'],
-              [action.to, action.value, action.data]
+              ['address', 'address', 'uint256', 'bytes'],
+              [await aliceIdentity.getAddress(), action.to, action.value, action.data]
             ))));
             const signatureParsed = ethers.Signature.from(signature);
 
@@ -339,8 +339,8 @@ describe('Identity', () => {
             };
 
             const signature = await aliceWallet.signMessage(ethers.getBytes(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(
-              ['address', 'uint256', 'bytes'],
-              [action.to, action.value, action.data]
+              ['address', 'address', 'uint256', 'bytes'],
+              [await aliceIdentity.getAddress(), action.to, action.value, action.data]
             ))));
             const signatureParsed = ethers.Signature.from(signature);
 
@@ -371,8 +371,8 @@ describe('Identity', () => {
             };
 
             const signature = await aliceWallet.signMessage(ethers.getBytes(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(
-              ['address', 'uint256', 'bytes'],
-              [action.to, action.value, action.data]
+              ['address', 'address', 'uint256', 'bytes'],
+              [await aliceIdentity.getAddress(), action.to, action.value, action.data]
             ))));
             const signatureParsed = ethers.Signature.from(signature);
 
@@ -446,8 +446,8 @@ describe('Identity', () => {
             const previousBalance = await ethers.provider.getBalance(bobIdentity);
 
             const signature = await carolWallet.signMessage(ethers.getBytes(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(
-              ['address', 'uint256', 'bytes'],
-              [action.to, action.value, action.data]
+              ['address', 'address', 'uint256', 'bytes'],
+              [await aliceIdentity.getAddress(), action.to, action.value, action.data]
             ))));
             const signatureParsed = ethers.Signature.from(signature);
 
@@ -478,8 +478,8 @@ describe('Identity', () => {
             };
 
             const signature = await carolWallet.signMessage(ethers.getBytes(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(
-              ['address', 'uint256', 'bytes'],
-              [action.to, action.value, action.data]
+              ['address', 'address', 'uint256', 'bytes'],
+              [await aliceIdentity.getAddress(), action.to, action.value, action.data]
             ))));
             const signatureParsed = ethers.Signature.from(signature);
 
@@ -558,8 +558,8 @@ describe('Identity', () => {
               data: '0x',
             };
             const signature = await aliceWallet.signMessage(ethers.getBytes(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(
-              ['address', 'uint256', 'bytes'],
-              [action.to, action.value, action.data],
+              ['address', 'address', 'uint256', 'bytes'],
+              [await aliceIdentity.getAddress(), action.to, action.value, action.data],
             ))));
             const signatureParsed = ethers.Signature.from(signature);
 

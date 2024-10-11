@@ -74,7 +74,14 @@ interface IERC734 {
     * Triggers on execution successful Event: `Executed`
     * Triggers on execution failure Event: `ExecutionFailed`
     */
-    function approveSigned(uint256 _id, bool _approve, uint256 _keyType, uint8 v, bytes32 r, bytes32 s) external returns (bool success);
+    function approveSigned(
+        uint256 _id,
+        bool _approve,
+        uint256 _keyType,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external returns (bool success);
 
     /**
      * @dev Removes _purpose for _key from the identity.
@@ -108,7 +115,15 @@ interface IERC734 {
      * Triggers Event: ExecutionRequested
      * Triggers on direct execution Event: Executed
      */
-    function executeSigned(address _to, uint256 _value, bytes calldata _data, uint256 _keyType, uint8 v, bytes32 r, bytes32 s) external payable returns (uint256 executionId);
+    function executeSigned(
+        address _to,
+        uint256 _value,
+        bytes calldata _data,
+        uint256 _keyType,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external payable returns (uint256 executionId);
 
     /**
      * @dev Returns the full key data, if present in the identity.
