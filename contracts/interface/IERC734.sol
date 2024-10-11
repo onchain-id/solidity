@@ -68,6 +68,15 @@ interface IERC734 {
     function approve(uint256 _id, bool _approve) external returns (bool success);
 
     /**
+    * @dev Approves an execution using signatures.
+    *
+    * Triggers Event: `Approved`
+    * Triggers on execution successful Event: `Executed`
+    * Triggers on execution failure Event: `ExecutionFailed`
+    */
+    function approveSigned(uint256 _id, bool _approve, uint256 _keyType, uint8 v, bytes32 r, bytes32 s) external returns (bool success);
+
+    /**
      * @dev Removes _purpose for _key from the identity.
      *
      * Triggers Event: `KeyRemoved`
@@ -88,6 +97,18 @@ interface IERC734 {
      * Triggers on direct execution Event: Executed
      */
     function execute(address _to, uint256 _value, bytes calldata _data) external payable returns (uint256 executionId);
+
+    /**
+     * @dev Passes an execution instruction to an ERC734 identity, using signatures instead of sender verification.
+     * How the execution is handled is up to the identity implementation:
+     * An execution COULD be requested and require `approve` to be called with one or more keys of purpose 1 or 2 to
+     * approve this execution.
+     * Execute COULD be used as the only accessor for `addKey` and `removeKey`.
+     *
+     * Triggers Event: ExecutionRequested
+     * Triggers on direct execution Event: Executed
+     */
+    function executeSigned(address _to, uint256 _value, bytes calldata _data, uint256 _keyType, uint8 v, bytes32 r, bytes32 s) external payable returns (uint256 executionId);
 
     /**
      * @dev Returns the full key data, if present in the identity.

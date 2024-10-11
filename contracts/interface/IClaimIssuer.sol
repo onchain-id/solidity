@@ -19,7 +19,7 @@ interface IClaimIssuer is IIdentity {
      * @param _identity the address of the identity contract
      * @return isRevoked true when the claim is revoked
      */
-    function revokeClaim(bytes32 _claimId, address _identity) external returns(bool);
+    function revokeClaim(bytes32 _claimId, address payable _identity) external returns(bool);
 
     /**
      * @dev Revoke a claim previously issued, the claim is no longer considered as valid after revocation.

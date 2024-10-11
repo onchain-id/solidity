@@ -24,7 +24,7 @@ contract ClaimIssuer is IClaimIssuer, Identity {
     /**
      *  @dev See {IClaimIssuer-revokeClaim}.
      */
-    function revokeClaim(bytes32 _claimId, address _identity) external override delegatedOnly onlyManager returns(bool) {
+    function revokeClaim(bytes32 _claimId, address payable _identity) external override delegatedOnly onlyManager returns(bool) {
         uint256 foundClaimTopic;
         uint256 scheme;
         address issuer;

@@ -5,6 +5,7 @@ import "./interface/IIdentity.sol";
 import "./interface/IClaimIssuer.sol";
 import "./version/Version.sol";
 import "./storage/Storage.sol";
+import "hardhat/console.sol";
 
 /**
  * @dev Implementation of the `IERC734` "KeyHolder" and the `IERC735` "ClaimHolder" interfaces
@@ -92,10 +93,47 @@ contract Identity is Storage, IIdentity, Version {
         emit ExecutionRequested(_executionId, _to, _value, _data);
 
         if (keyHasPurpose(keccak256(abi.encode(msg.sender)), 1)) {
-            approve(_executionId, true);
+            _approveAndExecute(_executionId, true);
         }
         else if (_to != address(this) && keyHasPurpose(keccak256(abi.encode(msg.sender)), 2)){
-            approve(_executionId, true);
+            _approveAndExecute(_executionId, true);
+        }
+
+        return _executionId;
+    }
+
+    /**
+     * @dev See {IERC734-execute}.
+     * @notice Passes an execution instruction to the keymanager, using signatures instead of sender verification.
+     * If the sender is an ACTION key and the destination address is not the identity contract itself, then the
+     * execution is immediately approved and performed.
+     * If the destination address is the identity itself, then the execution would be performed immediately only if
+     * the sender is a MANAGEMENT key.
+     * Otherwise the execution request must be approved via the `approve` method.
+     * @param _keyType The type of key used for the signature, a uint256 for different key types. 1 = ECDSA, 2 = RSA, 3 = P256.
+     * @return executionId to use in the approve function, to approve or reject this execution.
+     */
+    function executeSigned(address _to, uint256 _value, bytes memory _data, uint256 _keyType, uint8 v, bytes32 r, bytes32 s)
+    external
+    delegatedOnly
+    override
+    payable
+    returns (uint256 executionId) {
+        bytes32 executionSigner = recoverSignerForExecution(_to, _value, _data, _keyType, v, r, s);
+
+        uint256 _executionId = _executionNonce;
+        _executions[_executionId].to = _to;
+        _executions[_executionId].value = _value;
+        _executions[_executionId].data = _data;
+        _executionNonce++;
+
+        emit ExecutionRequested(_executionId, _to, _value, _data);
+
+        if (keyHasPurpose(executionSigner, 1)) {
+            _approveAndExecute(_executionId, true);
+        }
+        else if (_to != address(this) && keyHasPurpose(executionSigner, 2)){
+            _approveAndExecute(_executionId, true);
         }
 
         return _executionId;
@@ -233,39 +271,27 @@ contract Identity is Storage, IIdentity, Version {
             require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 2), "Sender does not have action key");
         }
 
-        emit Approved(_id, _approve);
+        return _approveAndExecute(_id, _approve);
+    }
 
-        if (_approve == true) {
-            _executions[_id].approved = true;
+    function approveSigned(uint256 _id, bool _approve, uint256 _keyType, uint8 v, bytes32 r, bytes32 s)
+    public
+    delegatedOnly
+    override
+    returns (bool success)
+    {
+        require(_id < _executionNonce, "Cannot approve a non-existing execution");
+        require(!_executions[_id].executed, "Request already executed");
 
-            // solhint-disable-next-line avoid-low-level-calls
-            (success,) = _executions[_id].to.call{value:(_executions[_id].value)}(_executions[_id].data);
+        bytes32 executionSigner = recoverSignerForPendingExecution( _id, _executions[_id].to, _executions[_id].value, _executions[_id].data, _keyType, v, r, s);
 
-            if (success) {
-                _executions[_id].executed = true;
-
-                emit Executed(
-                    _id,
-                    _executions[_id].to,
-                    _executions[_id].value,
-                    _executions[_id].data
-                );
-
-                return true;
-            } else {
-                emit ExecutionFailed(
-                    _id,
-                    _executions[_id].to,
-                    _executions[_id].value,
-                    _executions[_id].data
-                );
-
-                return false;
-            }
+        if(_executions[_id].to == address(this)) {
+            require(keyHasPurpose(executionSigner, 1), "Sender does not have management key");
         } else {
-            _executions[_id].approved = false;
+            require(keyHasPurpose(executionSigner, 2), "Sender does not have action key");
         }
-        return false;
+
+        return _approveAndExecute(_id, _approve);
     }
 
     /**
@@ -565,6 +591,8 @@ contract Identity is Storage, IIdentity, Version {
         return (recoveredAddress);
     }
 
+    receive() external payable {}
+
     /**
      * @notice Initializer internal function for the Identity contract.
      *
@@ -595,5 +623,72 @@ contract Identity is Storage, IIdentity, Version {
         // solhint-disable-next-line no-inline-assembly
         assembly { cs := extcodesize(self) }
         return cs == 0;
+    }
+
+    function recoverSignerForExecution(address _to, uint256 _value, bytes memory _data, uint256 _keyType, uint8 v, bytes32 r, bytes32 s) internal delegatedOnly view returns(bytes32 keyHash) {
+        if (_keyType == 1) {
+            bytes32 dataHash = keccak256(abi.encode(_to, _value, _data));
+            bytes32 prefixedHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash));
+            address recovered = ecrecover(prefixedHash, v, r, s);
+
+            return keccak256(abi.encode(recovered));
+        } else if (_keyType == 3) {
+            revert("Not implemented.");
+        } else {
+            revert("Invalid key type");
+        }
+    }
+
+    function recoverSignerForPendingExecution(uint256 _id, address _to, uint256 _value, bytes memory _data, uint256 _keyType, uint8 v, bytes32 r, bytes32 s) internal delegatedOnly view returns(bytes32 keyHash) {
+        if (_keyType == 1) {
+            bytes32 dataHash = keccak256(abi.encode(address(this), _id, _to, _value, _data));
+            bytes32 prefixedHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash));
+            address recovered = ecrecover(prefixedHash, v, r, s);
+
+            return keccak256(abi.encode(recovered));
+        } else if (_keyType == 3) {
+            revert("Not implemented.");
+        } else {
+            revert("Invalid key type");
+        }
+    }
+
+    function _approveAndExecute(uint256 _id, bool _approve) internal delegatedOnly returns (bool success) {
+        require(_id < _executionNonce, "Cannot approve a non-existing execution");
+        require(!_executions[_id].executed, "Request already executed");
+
+        emit Approved(_id, _approve);
+
+        if (_approve == true) {
+            _executions[_id].approved = true;
+
+            // solhint-disable-next-line avoid-low-level-calls
+            (success,) = _executions[_id].to.call{value:(_executions[_id].value)}(_executions[_id].data);
+
+            if (success) {
+                _executions[_id].executed = true;
+
+                emit Executed(
+                    _id,
+                    _executions[_id].to,
+                    _executions[_id].value,
+                    _executions[_id].data
+                );
+
+                return true;
+            } else {
+                emit ExecutionFailed(
+                    _id,
+                    _executions[_id].to,
+                    _executions[_id].value,
+                    _executions[_id].data
+                );
+
+                return false;
+            }
+        } else {
+            _executions[_id].approved = false;
+        }
+        return false;
     }
 }
