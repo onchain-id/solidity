@@ -5,7 +5,6 @@ import "./interface/IIdentity.sol";
 import "./interface/IClaimIssuer.sol";
 import "./version/Version.sol";
 import "./storage/Storage.sol";
-import "hardhat/console.sol";
 
 /**
  * @dev Implementation of the `IERC734` "KeyHolder" and the `IERC735` "ClaimHolder" interfaces
