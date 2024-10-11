@@ -4,7 +4,7 @@ import {ethers} from "hardhat";
 
 import { deployIdentityFixture } from '../fixtures';
 
-describe.only('Identity', () => {
+describe('Identity', () => {
   describe('.execute() - EOA', () => {
     describe('using ethereum EOA account', () => {
       describe('when calling execute as a MANAGEMENT key', () => {
