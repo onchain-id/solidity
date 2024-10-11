@@ -56,6 +56,8 @@ contract Identity is Storage, IIdentity, Version {
         }
     }
 
+    receive() external payable {}
+
     /**
      * @notice When using this contract as an implementation for a proxy, call this initializer with a delegatecall.
      *
@@ -118,7 +120,7 @@ contract Identity is Storage, IIdentity, Version {
     override
     payable
     returns (uint256 executionId) {
-        bytes32 executionSigner = recoverSignerForExecution(_to, _value, _data, _keyType, v, r, s);
+        bytes32 executionSigner = _recoverSignerForExecution(_to, _value, _data, _keyType, v, r, s);
 
         uint256 _executionId = _executionNonce;
         _executions[_executionId].to = _to;
@@ -282,7 +284,16 @@ contract Identity is Storage, IIdentity, Version {
         require(_id < _executionNonce, "Cannot approve a non-existing execution");
         require(!_executions[_id].executed, "Request already executed");
 
-        bytes32 executionSigner = recoverSignerForPendingExecution( _id, _executions[_id].to, _executions[_id].value, _executions[_id].data, _keyType, v, r, s);
+        bytes32 executionSigner = _recoverSignerForPendingExecution(
+            _id,
+            _executions[_id].to,
+            _executions[_id].value,
+            _executions[_id].data,
+            _keyType,
+            v,
+            r,
+            s
+        );
 
         if(_executions[_id].to == address(this)) {
             require(keyHasPurpose(executionSigner, 1), "Sender does not have management key");
@@ -379,7 +390,12 @@ contract Identity is Storage, IIdentity, Version {
     returns (bytes32 claimRequestId)
     {
         if (_issuer != address(this)) {
-            require(IClaimIssuer(_issuer).isClaimValid(IIdentity(address(this)), _topic, _signature, _data), "invalid claim");
+            require(IClaimIssuer(_issuer).isClaimValid(
+                IIdentity(address(this)),
+                _topic,
+                _signature,
+                _data),
+                "invalid claim");
         }
 
         bytes32 claimId = keccak256(abi.encode(_issuer, _topic));
@@ -536,7 +552,9 @@ contract Identity is Storage, IIdentity, Version {
     {
         bytes32 dataHash = keccak256(abi.encode(_identity, claimTopic, data));
         // Use abi.encodePacked to concatenate the message prefix and the message to sign.
-        bytes32 prefixedHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash));
+        bytes32 prefixedHash = keccak256(
+            abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash)
+        );
 
         // Recover address of data signer
         address recovered = getRecoveredAddress(sig, prefixedHash);
@@ -590,8 +608,6 @@ contract Identity is Storage, IIdentity, Version {
         return (recoveredAddress);
     }
 
-    receive() external payable {}
-
     /**
      * @notice Initializer internal function for the Identity contract.
      *
@@ -609,47 +625,6 @@ contract Identity is Storage, IIdentity, Version {
         _keys[_key].keyType = 1;
         _keysByPurpose[1].push(_key);
         emit KeyAdded(_key, 1, 1);
-    }
-
-    /**
-     * @notice Computes if the context in which the function is called is a constructor or not.
-     *
-     * @return true if the context is a constructor.
-     */
-    function _isConstructor() private view returns (bool) {
-        address self = address(this);
-        uint256 cs;
-        // solhint-disable-next-line no-inline-assembly
-        assembly { cs := extcodesize(self) }
-        return cs == 0;
-    }
-
-    function recoverSignerForExecution(address _to, uint256 _value, bytes memory _data, uint256 _keyType, uint8 v, bytes32 r, bytes32 s) internal delegatedOnly view returns(bytes32 keyHash) {
-        if (_keyType == 1) {
-            bytes32 dataHash = keccak256(abi.encode(address(this), _to, _value, _data));
-            bytes32 prefixedHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash));
-            address recovered = ecrecover(prefixedHash, v, r, s);
-
-            return keccak256(abi.encode(recovered));
-        } else if (_keyType == 3) {
-            revert("Not implemented.");
-        } else {
-            revert("Invalid key type");
-        }
-    }
-
-    function recoverSignerForPendingExecution(uint256 _id, address _to, uint256 _value, bytes memory _data, uint256 _keyType, uint8 v, bytes32 r, bytes32 s) internal delegatedOnly view returns(bytes32 keyHash) {
-        if (_keyType == 1) {
-            bytes32 dataHash = keccak256(abi.encode(address(this), _id, _to, _value, _data));
-            bytes32 prefixedHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash));
-            address recovered = ecrecover(prefixedHash, v, r, s);
-
-            return keccak256(abi.encode(recovered));
-        } else if (_keyType == 3) {
-            revert("Not implemented.");
-        } else {
-            revert("Invalid key type");
-        }
     }
 
     function _approveAndExecute(uint256 _id, bool _approve) internal delegatedOnly returns (bool success) {
@@ -689,5 +664,67 @@ contract Identity is Storage, IIdentity, Version {
             _executions[_id].approved = false;
         }
         return false;
+    }
+
+    function _recoverSignerForExecution(
+        address _to,
+        uint256 _value,
+        bytes memory _data,
+        uint256 _keyType,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal delegatedOnly view returns(bytes32 keyHash) {
+        if (_keyType == 1) {
+            bytes32 dataHash = keccak256(abi.encode(address(this), _to, _value, _data));
+            bytes32 prefixedHash = keccak256(
+                abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash)
+            );
+            address recovered = ecrecover(prefixedHash, v, r, s);
+
+            return keccak256(abi.encode(recovered));
+        } else if (_keyType == 3) {
+            revert("Not implemented.");
+        } else {
+            revert("Invalid key type");
+        }
+    }
+
+    function _recoverSignerForPendingExecution(
+        uint256 _id,
+        address _to,
+        uint256 _value,
+        bytes memory _data,
+        uint256 _keyType,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal delegatedOnly view returns(bytes32 keyHash) {
+        if (_keyType == 1) {
+            bytes32 dataHash = keccak256(abi.encode(address(this), _id, _to, _value, _data));
+            bytes32 prefixedHash = keccak256(
+                abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash)
+            );
+            address recovered = ecrecover(prefixedHash, v, r, s);
+
+            return keccak256(abi.encode(recovered));
+        } else if (_keyType == 3) {
+            revert("Not implemented.");
+        } else {
+            revert("Invalid key type");
+        }
+    }
+
+    /**
+     * @notice Computes if the context in which the function is called is a constructor or not.
+     *
+     * @return true if the context is a constructor.
+     */
+    function _isConstructor() private view returns (bool) {
+        address self = address(this);
+        uint256 cs;
+        // solhint-disable-next-line no-inline-assembly
+        assembly { cs := extcodesize(self) }
+        return cs == 0;
     }
 }
