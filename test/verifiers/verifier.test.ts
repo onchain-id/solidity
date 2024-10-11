@@ -9,7 +9,7 @@ describe('Verifier', () => {
         const [deployer, aliceWallet] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
 
-        await expect(verifier.verify(aliceWallet.address)).to.eventually.be.true;
+        await expect(verifier.verify(aliceWallet)).to.eventually.be.true;
       });
     });
 
@@ -17,9 +17,9 @@ describe('Verifier', () => {
       it('should return false', async () => {
         const [deployer, aliceWallet] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
-        await verifier.addClaimTopic(ethers.utils.formatBytes32String('SOME_TOPIC'));
+        await verifier.addClaimTopic(ethers.encodeBytes32String('SOME_TOPIC'));
 
-        await expect(verifier.verify(aliceWallet.address)).to.eventually.be.false;
+        await expect(verifier.verify(aliceWallet)).to.eventually.be.false;
       });
     });
 
@@ -27,10 +27,10 @@ describe('Verifier', () => {
       it('should return false', async () => {
         const [deployer, aliceWallet] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
-        await verifier.addClaimTopic(ethers.utils.formatBytes32String('SOME_TOPIC'));
-        await verifier.addTrustedIssuer(deployer.address, [ethers.utils.formatBytes32String('SOME_OTHER_TOPIC')]);
+        await verifier.addClaimTopic(ethers.encodeBytes32String('SOME_TOPIC'));
+        await verifier.addTrustedIssuer(deployer, [ethers.encodeBytes32String('SOME_OTHER_TOPIC')]);
 
-        await expect(verifier.verify(aliceWallet.address)).to.eventually.be.false;
+        await expect(verifier.verify(aliceWallet)).to.eventually.be.false;
       });
     });
 
@@ -39,12 +39,12 @@ describe('Verifier', () => {
         it('should return false', async () => {
           const [deployer, aliceWallet, claimIssuerWallet] = await ethers.getSigners();
           const verifier = await ethers.deployContract('Verifier');
-          const claimIssuer = await ethers.deployContract('ClaimIssuer', [claimIssuerWallet.address]);
-          const aliceIdentity = await ethers.deployContract('Identity', [aliceWallet.address, false]);
-          await verifier.addClaimTopic(ethers.utils.formatBytes32String('SOME_TOPIC'));
-          await verifier.addTrustedIssuer(claimIssuer.address, [ethers.utils.formatBytes32String('SOME_TOPIC')]);
+          const claimIssuer = await ethers.deployContract('ClaimIssuer', [claimIssuerWallet]);
+          const aliceIdentity = await ethers.deployContract('Identity', [aliceWallet, false]);
+          await verifier.addClaimTopic(ethers.encodeBytes32String('SOME_TOPIC'));
+          await verifier.addTrustedIssuer(claimIssuer, [ethers.encodeBytes32String('SOME_TOPIC')]);
 
-          await expect(verifier.verify(aliceIdentity.address)).to.eventually.be.false;
+          await expect(verifier.verify(aliceIdentity)).to.eventually.be.false;
         });
       });
 
@@ -52,23 +52,23 @@ describe('Verifier', () => {
         it('should return false', async () => {
           const [deployer, aliceWallet, claimIssuerWallet] = await ethers.getSigners();
           const verifier = await ethers.deployContract('Verifier');
-          const claimIssuer = await ethers.deployContract('ClaimIssuer', [claimIssuerWallet.address]);
-          const aliceIdentity = await ethers.deployContract('Identity', [aliceWallet.address, false]);
+          const claimIssuer = await ethers.deployContract('ClaimIssuer', [claimIssuerWallet]);
+          const aliceIdentity = await ethers.deployContract('Identity', [aliceWallet, false]);
 
           await verifier.addClaimTopic(666);
-          await verifier.addTrustedIssuer(claimIssuer.address, [666]);
+          await verifier.addTrustedIssuer(claimIssuer, [666]);
 
           const aliceClaim666 = {
             id: '',
-            identity: aliceIdentity.address,
-            issuer: claimIssuer.address,
+            identity: await aliceIdentity.getAddress(),
+            issuer: await claimIssuer.getAddress(),
             topic: 666,
             scheme: 1,
             data: '0x0042',
             signature: '',
             uri: 'https://example.com',
           };
-          aliceClaim666.signature = await claimIssuerWallet.signMessage(ethers.utils.arrayify(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address', 'uint256', 'bytes'], [aliceClaim666.identity, aliceClaim666.topic, aliceClaim666.data]))));
+          aliceClaim666.signature = await claimIssuerWallet.signMessage(ethers.getBytes(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address', 'uint256', 'bytes'], [aliceClaim666.identity, aliceClaim666.topic, aliceClaim666.data]))));
           await aliceIdentity.connect(aliceWallet).addClaim(
             aliceClaim666.topic,
             aliceClaim666.scheme,
@@ -81,7 +81,7 @@ describe('Verifier', () => {
             aliceClaim666.signature,
           );
 
-          await expect(verifier.verify(aliceIdentity.address)).to.eventually.be.false;
+          await expect(verifier.verify(aliceIdentity)).to.eventually.be.false;
         });
       });
 
@@ -89,23 +89,23 @@ describe('Verifier', () => {
         it('should return true', async () => {
           const [deployer, aliceWallet, claimIssuerWallet] = await ethers.getSigners();
           const verifier = await ethers.deployContract('Verifier');
-          const claimIssuer = await ethers.deployContract('ClaimIssuer', [claimIssuerWallet.address]);
-          const aliceIdentity = await ethers.deployContract('Identity', [aliceWallet.address, false]);
+          const claimIssuer = await ethers.deployContract('ClaimIssuer', [claimIssuerWallet]);
+          const aliceIdentity = await ethers.deployContract('Identity', [aliceWallet, false]);
 
           await verifier.addClaimTopic(666);
-          await verifier.addTrustedIssuer(claimIssuer.address, [666]);
+          await verifier.addTrustedIssuer(claimIssuer, [666]);
 
           const aliceClaim666 = {
             id: '',
-            identity: aliceIdentity.address,
-            issuer: claimIssuer.address,
+            identity: await aliceIdentity.getAddress(),
+            issuer: await claimIssuer.getAddress(),
             topic: 666,
             scheme: 1,
             data: '0x0042',
             signature: '',
             uri: 'https://example.com',
           };
-          aliceClaim666.signature = await claimIssuerWallet.signMessage(ethers.utils.arrayify(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address', 'uint256', 'bytes'], [aliceClaim666.identity, aliceClaim666.topic, aliceClaim666.data]))));
+          aliceClaim666.signature = await claimIssuerWallet.signMessage(ethers.getBytes(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address', 'uint256', 'bytes'], [aliceClaim666.identity, aliceClaim666.topic, aliceClaim666.data]))));
           await aliceIdentity.connect(aliceWallet).addClaim(
             aliceClaim666.topic,
             aliceClaim666.scheme,
@@ -115,7 +115,7 @@ describe('Verifier', () => {
             aliceClaim666.uri,
           );
 
-          await expect(verifier.verify(aliceIdentity.address)).to.eventually.be.true;
+          await expect(verifier.verify(aliceIdentity)).to.eventually.be.true;
         });
       });
     });
@@ -125,27 +125,27 @@ describe('Verifier', () => {
         it('should return true', async () => {
           const [deployer, aliceWallet, claimIssuerAWallet, claimIssuerBWallet, claimIssuerCWallet] = await ethers.getSigners();
           const verifier = await ethers.deployContract('Verifier');
-          const claimIssuerA = await ethers.deployContract('ClaimIssuer', [claimIssuerAWallet.address]);
-          const claimIssuerB = await ethers.deployContract('ClaimIssuer', [claimIssuerBWallet.address]);
-          const claimIssuerC = await ethers.deployContract('ClaimIssuer', [claimIssuerCWallet.address]);
-          const aliceIdentity = await ethers.deployContract('Identity', [aliceWallet.address, false]);
+          const claimIssuerA = await ethers.deployContract('ClaimIssuer', [claimIssuerAWallet]);
+          const claimIssuerB = await ethers.deployContract('ClaimIssuer', [claimIssuerBWallet]);
+          const claimIssuerC = await ethers.deployContract('ClaimIssuer', [claimIssuerCWallet]);
+          const aliceIdentity = await ethers.deployContract('Identity', [aliceWallet, false]);
 
           await verifier.addClaimTopic(666);
-          await verifier.addTrustedIssuer(claimIssuerA.address, [666]);
+          await verifier.addTrustedIssuer(claimIssuerA, [666]);
           await verifier.addClaimTopic(42);
-          await verifier.addTrustedIssuer(claimIssuerB.address, [42, 666]);
+          await verifier.addTrustedIssuer(claimIssuerB, [42, 666]);
 
           const aliceClaim666C = {
             id: '',
-            identity: aliceIdentity.address,
-            issuer: claimIssuerC.address,
+            identity: await aliceIdentity.getAddress(),
+            issuer: await claimIssuerC.getAddress(),
             topic: 666,
             scheme: 1,
             data: '0x0042',
             signature: '',
             uri: 'https://example.com',
           };
-          aliceClaim666C.signature = await claimIssuerCWallet.signMessage(ethers.utils.arrayify(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address', 'uint256', 'bytes'], [aliceClaim666C.identity, aliceClaim666C.topic, aliceClaim666C.data]))));
+          aliceClaim666C.signature = await claimIssuerCWallet.signMessage(ethers.getBytes(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address', 'uint256', 'bytes'], [aliceClaim666C.identity, aliceClaim666C.topic, aliceClaim666C.data]))));
           await aliceIdentity.connect(aliceWallet).addClaim(
             aliceClaim666C.topic,
             aliceClaim666C.scheme,
@@ -157,15 +157,15 @@ describe('Verifier', () => {
 
           const aliceClaim666 = {
             id: '',
-            identity: aliceIdentity.address,
-            issuer: claimIssuerA.address,
+            identity: await aliceIdentity.getAddress(),
+            issuer: await claimIssuerA.getAddress(),
             topic: 666,
             scheme: 1,
             data: '0x0042',
             signature: '',
             uri: 'https://example.com',
           };
-          aliceClaim666.signature = await claimIssuerAWallet.signMessage(ethers.utils.arrayify(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address', 'uint256', 'bytes'], [aliceClaim666.identity, aliceClaim666.topic, aliceClaim666.data]))));
+          aliceClaim666.signature = await claimIssuerAWallet.signMessage(ethers.getBytes(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address', 'uint256', 'bytes'], [aliceClaim666.identity, aliceClaim666.topic, aliceClaim666.data]))));
           await aliceIdentity.connect(aliceWallet).addClaim(
             aliceClaim666.topic,
             aliceClaim666.scheme,
@@ -177,15 +177,15 @@ describe('Verifier', () => {
 
           const aliceClaim666B = {
             id: '',
-            identity: aliceIdentity.address,
-            issuer: claimIssuerB.address,
+            identity: await aliceIdentity.getAddress(),
+            issuer: await claimIssuerB.getAddress(),
             topic: 666,
             scheme: 1,
             data: '0x0066',
             signature: '',
             uri: 'https://example.com/B/666',
           };
-          aliceClaim666B.signature = await claimIssuerBWallet.signMessage(ethers.utils.arrayify(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address', 'uint256', 'bytes'], [aliceClaim666B.identity, aliceClaim666B.topic, aliceClaim666B.data]))));
+          aliceClaim666B.signature = await claimIssuerBWallet.signMessage(ethers.getBytes(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address', 'uint256', 'bytes'], [aliceClaim666B.identity, aliceClaim666B.topic, aliceClaim666B.data]))));
           await aliceIdentity.connect(aliceWallet).addClaim(
             aliceClaim666B.topic,
             aliceClaim666B.scheme,
@@ -197,15 +197,15 @@ describe('Verifier', () => {
 
           const aliceClaim42 = {
             id: '',
-            identity: aliceIdentity.address,
-            issuer: claimIssuerB.address,
+            identity: await aliceIdentity.getAddress(),
+            issuer: await claimIssuerB.getAddress(),
             topic: 42,
             scheme: 1,
             data: '0x0010',
             signature: '',
             uri: 'https://example.com/42',
           };
-          aliceClaim42.signature = await claimIssuerBWallet.signMessage(ethers.utils.arrayify(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address', 'uint256', 'bytes'], [aliceClaim42.identity, aliceClaim42.topic, aliceClaim42.data]))));
+          aliceClaim42.signature = await claimIssuerBWallet.signMessage(ethers.getBytes(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address', 'uint256', 'bytes'], [aliceClaim42.identity, aliceClaim42.topic, aliceClaim42.data]))));
           await aliceIdentity.connect(aliceWallet).addClaim(
             aliceClaim42.topic,
             aliceClaim42.scheme,
@@ -217,7 +217,7 @@ describe('Verifier', () => {
 
           await claimIssuerB.connect(claimIssuerBWallet).revokeClaimBySignature(aliceClaim666B.signature);
 
-          await expect(verifier.verify(aliceIdentity.address)).to.eventually.be.true;
+          await expect(verifier.verify(aliceIdentity)).to.eventually.be.true;
         });
       });
 
@@ -225,26 +225,26 @@ describe('Verifier', () => {
         it('should return false', async () => {
           const [deployer, aliceWallet, claimIssuerAWallet, claimIssuerBWallet] = await ethers.getSigners();
           const verifier = await ethers.deployContract('Verifier');
-          const claimIssuerA = await ethers.deployContract('ClaimIssuer', [claimIssuerAWallet.address]);
-          const claimIssuerB = await ethers.deployContract('ClaimIssuer', [claimIssuerBWallet.address]);
-          const aliceIdentity = await ethers.deployContract('Identity', [aliceWallet.address, false]);
+          const claimIssuerA = await ethers.deployContract('ClaimIssuer', [claimIssuerAWallet]);
+          const claimIssuerB = await ethers.deployContract('ClaimIssuer', [claimIssuerBWallet]);
+          const aliceIdentity = await ethers.deployContract('Identity', [aliceWallet, false]);
 
           await verifier.addClaimTopic(666);
-          await verifier.addTrustedIssuer(claimIssuerA.address, [666]);
+          await verifier.addTrustedIssuer(claimIssuerA, [666]);
           await verifier.addClaimTopic(42);
-          await verifier.addTrustedIssuer(claimIssuerB.address, [42, 666]);
+          await verifier.addTrustedIssuer(claimIssuerB, [42, 666]);
 
           const aliceClaim666 = {
             id: '',
-            identity: aliceIdentity.address,
-            issuer: claimIssuerA.address,
+            identity: await aliceIdentity.getAddress(),
+            issuer: await claimIssuerA.getAddress(),
             topic: 666,
             scheme: 1,
             data: '0x0042',
             signature: '',
             uri: 'https://example.com',
           };
-          aliceClaim666.signature = await claimIssuerAWallet.signMessage(ethers.utils.arrayify(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address', 'uint256', 'bytes'], [aliceClaim666.identity, aliceClaim666.topic, aliceClaim666.data]))));
+          aliceClaim666.signature = await claimIssuerAWallet.signMessage(ethers.getBytes(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address', 'uint256', 'bytes'], [aliceClaim666.identity, aliceClaim666.topic, aliceClaim666.data]))));
           await aliceIdentity.connect(aliceWallet).addClaim(
             aliceClaim666.topic,
             aliceClaim666.scheme,
@@ -256,15 +256,15 @@ describe('Verifier', () => {
 
           const aliceClaim666B = {
             id: '',
-            identity: aliceIdentity.address,
-            issuer: claimIssuerB.address,
+            identity: await aliceIdentity.getAddress(),
+            issuer: await claimIssuerB.getAddress(),
             topic: 666,
             scheme: 1,
             data: '0x0066',
             signature: '',
             uri: 'https://example.com/B/666',
           };
-          aliceClaim666B.signature = await claimIssuerBWallet.signMessage(ethers.utils.arrayify(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address', 'uint256', 'bytes'], [aliceClaim666B.identity, aliceClaim666B.topic, aliceClaim666B.data]))));
+          aliceClaim666B.signature = await claimIssuerBWallet.signMessage(ethers.getBytes(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address', 'uint256', 'bytes'], [aliceClaim666B.identity, aliceClaim666B.topic, aliceClaim666B.data]))));
           await aliceIdentity.connect(aliceWallet).addClaim(
             aliceClaim666B.topic,
             aliceClaim666B.scheme,
@@ -276,15 +276,15 @@ describe('Verifier', () => {
 
           const aliceClaim42 = {
             id: '',
-            identity: aliceIdentity.address,
-            issuer: claimIssuerB.address,
+            identity: await aliceIdentity.getAddress(),
+            issuer: await claimIssuerB.getAddress(),
             topic: 42,
             scheme: 1,
             data: '0x0010',
             signature: '',
             uri: 'https://example.com/42',
           };
-          aliceClaim42.signature = await claimIssuerBWallet.signMessage(ethers.utils.arrayify(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address', 'uint256', 'bytes'], [aliceClaim42.identity, aliceClaim42.topic, aliceClaim42.data]))));
+          aliceClaim42.signature = await claimIssuerBWallet.signMessage(ethers.getBytes(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address', 'uint256', 'bytes'], [aliceClaim42.identity, aliceClaim42.topic, aliceClaim42.data]))));
           await aliceIdentity.connect(aliceWallet).addClaim(
             aliceClaim42.topic,
             aliceClaim42.scheme,
@@ -296,7 +296,7 @@ describe('Verifier', () => {
 
           await claimIssuerB.connect(claimIssuerBWallet).revokeClaimBySignature(aliceClaim42.signature);
 
-          await expect(verifier.verify(aliceIdentity.address)).to.eventually.be.false;
+          await expect(verifier.verify(aliceIdentity)).to.eventually.be.false;
         });
       });
     });
@@ -308,7 +308,7 @@ describe('Verifier', () => {
         const [deployer, aliceWallet] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
 
-        await expect(verifier.connect(aliceWallet).removeClaimTopic(2)).to.be.revertedWith('Ownable: caller is not the owner');
+        await expect(verifier.connect(aliceWallet).removeClaimTopic(2)).to.be.revertedWithCustomError(verifier, 'OwnableUnauthorizedAccount');
       });
     });
 
@@ -334,9 +334,9 @@ describe('Verifier', () => {
       it('should revert', async () => {
         const [deployer, aliceWallet] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
-        const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
+        const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet]);
 
-        await expect(verifier.connect(aliceWallet).removeTrustedIssuer(claimIssuer.address)).to.be.revertedWith('Ownable: caller is not the owner');
+        await expect(verifier.connect(aliceWallet).removeTrustedIssuer(claimIssuer)).to.be.revertedWithCustomError(verifier, 'OwnableUnauthorizedAccount');
       });
     });
 
@@ -344,15 +344,15 @@ describe('Verifier', () => {
       it('should remove the trusted issuer', async () => {
         const [deployer, aliceWallet] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
-        const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
-        const claimIssuerB = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
-        await verifier.addTrustedIssuer(claimIssuer.address, [1]);
-        await verifier.addTrustedIssuer(claimIssuerB.address, [2]);
+        const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet]);
+        const claimIssuerB = await ethers.deployContract('ClaimIssuer', [aliceWallet]);
+        await verifier.addTrustedIssuer(claimIssuer, [1]);
+        await verifier.addTrustedIssuer(claimIssuerB, [2]);
 
-        const tx = await verifier.removeTrustedIssuer(claimIssuer.address);
-        await expect(tx).to.emit(verifier, 'TrustedIssuerRemoved').withArgs(claimIssuer.address);
-        expect(await verifier.isTrustedIssuer(claimIssuer.address)).to.be.false;
-        expect(await verifier.getTrustedIssuers()).to.be.deep.equal([claimIssuerB.address]);
+        const tx = await verifier.removeTrustedIssuer(claimIssuer);
+        await expect(tx).to.emit(verifier, 'TrustedIssuerRemoved').withArgs(claimIssuer);
+        expect(await verifier.isTrustedIssuer(claimIssuer)).to.be.false;
+        expect(await verifier.getTrustedIssuers()).to.be.deep.equal([await claimIssuerB.getAddress()]);
       });
     });
 
@@ -361,7 +361,7 @@ describe('Verifier', () => {
         const [deployer] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
 
-        await expect(verifier.removeTrustedIssuer(ethers.constants.AddressZero)).to.be.revertedWith('invalid argument - zero address');
+        await expect(verifier.removeTrustedIssuer(ethers.ZeroAddress)).to.be.revertedWith('invalid argument - zero address');
       });
     });
 
@@ -369,9 +369,9 @@ describe('Verifier', () => {
       it('should revert', async () => {
         const [deployer, aliceWallet] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
-        const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
+        const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet]);
 
-        await expect(verifier.removeTrustedIssuer(claimIssuer.address)).to.be.revertedWith('NOT a trusted issuer');
+        await expect(verifier.removeTrustedIssuer(claimIssuer)).to.be.revertedWith('NOT a trusted issuer');
       });
     });
   });
@@ -381,9 +381,9 @@ describe('Verifier', () => {
       it('should revert', async () => {
         const [deployer, aliceWallet] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
-        const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
+        const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet]);
 
-        await expect(verifier.connect(aliceWallet).addTrustedIssuer(claimIssuer.address, [1])).to.be.revertedWith('Ownable: caller is not the owner');
+        await expect(verifier.connect(aliceWallet).addTrustedIssuer(claimIssuer, [1])).to.be.revertedWithCustomError(verifier, 'OwnableUnauthorizedAccount');
       });
     });
 
@@ -392,7 +392,7 @@ describe('Verifier', () => {
         const [deployer] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
 
-        await expect(verifier.addTrustedIssuer(ethers.constants.AddressZero, [1])).to.be.revertedWith('invalid argument - zero address');
+        await expect(verifier.addTrustedIssuer(ethers.ZeroAddress, [1])).to.be.revertedWith('invalid argument - zero address');
       });
     });
 
@@ -400,10 +400,10 @@ describe('Verifier', () => {
       it('should revert', async () => {
         const [deployer, aliceWallet] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
-        const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
-        await verifier.addTrustedIssuer(claimIssuer.address, [1]);
+        const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet]);
+        await verifier.addTrustedIssuer(claimIssuer, [1]);
 
-        await expect(verifier.addTrustedIssuer(claimIssuer.address, [2])).to.be.revertedWith('trusted Issuer already exists');
+        await expect(verifier.addTrustedIssuer(claimIssuer, [2])).to.be.revertedWith('trusted Issuer already exists');
       });
     });
 
@@ -412,7 +412,7 @@ describe('Verifier', () => {
         const [deployer] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
 
-        await expect(verifier.addTrustedIssuer(deployer.address, [])).to.be.revertedWith('trusted claim topics cannot be empty');
+        await expect(verifier.addTrustedIssuer(deployer, [])).to.be.revertedWith('trusted claim topics cannot be empty');
       });
     });
 
@@ -421,7 +421,7 @@ describe('Verifier', () => {
         const [deployer] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
 
-        await expect(verifier.addTrustedIssuer(deployer.address, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16])).to.be.revertedWith('cannot have more than 15 claim topics');
+        await expect(verifier.addTrustedIssuer(deployer, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16])).to.be.revertedWith('cannot have more than 15 claim topics');
       });
     });
 
@@ -430,12 +430,12 @@ describe('Verifier', () => {
         const [deployer] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
         for (let i = 0; i < 50; i++) {
-          const claimIssuer = await ethers.deployContract('ClaimIssuer', [deployer.address]);
-          await verifier.addTrustedIssuer(claimIssuer.address, [1]);
+          const claimIssuer = await ethers.deployContract('ClaimIssuer', [deployer]);
+          await verifier.addTrustedIssuer(claimIssuer, [1]);
         }
 
-        const claimIssuer = await ethers.deployContract('ClaimIssuer', [deployer.address]);
-        await expect(verifier.addTrustedIssuer(claimIssuer.address, [1])).to.be.revertedWith('cannot have more than 50 trusted issuers');
+        const claimIssuer = await ethers.deployContract('ClaimIssuer', [deployer]);
+        await expect(verifier.addTrustedIssuer(claimIssuer, [1])).to.be.revertedWith('cannot have more than 50 trusted issuers');
       });
     });
   });
@@ -445,9 +445,9 @@ describe('Verifier', () => {
       it('should revert', async () => {
         const [deployer, aliceWallet] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
-        const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
+        const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet]);
 
-        await expect(verifier.connect(aliceWallet).updateIssuerClaimTopics(claimIssuer.address, [1])).to.be.revertedWith('Ownable: caller is not the owner');
+        await expect(verifier.connect(aliceWallet).updateIssuerClaimTopics(claimIssuer, [1])).to.be.revertedWithCustomError(verifier, 'OwnableUnauthorizedAccount');
       });
     });
 
@@ -455,16 +455,16 @@ describe('Verifier', () => {
       it('should update the issuer claim topics', async () => {
         const [deployer, aliceWallet] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
-        const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
-        await verifier.addTrustedIssuer(claimIssuer.address, [1]);
+        const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet]);
+        await verifier.addTrustedIssuer(claimIssuer, [1]);
 
-        const tx = await verifier.updateIssuerClaimTopics(claimIssuer.address, [2, 3]);
-        await expect(tx).to.emit(verifier, 'ClaimTopicsUpdated').withArgs(claimIssuer.address, [2, 3]);
-        expect(await verifier.isTrustedIssuer(claimIssuer.address)).to.be.true;
+        const tx = await verifier.updateIssuerClaimTopics(claimIssuer, [2, 3]);
+        await expect(tx).to.emit(verifier, 'ClaimTopicsUpdated').withArgs(claimIssuer, [2, 3]);
+        expect(await verifier.isTrustedIssuer(claimIssuer)).to.be.true;
         expect(await verifier.getTrustedIssuersForClaimTopic(1)).to.be.empty;
-        expect(await verifier.getTrustedIssuerClaimTopics(claimIssuer.address)).to.be.deep.equal([2, 3]);
-        expect(await verifier.hasClaimTopic(claimIssuer.address, 2)).to.be.true;
-        expect(await verifier.hasClaimTopic(claimIssuer.address, 1)).to.be.false;
+        expect(await verifier.getTrustedIssuerClaimTopics(claimIssuer)).to.be.deep.equal([2, 3]);
+        expect(await verifier.hasClaimTopic(claimIssuer, 2)).to.be.true;
+        expect(await verifier.hasClaimTopic(claimIssuer, 1)).to.be.false;
       });
     });
 
@@ -472,7 +472,7 @@ describe('Verifier', () => {
       it('should revert', async () => {
         const verifier = await ethers.deployContract('Verifier');
 
-        await expect(verifier.updateIssuerClaimTopics(ethers.constants.AddressZero, [1])).to.be.revertedWith('invalid argument - zero address');
+        await expect(verifier.updateIssuerClaimTopics(ethers.ZeroAddress, [1])).to.be.revertedWith('invalid argument - zero address');
       });
     });
 
@@ -480,9 +480,9 @@ describe('Verifier', () => {
       it('should revert', async () => {
         const [deployer, aliceWallet] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
-        const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
+        const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet]);
 
-        await expect(verifier.updateIssuerClaimTopics(claimIssuer.address, [1])).to.be.revertedWith('NOT a trusted issuer');
+        await expect(verifier.updateIssuerClaimTopics(claimIssuer, [1])).to.be.revertedWith('NOT a trusted issuer');
       });
     });
 
@@ -490,10 +490,11 @@ describe('Verifier', () => {
       it('should revert', async () => {
         const [deployer, aliceWallet] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
-        const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
-        await verifier.addTrustedIssuer(claimIssuer.address, [1]);
+        const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet]);
 
-        await expect(verifier.updateIssuerClaimTopics(claimIssuer.address, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])).to.be.revertedWith('cannot have more than 15 claim topics');
+        await verifier.addTrustedIssuer(claimIssuer, [1]);
+
+        await expect(verifier.updateIssuerClaimTopics(claimIssuer, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])).to.be.revertedWith('cannot have more than 15 claim topics');
       });
     });
 
@@ -501,10 +502,10 @@ describe('Verifier', () => {
       it('should revert', async () => {
         const [deployer, aliceWallet] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
-        const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
-        await verifier.addTrustedIssuer(claimIssuer.address, [1]);
+        const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet]);
+        await verifier.addTrustedIssuer(claimIssuer, [1]);
 
-        await expect(verifier.updateIssuerClaimTopics(claimIssuer.address, [])).to.be.revertedWith('claim topics cannot be empty');
+        await expect(verifier.updateIssuerClaimTopics(claimIssuer, [])).to.be.revertedWith('claim topics cannot be empty');
       });
     });
   });
@@ -514,9 +515,9 @@ describe('Verifier', () => {
       it('should revert', async () => {
         const [deployer, aliceWallet] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
-        const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
+        const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet]);
 
-        await expect(verifier.getTrustedIssuerClaimTopics(claimIssuer.address)).to.be.revertedWith('trusted Issuer doesn\'t exist');
+        await expect(verifier.getTrustedIssuerClaimTopics(claimIssuer)).to.be.revertedWith('trusted Issuer doesn\'t exist');
       });
     });
   });

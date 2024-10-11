@@ -12,12 +12,29 @@ import "./tasks/remove-key.task";
 import "./tasks/revoke.task";
 
 const config: HardhatUserConfig = {
-  solidity: "0.8.17",
+  solidity: "0.8.27",
   networks: {
-    mumbai: {
-      url: 'https://rpc-mumbai.maticvigil.com/v1/9cd3d6ce21f0a25bb8f33504a1820d616f700d24',
-      accounts: ["1d79b7c95d2456a55f55a0e17f856412637fa6b3c332fa557ce2c8a89139ec74"],
+    amoy: {
+      url: 'https://rpc-amoy.polygon.technology', // chain RPC endpoint, eg. https://rpc-amoy.polygon.technology.
+      accounts: [
+        '0x429c8391aad3ba93b8670e1a2f4198e03af2811f5cb9a72b03bad5f96dabf2d8'
+      ]
     }
+  },
+  etherscan: {
+    apiKey: {
+      amoy: "MY_KEY"
+    },
+    customChains: [
+      {
+        network: "amoy",
+        chainId: 80002,
+        urls: {
+          apiURL: "https://api-testnet.polygonscan.com/api",
+          browserURL: "https://amoy.polygonscan.com"
+        }
+      }
+    ]
   }
 };
 

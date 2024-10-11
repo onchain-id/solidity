@@ -15,24 +15,24 @@ describe('VerifierUser', () => {
   describe('when identity is verified', () => {
     it('should return', async () => {
       const [deployer, aliceWallet, claimIssuerWallet] = await ethers.getSigners();
-      const claimIssuer = await ethers.deployContract('ClaimIssuer', [claimIssuerWallet.address]);
-      const aliceIdentity = await ethers.deployContract('Identity', [aliceWallet.address, false]);
+      const claimIssuer = await ethers.deployContract('ClaimIssuer', [claimIssuerWallet]);
+      const aliceIdentity = await ethers.deployContract('Identity', [aliceWallet, false]);
       const verifierUser = await ethers.deployContract('VerifierUser', []);
 
       await verifierUser.addClaimTopic(666);
-      await verifierUser.addTrustedIssuer(claimIssuer.address, [666]);
+      await verifierUser.addTrustedIssuer(claimIssuer, [666]);
 
       const aliceClaim666 = {
         id: '',
-        identity: aliceIdentity.address,
-        issuer: claimIssuer.address,
+        identity: await aliceIdentity.getAddress(),
+        issuer: await claimIssuer.getAddress(),
         topic: 666,
         scheme: 1,
         data: '0x0042',
         signature: '',
         uri: 'https://example.com',
       };
-      aliceClaim666.signature = await claimIssuerWallet.signMessage(ethers.utils.arrayify(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address', 'uint256', 'bytes'], [aliceClaim666.identity, aliceClaim666.topic, aliceClaim666.data]))));
+      aliceClaim666.signature = await claimIssuerWallet.signMessage(ethers.getBytes(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address', 'uint256', 'bytes'], [aliceClaim666.identity, aliceClaim666.topic, aliceClaim666.data]))));
       await aliceIdentity.connect(aliceWallet).addClaim(
         aliceClaim666.topic,
         aliceClaim666.scheme,
@@ -43,9 +43,9 @@ describe('VerifierUser', () => {
       );
 
       const action = {
-        to: verifierUser.address,
+        to: verifierUser,
         value: 0,
-        data: new ethers.utils.Interface(['function doSomething()']).encodeFunctionData('doSomething'),
+        data: new ethers.Interface(['function doSomething()']).encodeFunctionData('doSomething'),
       };
 
       const tx = await aliceIdentity.connect(aliceWallet).execute(
@@ -60,24 +60,24 @@ describe('VerifierUser', () => {
   describe('when identity is not verified', () => {
     it('should revert', async () => {
       const [deployer, aliceWallet, claimIssuerWallet] = await ethers.getSigners();
-      const claimIssuer = await ethers.deployContract('ClaimIssuer', [claimIssuerWallet.address]);
-      const aliceIdentity = await ethers.deployContract('Identity', [aliceWallet.address, false]);
+      const claimIssuer = await ethers.deployContract('ClaimIssuer', [claimIssuerWallet]);
+      const aliceIdentity = await ethers.deployContract('Identity', [aliceWallet, false]);
       const verifierUser = await ethers.deployContract('VerifierUser', []);
 
       await verifierUser.addClaimTopic(666);
-      await verifierUser.addTrustedIssuer(claimIssuer.address, [666]);
+      await verifierUser.addTrustedIssuer(claimIssuer, [666]);
 
       const aliceClaim666 = {
         id: '',
-        identity: aliceIdentity.address,
-        issuer: claimIssuer.address,
+        identity: await aliceIdentity.getAddress(),
+        issuer: await claimIssuer.getAddress(),
         topic: 666,
         scheme: 1,
         data: '0x0042',
         signature: '',
         uri: 'https://example.com',
       };
-      aliceClaim666.signature = await claimIssuerWallet.signMessage(ethers.utils.arrayify(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address', 'uint256', 'bytes'], [aliceClaim666.identity, aliceClaim666.topic, aliceClaim666.data]))));
+      aliceClaim666.signature = await claimIssuerWallet.signMessage(ethers.getBytes(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address', 'uint256', 'bytes'], [aliceClaim666.identity, aliceClaim666.topic, aliceClaim666.data]))));
       await aliceIdentity.connect(aliceWallet).addClaim(
         aliceClaim666.topic,
         aliceClaim666.scheme,
@@ -90,9 +90,9 @@ describe('VerifierUser', () => {
       await claimIssuer.connect(claimIssuerWallet).revokeClaimBySignature(aliceClaim666.signature);
 
       const action = {
-        to: verifierUser.address,
+        to: verifierUser,
         value: 0,
-        data: new ethers.utils.Interface(['function doSomething()']).encodeFunctionData('doSomething'),
+        data: new ethers.Interface(['function doSomething()']).encodeFunctionData('doSomething'),
       };
 
       const tx = await aliceIdentity.connect(aliceWallet).execute(
