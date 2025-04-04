@@ -1,7 +1,7 @@
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from "chai";
-import {ethers} from "hardhat";
-import {deployIdentityFixture} from "../fixtures";
+import { ethers } from "hardhat";
+import { deployIdentityFixture } from "../fixtures";
 
 describe('ClaimIssuer - Reference (with revoke)', () => {
   describe('revokeClaim (deprecated)', () => {

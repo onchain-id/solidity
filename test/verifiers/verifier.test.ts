@@ -9,7 +9,7 @@ describe('Verifier', () => {
         const [deployer, aliceWallet] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
 
-        await expect(verifier.verify(aliceWallet.address)).to.eventually.be.true;
+        expect(await verifier.verify(aliceWallet.address)).to.equal(true);
       });
     });
 
@@ -19,7 +19,7 @@ describe('Verifier', () => {
         const verifier = await ethers.deployContract('Verifier');
         await verifier.addClaimTopic(ethers.encodeBytes32String('SOME_TOPIC'));
 
-        await expect(verifier.verify(aliceWallet.address)).to.eventually.be.false;
+        expect(await verifier.verify(aliceWallet.address)).to.equal(false);
       });
     });
 
@@ -30,7 +30,7 @@ describe('Verifier', () => {
         await verifier.addClaimTopic(ethers.encodeBytes32String('SOME_TOPIC'));
         await verifier.addTrustedIssuer(deployer.address, [ethers.encodeBytes32String('SOME_OTHER_TOPIC')]);
 
-        await expect(verifier.verify(aliceWallet.address)).to.eventually.be.false;
+        expect(await verifier.verify(aliceWallet.address)).to.equal(false);
       });
     });
 
@@ -44,7 +44,7 @@ describe('Verifier', () => {
           await verifier.addClaimTopic(ethers.encodeBytes32String('SOME_TOPIC'));
           await verifier.addTrustedIssuer(claimIssuer.target, [ethers.encodeBytes32String('SOME_TOPIC')]);
 
-          await expect(verifier.verify(aliceIdentity.target)).to.eventually.be.false;
+          expect(await verifier.verify(aliceIdentity.target)).to.equal(false);
         });
       });
 
@@ -81,7 +81,7 @@ describe('Verifier', () => {
             aliceClaim666.signature,
           );
 
-          await expect(verifier.verify(aliceIdentity.target)).to.eventually.be.false;
+          expect(await verifier.verify(aliceIdentity.target)).to.equal(false);
         });
       });
 
@@ -115,7 +115,7 @@ describe('Verifier', () => {
             aliceClaim666.uri,
           );
 
-          await expect(verifier.verify(aliceIdentity.target)).to.eventually.be.true;
+          expect(await verifier.verify(aliceIdentity.target)).to.equal(true);
         });
       });
     });
@@ -217,7 +217,7 @@ describe('Verifier', () => {
 
           await claimIssuerB.connect(claimIssuerBWallet).revokeClaimBySignature(aliceClaim666B.signature);
 
-          await expect(verifier.verify(aliceIdentity.target)).to.eventually.be.true;
+          expect(await verifier.verify(aliceIdentity.target)).to.equal(true);
         });
       });
 
@@ -296,7 +296,7 @@ describe('Verifier', () => {
 
           await claimIssuerB.connect(claimIssuerBWallet).revokeClaimBySignature(aliceClaim42.signature);
 
-          await expect(verifier.verify(aliceIdentity.target)).to.eventually.be.false;
+          expect(await verifier.verify(aliceIdentity.target)).to.equal(false);
         });
       });
     });
@@ -305,7 +305,7 @@ describe('Verifier', () => {
   describe('.removeClaimTopic', () => {
     describe('when not called by the owner', () => {
       it('should revert', async () => {
-        const [deployer, aliceWallet] = await ethers.getSigners();
+        const [, aliceWallet] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
 
         await expect(verifier.connect(aliceWallet).removeClaimTopic(2)).to.be.revertedWith('Ownable: caller is not the owner');
@@ -314,7 +314,6 @@ describe('Verifier', () => {
 
     describe('when called by the owner', () => {
       it('should remove the claim topic', async () => {
-        const [deployer] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
         await verifier.addClaimTopic(1);
         await verifier.addClaimTopic(2);
@@ -332,7 +331,7 @@ describe('Verifier', () => {
   describe('.removeTrustedIssuer', () => {
     describe('when not called by the owner', () => {
       it('should revert', async () => {
-        const [deployer, aliceWallet] = await ethers.getSigners();
+        const [, aliceWallet] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
         const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
 
@@ -342,7 +341,7 @@ describe('Verifier', () => {
 
     describe('when called by the owner', () => {
       it('should remove the trusted issuer', async () => {
-        const [deployer, aliceWallet] = await ethers.getSigners();
+        const [, aliceWallet] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
         const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
         const claimIssuerB = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
@@ -358,7 +357,6 @@ describe('Verifier', () => {
 
     describe('when issuer address is zero', () => {
       it('should revert', async () => {
-        const [deployer] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
 
         await expect(verifier.removeTrustedIssuer(ethers.ZeroAddress)).to.be.revertedWithCustomError(verifier, 'ZeroAddress');
@@ -367,7 +365,7 @@ describe('Verifier', () => {
 
     describe('when issuer is not trusted', () => {
       it('should revert', async () => {
-        const [deployer, aliceWallet] = await ethers.getSigners();
+        const [, aliceWallet] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
         const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
 
@@ -379,7 +377,7 @@ describe('Verifier', () => {
   describe('.addTrustedIssuer', () => {
     describe('when not called by the owner', () => {
       it('should revert', async () => {
-        const [deployer, aliceWallet] = await ethers.getSigners();
+        const [, aliceWallet] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
         const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
 
@@ -389,7 +387,6 @@ describe('Verifier', () => {
 
     describe('when issuer address is the zero', () => {
       it('should revert', async () => {
-        const [deployer] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
 
         await expect(verifier.addTrustedIssuer(ethers.ZeroAddress, [1])).to.be.revertedWithCustomError(verifier, 'ZeroAddress');
@@ -398,7 +395,7 @@ describe('Verifier', () => {
 
     describe('when issuer is already trusted', () => {
       it('should revert', async () => {
-        const [deployer, aliceWallet] = await ethers.getSigners();
+        const [, aliceWallet] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
         const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
         await verifier.addTrustedIssuer(claimIssuer.target, [1]);
@@ -443,7 +440,7 @@ describe('Verifier', () => {
   describe('.updateIssuerClaimTopics', () => {
     describe('when not called by the owner', () => {
       it('should revert', async () => {
-        const [deployer, aliceWallet] = await ethers.getSigners();
+        const [, aliceWallet] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
         const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
 
@@ -453,7 +450,7 @@ describe('Verifier', () => {
 
     describe('when called by the owner', () => {
       it('should update the issuer claim topics', async () => {
-        const [deployer, aliceWallet] = await ethers.getSigners();
+        const [,aliceWallet] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
         const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
         await verifier.addTrustedIssuer(claimIssuer.target, [1]);
@@ -478,7 +475,7 @@ describe('Verifier', () => {
 
     describe('when issuer is not trusted', () => {
       it('should revert', async () => {
-        const [deployer, aliceWallet] = await ethers.getSigners();
+        const [, aliceWallet] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
         const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
 
@@ -488,7 +485,7 @@ describe('Verifier', () => {
 
     describe('when list of topics contains more than 15 topics', () => {
       it('should revert', async () => {
-        const [deployer, aliceWallet] = await ethers.getSigners();
+        const [, aliceWallet] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
         const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
         await verifier.addTrustedIssuer(claimIssuer.target, [1]);
@@ -499,7 +496,7 @@ describe('Verifier', () => {
 
     describe('when list of topics is empty', () => {
       it('should revert', async () => {
-        const [deployer, aliceWallet] = await ethers.getSigners();
+        const [, aliceWallet] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
         const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
         await verifier.addTrustedIssuer(claimIssuer.target, [1]);
@@ -512,7 +509,7 @@ describe('Verifier', () => {
   describe('.getTrustedIssuerClaimTopic', () => {
     describe('when issuer is not trusted', () => {
       it('should revert', async () => {
-        const [deployer, aliceWallet] = await ethers.getSigners();
+        const [, aliceWallet] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
         const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
 

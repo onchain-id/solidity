@@ -5,6 +5,8 @@ import { IIdentity } from "./interface/IIdentity.sol";
 import { IClaimIssuer } from "./interface/IClaimIssuer.sol";
 import { Version } from "./version/Version.sol";
 import { Storage } from "./storage/Storage.sol";
+import { KeyPurposes } from "./libraries/KeyPurposes.sol";
+import { KeyTypes } from "./libraries/KeyTypes.sol";
 
 error CannotApproveNonExistingExecution();
 error ClaimNotExists();
@@ -40,7 +42,7 @@ contract Identity is Storage, IIdentity, Version {
      * @notice requires management key to call this function, or internal call
      */
     modifier onlyManager() {
-        require(msg.sender == address(this) || keyHasPurpose(keccak256(abi.encode(msg.sender)), 1)
+        require(msg.sender == address(this) || keyHasPurpose(keccak256(abi.encode(msg.sender)), KeyPurposes.MANAGEMENT)
         , SenderDoesNotHaveManagementKey());
         _;
     }
@@ -49,7 +51,7 @@ contract Identity is Storage, IIdentity, Version {
      * @notice requires claim key to call this function, or internal call
      */
     modifier onlyClaimKey() {
-        require(msg.sender == address(this) || keyHasPurpose(keccak256(abi.encode(msg.sender)), 3)
+        require(msg.sender == address(this) || keyHasPurpose(keccak256(abi.encode(msg.sender)), KeyPurposes.CLAIM_SIGNER)
         , SenderDoesNotHaveClaimSignerKey());
         _;
     }
@@ -105,10 +107,10 @@ contract Identity is Storage, IIdentity, Version {
 
         emit ExecutionRequested(_executionId, _to, _value, _data);
 
-        if (keyHasPurpose(keccak256(abi.encode(msg.sender)), 1)) {
+        if (keyHasPurpose(keccak256(abi.encode(msg.sender)), KeyPurposes.MANAGEMENT)) {
             approve(_executionId, true);
         }
-        else if (_to != address(this) && keyHasPurpose(keccak256(abi.encode(msg.sender)), 2)){
+        else if (_to != address(this) && keyHasPurpose(keccak256(abi.encode(msg.sender)), KeyPurposes.ACTION)){
             approve(_executionId, true);
         }
 
@@ -239,10 +241,10 @@ contract Identity is Storage, IIdentity, Version {
         require(!_executions[_id].executed, RequestAlreadyExecuted());
 
         if(_executions[_id].to == address(this)) {
-            require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 1), SenderDoesNotHaveManagementKey());
+            require(keyHasPurpose(keccak256(abi.encode(msg.sender)), KeyPurposes.MANAGEMENT), SenderDoesNotHaveManagementKey());
         }
         else {
-            require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 2), SenderDoesNotHaveActionKey());
+            require(keyHasPurpose(keccak256(abi.encode(msg.sender)), KeyPurposes.ACTION), SenderDoesNotHaveActionKey());
         }
 
         emit Approved(_id, _approve);
@@ -496,7 +498,7 @@ contract Identity is Storage, IIdentity, Version {
         for (uint keyPurposeIndex = 0; keyPurposeIndex < key.purposes.length; keyPurposeIndex++) {
             uint256 purpose = key.purposes[keyPurposeIndex];
 
-            if (purpose == 1 || purpose == _purpose) return true;
+            if (purpose == KeyPurposes.MANAGEMENT || purpose == _purpose) return true;
         }
 
         return false;
@@ -531,11 +533,7 @@ contract Identity is Storage, IIdentity, Version {
 
         // Does the trusted identifier have they key which signed the user's claim?
         //  && (isClaimRevoked(_claimId) == false)
-        if (keyHasPurpose(hashedAddr, 3)) {
-            return true;
-        }
-
-        return false;
+        return keyHasPurpose(hashedAddr, KeyPurposes.CLAIM_SIGNER);
     }
 
     /**
@@ -588,10 +586,10 @@ contract Identity is Storage, IIdentity, Version {
 
         bytes32 _key = keccak256(abi.encode(initialManagementKey));
         _keys[_key].key = _key;
-        _keys[_key].purposes = [1];
-        _keys[_key].keyType = 1;
-        _keysByPurpose[1].push(_key);
-        emit KeyAdded(_key, 1, 1);
+        _keys[_key].purposes = [ KeyPurposes.MANAGEMENT ];
+        _keys[_key].keyType = KeyTypes.ECDSA;
+        _keysByPurpose[KeyPurposes.MANAGEMENT].push(_key);
+        emit KeyAdded(_key, KeyPurposes.MANAGEMENT, KeyTypes.ECDSA);
     }
 
     /**

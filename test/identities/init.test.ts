@@ -1,8 +1,9 @@
-import {loadFixture} from '@nomicfoundation/hardhat-network-helpers';
-import {expect} from "chai";
-import {ethers} from "hardhat";
+import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
+import { expect } from "chai";
+import { ethers } from "hardhat";
 
-import {deployIdentityFixture} from '../fixtures';
+import { deployIdentityFixture } from '../fixtures';
+import { KeyPurposes, KeyTypes } from '../constants';
 
 describe('Identity', () => {
   it('should revert when attempting to initialize an already deployed identity', async () => {
@@ -18,8 +19,8 @@ describe('Identity', () => {
       ethers.keccak256(
         ethers.AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])
       ),
-      3,
-      1,
+      KeyPurposes.CLAIM_SIGNER,
+      KeyTypes.ECDSA,
     )).to.be.revertedWithCustomError(identityImplementation, 'InteractingWithLibraryForbidden');
 
     await expect(identityImplementation.connect(aliceWallet).initialize(deployerWallet.address))

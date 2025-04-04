@@ -6,8 +6,8 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IdentityProxy } from "../proxy/IdentityProxy.sol";
 import { IIdFactory } from "./IIdFactory.sol";
 import { IERC734 } from "../interface/IERC734.sol";
-
-
+import { KeyPurposes } from "../libraries/KeyPurposes.sol";
+import { KeyTypes } from "../libraries/KeyTypes.sol";
 
 error AlreadyFactory();
 error CannotBeCalledOnSenderAddress();
@@ -119,14 +119,14 @@ contract IdFactory is IIdFactory, Ownable {
                 , WalletAlsoListedInManagementKeys());
             IERC734(identity).addKey(
                 _managementKeys[i],
-                1,
-                1
+                KeyPurposes.MANAGEMENT,
+                KeyTypes.ECDSA
             );
         }
 
         IERC734(identity).removeKey(
             keccak256(abi.encode(address(this))),
-            1
+            KeyPurposes.MANAGEMENT
         );
 
         _saltTaken[oidSalt] = true;

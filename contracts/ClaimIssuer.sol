@@ -3,6 +3,7 @@ pragma solidity 0.8.27;
 
 import { IClaimIssuer } from "./interface/IClaimIssuer.sol";
 import { Identity, IIdentity } from "./Identity.sol";
+import { KeyPurposes } from "./libraries/KeyPurposes.sol";
 
 error ClaimAlreadyRevoked();
 
@@ -64,21 +65,14 @@ contract ClaimIssuer is IClaimIssuer, Identity {
 
         // Does the trusted identifier have they key which signed the user's claim?
         //  && (isClaimRevoked(_claimId) == false)
-        if (keyHasPurpose(hashedAddr, 3) && (isClaimRevoked(sig) == false)) {
-            return true;
-        }
-
-        return false;
+        return keyHasPurpose(hashedAddr, KeyPurposes.CLAIM_SIGNER) && !isClaimRevoked(sig);
     }
 
     /**
      *  @dev See {IClaimIssuer-isClaimRevoked}.
      */
     function isClaimRevoked(bytes memory _sig) public override view returns (bool) {
-        if (revokedClaims[_sig]) {
-            return true;
-        }
-
-        return false;
+        return revokedClaims[_sig];
     }
+
 }

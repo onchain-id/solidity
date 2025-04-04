@@ -16,7 +16,7 @@ describe("TopicIdMapping", () => {
   it("deployer should be owner", async () => {
     const [deployerWallet] = await ethers.getSigners();
     const topicIdMapping = await ethers.deployContract("TopicIdMapping", []);
-    await expect(topicIdMapping.owner()).to.eventually.equal(
+    expect(await topicIdMapping.owner()).to.equal(
       deployerWallet.address
     );
   });
@@ -41,8 +41,8 @@ describe("TopicIdMapping", () => {
     await topicIdMapping
       .connect(deployerWallet)
       .setTopicName(TEST_TOPIC_ID, TEST_TOPIC_NAME);
-    await expect(
-      topicIdMapping.getTopicName(TEST_TOPIC_ID)
-    ).to.eventually.equal(TEST_TOPIC_NAME);
+    expect(
+      await topicIdMapping.getTopicName(TEST_TOPIC_ID)
+    ).to.equal(TEST_TOPIC_NAME);
   });
 });

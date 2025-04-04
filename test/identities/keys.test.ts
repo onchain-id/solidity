@@ -1,8 +1,9 @@
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from "chai";
-import {ethers} from "hardhat";
+import { ethers } from "hardhat";
 
 import { deployIdentityFixture } from '../fixtures';
+import { KeyPurposes, KeyTypes } from '../constants';
 
 describe('Identity', () => {
   describe('Key Management', () => {
@@ -15,8 +16,8 @@ describe('Identity', () => {
         );
         const aliceKey = await aliceIdentity.getKey(aliceKeyHash);
         expect(aliceKey.key).to.equal(aliceKeyHash);
-        expect(aliceKey.purposes).to.deep.equal([1]);
-        expect(aliceKey.keyType).to.equal(1);
+        expect(aliceKey.purposes).to.deep.equal([KeyPurposes.MANAGEMENT]);
+        expect(aliceKey.keyType).to.equal(KeyTypes.ECDSA);
       });
 
       it('should retrieve existing key purposes', async () => {
@@ -26,7 +27,7 @@ describe('Identity', () => {
           ethers.AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])
         );
         const purposes = await aliceIdentity.getKeyPurposes(aliceKeyHash);
-        expect(purposes).to.deep.equal([1]);
+        expect(purposes).to.deep.equal([KeyPurposes.MANAGEMENT]);
       });
 
       it('should retrieve existing keys with given purpose', async () => {
@@ -35,7 +36,7 @@ describe('Identity', () => {
         const aliceKeyHash = ethers.keccak256(
           ethers.AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])
         );
-        const keys = await aliceIdentity.getKeysByPurpose(1);
+        const keys = await aliceIdentity.getKeysByPurpose(KeyPurposes.MANAGEMENT);
         expect(keys).to.deep.equal([aliceKeyHash]);
       });
 
@@ -45,7 +46,7 @@ describe('Identity', () => {
         const aliceKeyHash = ethers.keccak256(
           ethers.AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])
         );
-        const hasPurpose = await aliceIdentity.keyHasPurpose(aliceKeyHash, 1);
+        const hasPurpose = await aliceIdentity.keyHasPurpose(aliceKeyHash, KeyPurposes.MANAGEMENT);
         expect(hasPurpose).to.equal(true);
       });
 
@@ -55,7 +56,7 @@ describe('Identity', () => {
         const aliceKeyHash = ethers.keccak256(
           ethers.AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])
         );
-        const hasPurpose = await aliceIdentity.keyHasPurpose(aliceKeyHash, 2);
+        const hasPurpose = await aliceIdentity.keyHasPurpose(aliceKeyHash, KeyPurposes.ACTION);
         expect(hasPurpose).to.equal(true);
       });
 
@@ -65,7 +66,7 @@ describe('Identity', () => {
         const bobKeyHash = ethers.keccak256(
           ethers.AbiCoder.defaultAbiCoder().encode(['address'], [bobWallet.address])
         );
-        const hasPurpose = await aliceIdentity.keyHasPurpose(bobKeyHash, 2);
+        const hasPurpose = await aliceIdentity.keyHasPurpose(bobKeyHash, KeyPurposes.ACTION);
         expect(hasPurpose).to.equal(false);
       });
     });
@@ -79,7 +80,7 @@ describe('Identity', () => {
             ethers.AbiCoder.defaultAbiCoder().encode(['address'], [bobWallet.address])
           );
           await expect(
-            aliceIdentity.connect(bobWallet).addKey(bobKeyHash, 1, 1)
+            aliceIdentity.connect(bobWallet).addKey(bobKeyHash, KeyPurposes.MANAGEMENT, KeyTypes.ECDSA)
           ).to.be.revertedWithCustomError(aliceIdentity, 'SenderDoesNotHaveManagementKey');
         });
       });
@@ -91,11 +92,11 @@ describe('Identity', () => {
           const aliceKeyHash = ethers.keccak256(
             ethers.AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])
           );
-          await aliceIdentity.connect(aliceWallet).addKey(aliceKeyHash, 2, 1);
+          await aliceIdentity.connect(aliceWallet).addKey(aliceKeyHash, KeyPurposes.ACTION, KeyTypes.ECDSA);
           const aliceKey = await aliceIdentity.getKey(aliceKeyHash);
           expect(aliceKey.key).to.equal(aliceKeyHash);
-          expect(aliceKey.purposes).to.deep.equal([1, 2]);
-          expect(aliceKey.keyType).to.equal(1);
+          expect(aliceKey.purposes).to.deep.equal([KeyPurposes.MANAGEMENT, KeyPurposes.ACTION]);
+          expect(aliceKey.keyType).to.equal(KeyTypes.ECDSA);
         });
 
         it('should add a new key with a purpose', async () => {
@@ -104,11 +105,11 @@ describe('Identity', () => {
           const bobKeyHash = ethers.keccak256(
             ethers.AbiCoder.defaultAbiCoder().encode(['address'], [bobWallet.address])
           );
-          await aliceIdentity.connect(aliceWallet).addKey(bobKeyHash, 1, 1);
+          await aliceIdentity.connect(aliceWallet).addKey(bobKeyHash, KeyPurposes.MANAGEMENT, KeyTypes.ECDSA);
           const bobKey = await aliceIdentity.getKey(bobKeyHash);
           expect(bobKey.key).to.equal(bobKeyHash);
-          expect(bobKey.purposes).to.deep.equal([1]);
-          expect(bobKey.keyType).to.equal(1);
+          expect(bobKey.purposes).to.deep.equal([KeyPurposes.MANAGEMENT]);
+          expect(bobKey.keyType).to.equal(KeyTypes.ECDSA);
         });
 
         it('should revert because key already has the purpose', async () => {
@@ -118,7 +119,7 @@ describe('Identity', () => {
             ethers.AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])
           );
           await expect(
-            aliceIdentity.connect(aliceWallet).addKey(aliceKeyHash, 1, 1)
+            aliceIdentity.connect(aliceWallet).addKey(aliceKeyHash, KeyPurposes.MANAGEMENT, KeyTypes.ECDSA)
           ).to.be.revertedWithCustomError(aliceIdentity, 'KeyAlreadyHasPurpose');
         });
       });
@@ -133,7 +134,7 @@ describe('Identity', () => {
             ethers.AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])
           );
           await expect(
-            aliceIdentity.connect(bobWallet).removeKey(aliceKeyHash, 1)
+            aliceIdentity.connect(bobWallet).removeKey(aliceKeyHash, KeyPurposes.MANAGEMENT)
           ).to.be.revertedWithCustomError(aliceIdentity, 'SenderDoesNotHaveManagementKey');
         });
       });
@@ -159,7 +160,7 @@ describe('Identity', () => {
             ethers.AbiCoder.defaultAbiCoder().encode(['address'], [bobWallet.address])
           );
           await expect(
-            aliceIdentity.connect(aliceWallet).removeKey(bobKeyHash, 2)
+            aliceIdentity.connect(aliceWallet).removeKey(bobKeyHash, KeyPurposes.ACTION)
           ).to.be.revertedWithCustomError(aliceIdentity, 'KeyNotRegistered');
         });
 
@@ -170,7 +171,7 @@ describe('Identity', () => {
             ethers.AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])
           );
           await expect(
-            aliceIdentity.connect(aliceWallet).removeKey(aliceKeyHash, 2)
+            aliceIdentity.connect(aliceWallet).removeKey(aliceKeyHash, KeyPurposes.ACTION)
           ).to.be.revertedWithCustomError(aliceIdentity, 'KeyDoesNotHavePurpose');
         });
       });

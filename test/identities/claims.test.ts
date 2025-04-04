@@ -25,7 +25,7 @@ describe('Identity', () => {
 
             const tx = await aliceIdentity.connect(aliceWallet).addClaim(claim.topic, claim.scheme, claim.issuer, claim.signature, claim.data, claim.uri);
             await expect(tx).to.emit(aliceIdentity, 'ClaimAdded').withArgs(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address', 'uint256'], [claim.issuer, claim.topic])), claim.topic, claim.scheme, claim.issuer, claim.signature, claim.data, claim.uri);
-            await expect(aliceIdentity.isClaimValid(claim.identity, claim.topic, claim.signature, claim.data)).to.eventually.equal(false);
+            expect(await aliceIdentity.isClaimValid(claim.identity, claim.topic, claim.signature, claim.data)).to.equal(false);
           });
         });
 
@@ -63,7 +63,7 @@ describe('Identity', () => {
               await expect(tx).to.emit(aliceIdentity, 'ClaimAdded').withArgs(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address', 'uint256'], [claim.issuer, claim.topic])), claim.topic, claim.scheme, claim.issuer, claim.signature, claim.data, claim.uri);
               await expect(tx).to.emit(aliceIdentity, 'Approved');
               await expect(tx).to.emit(aliceIdentity, 'Executed');
-              await expect(aliceIdentity.isClaimValid(claim.identity, claim.topic, claim.signature, claim.data)).to.eventually.equal(true);
+              expect(await aliceIdentity.isClaimValid(claim.identity, claim.topic, claim.signature, claim.data)).to.equal(true);
             });
           });
 
@@ -335,13 +335,13 @@ describe('Identity', () => {
       it('should return an empty array when there are no claims for the topic', async () => {
         const { aliceIdentity } = await loadFixture(deployIdentityFixture);
 
-        await expect(aliceIdentity.getClaimIdsByTopic(101010)).to.eventually.deep.equal([]);
+        expect(await aliceIdentity.getClaimIdsByTopic(101010)).to.deep.equal([]);
       });
 
       it('should return an array of claim Id existing fo the topic', async () => {
         const { aliceIdentity, aliceClaim666 } = await loadFixture(deployIdentityFixture);
 
-        await expect(aliceIdentity.getClaimIdsByTopic(aliceClaim666.topic)).to.eventually.deep.equal([aliceClaim666.id]);
+        expect(await aliceIdentity.getClaimIdsByTopic(aliceClaim666.topic)).to.deep.equal([aliceClaim666.id]);
       });
     });
   });
