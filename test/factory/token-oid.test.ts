@@ -11,7 +11,7 @@ describe('IdFactory', () => {
 
       await expect(identityFactory.connect(aliceWallet).addTokenFactory(aliceWallet.address)).to.be.revertedWith('Ownable: caller is not the owner');
 
-      await expect(identityFactory.connect(deployerWallet).addTokenFactory(ethers.constants.AddressZero)).to.be.revertedWithCustomError(identityFactory, 'ZeroAddress');
+      await expect(identityFactory.connect(deployerWallet).addTokenFactory(ethers.ZeroAddress)).to.be.revertedWithCustomError(identityFactory, 'ZeroAddress');
 
       const addTx = await identityFactory.connect(deployerWallet).addTokenFactory(aliceWallet.address);
       await expect(addTx).to.emit(identityFactory, 'TokenFactoryAdded').withArgs(aliceWallet.address);
@@ -20,7 +20,7 @@ describe('IdFactory', () => {
 
       await expect(identityFactory.connect(aliceWallet).removeTokenFactory(bobWallet.address)).to.be.revertedWith('Ownable: caller is not the owner');
 
-      await expect(identityFactory.connect(deployerWallet).removeTokenFactory(ethers.constants.AddressZero)).to.be.revertedWithCustomError(identityFactory, 'ZeroAddress');
+      await expect(identityFactory.connect(deployerWallet).removeTokenFactory(ethers.ZeroAddress)).to.be.revertedWithCustomError(identityFactory, 'ZeroAddress');
 
       await expect(identityFactory.connect(deployerWallet).removeTokenFactory(bobWallet.address)).to.be.revertedWithCustomError(identityFactory, 'NotFactory');
 
@@ -39,13 +39,13 @@ describe('IdFactory', () => {
     it('should revert for token address being zero address', async () => {
       const { identityFactory, deployerWallet, aliceWallet } = await loadFixture(deployFactoryFixture);
 
-      await expect(identityFactory.connect(deployerWallet).createTokenIdentity(ethers.constants.AddressZero, aliceWallet.address, 'TST')).to.be.revertedWithCustomError(identityFactory, 'ZeroAddress');
+      await expect(identityFactory.connect(deployerWallet).createTokenIdentity(ethers.ZeroAddress, aliceWallet.address, 'TST')).to.be.revertedWithCustomError(identityFactory, 'ZeroAddress');
     });
 
     it('should revert for owner being zero address', async () => {
       const { identityFactory, deployerWallet, aliceWallet } = await loadFixture(deployFactoryFixture);
 
-      await expect(identityFactory.connect(deployerWallet).createTokenIdentity(aliceWallet.address, ethers.constants.AddressZero, 'TST')).to.be.revertedWithCustomError(identityFactory, 'ZeroAddress');
+      await expect(identityFactory.connect(deployerWallet).createTokenIdentity(aliceWallet.address, ethers.ZeroAddress, 'TST')).to.be.revertedWithCustomError(identityFactory, 'ZeroAddress');
     });
 
     it('should revert for salt being empty', async () => {

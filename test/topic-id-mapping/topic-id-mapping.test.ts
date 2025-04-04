@@ -8,7 +8,9 @@ describe("TopicIdMapping", () => {
   it("should deploy", async () => {
    await ethers.getSigners();
     const topicIdMapping = await ethers.deployContract("TopicIdMapping", []);
-    await expect(topicIdMapping.deployed()).to.eventually.be.ok;
+    await topicIdMapping.waitForDeployment();
+
+    expect(topicIdMapping.target).to.not.equal(ethers.ZeroAddress);
   });
 
   it("deployer should be owner", async () => {

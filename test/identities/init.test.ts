@@ -15,8 +15,8 @@ describe('Identity', () => {
     const {identityImplementation, aliceWallet, deployerWallet} = await loadFixture(deployIdentityFixture);
 
     await expect(identityImplementation.connect(deployerWallet).addKey(
-      ethers.utils.keccak256(
-        ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address])
+      ethers.keccak256(
+        ethers.AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])
       ),
       3,
       1,
@@ -30,7 +30,7 @@ describe('Identity', () => {
     const [identityOwnerWallet] = await ethers.getSigners();
 
     const Identity = await ethers.getContractFactory('Identity');
-    await expect(Identity.connect(identityOwnerWallet).deploy(ethers.constants.AddressZero, false)).to.be.revertedWithCustomError(Identity, 'ZeroAddress');
+    await expect(Identity.connect(identityOwnerWallet).deploy(ethers.ZeroAddress, false)).to.be.revertedWithCustomError(Identity, 'ZeroAddress');
   });
 
   it('should return the version of the implementation', async () => {

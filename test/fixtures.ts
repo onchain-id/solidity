@@ -11,12 +11,12 @@ export async function deployFactoryFixture() {
     'ImplementationAuthority'
   );
   const implementationAuthority = await ImplementationAuthority.connect(deployerWallet).deploy(
-    identityImplementation.address,
+    identityImplementation.target,
   );
 
   const IdentityFactory = await ethers.getContractFactory('IdFactory');
   const identityFactory = await IdentityFactory.connect(deployerWallet).deploy(
-    implementationAuthority.address,
+    implementationAuthority.target,
   );
 
   return {
@@ -41,8 +41,8 @@ export async function deployIdentityFixture() {
   const ClaimIssuer = await ethers.getContractFactory('ClaimIssuer');
   const claimIssuer = await ClaimIssuer.connect(claimIssuerWallet).deploy(claimIssuerWallet.address);
   await claimIssuer.connect(claimIssuerWallet).addKey(
-    ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(['address'], [claimIssuerWallet.address])
+    ethers.keccak256(
+      ethers.AbiCoder.defaultAbiCoder().encode(['address'], [claimIssuerWallet.address])
     ),
     3,
     1,
@@ -50,24 +50,24 @@ export async function deployIdentityFixture() {
 
   await identityFactory.connect(deployerWallet).createIdentity(aliceWallet.address, 'alice');
   const aliceIdentity = await ethers.getContractAt('Identity', await identityFactory.getIdentity(aliceWallet.address));
-  await aliceIdentity.connect(aliceWallet).addKey(ethers.utils.keccak256(
-    ethers.utils.defaultAbiCoder.encode(['address'], [carolWallet.address])
+  await aliceIdentity.connect(aliceWallet).addKey(ethers.keccak256(
+    ethers.AbiCoder.defaultAbiCoder().encode(['address'], [carolWallet.address])
   ), 3, 1);
-  await aliceIdentity.connect(aliceWallet).addKey(ethers.utils.keccak256(
-    ethers.utils.defaultAbiCoder.encode(['address'], [davidWallet.address])
+  await aliceIdentity.connect(aliceWallet).addKey(ethers.keccak256(
+    ethers.AbiCoder.defaultAbiCoder().encode(['address'], [davidWallet.address])
   ), 2, 1);
   const aliceClaim666 = {
     id: '',
-    identity: aliceIdentity.address,
-    issuer: claimIssuer.address,
+    identity: aliceIdentity.target,
+    issuer: claimIssuer.target,
     topic: 666,
     scheme: 1,
     data: '0x0042',
     signature: '',
     uri: 'https://example.com',
   };
-  aliceClaim666.id = ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address', 'uint256'], [aliceClaim666.issuer, aliceClaim666.topic]));
-  aliceClaim666.signature = await claimIssuerWallet.signMessage(ethers.utils.arrayify(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address', 'uint256', 'bytes'], [aliceClaim666.identity, aliceClaim666.topic, aliceClaim666.data]))));
+  aliceClaim666.id = ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address', 'uint256'], [aliceClaim666.issuer, aliceClaim666.topic]));
+  aliceClaim666.signature = await claimIssuerWallet.signMessage(ethers.getBytes(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address', 'uint256', 'bytes'], [aliceClaim666.identity, aliceClaim666.topic, aliceClaim666.data]))));
 
   await aliceIdentity.connect(aliceWallet).addClaim(aliceClaim666.topic, aliceClaim666.scheme, aliceClaim666.issuer, aliceClaim666.signature, aliceClaim666.data, aliceClaim666.uri);
 
