@@ -1,10 +1,30 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.27;
 
-import "../proxy/IdentityProxy.sol";
-import "./IIdFactory.sol";
-import "../interface/IERC734.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+
+import { IdentityProxy } from "../proxy/IdentityProxy.sol";
+import { IIdFactory } from "./IIdFactory.sol";
+import { IERC734 } from "../interface/IERC734.sol";
+
+
+
+error AlreadyFactory();
+error CannotBeCalledOnSenderAddress();
+error EmptyListOfKeys();
+error EmptyString();
+error NotFactory();
+error MaxWalletsPerIdentityExceeded();
+error OnlyLinkedWalletCanUnlink();
+error OwnableUnauthorizedAccount(address account); // OZ
+error SaltTaken();
+error TokenAddress();
+error TokenAlreadyLinked();
+error WalletAlreadyLinkedToIdentity();
+error WalletAlsoListedInManagementKeys();
+error WalletNotLinkedToIdentity();
+error ZeroAddress();
+
 
 contract IdFactory is IIdFactory, Ownable {
 
@@ -31,17 +51,17 @@ contract IdFactory is IIdFactory, Ownable {
 
 
     // setting
-    constructor (address implementationAuthority) {
-        require(implementationAuthority != address(0), "invalid argument - zero address");
-        _implementationAuthority = implementationAuthority;
+    constructor (address implementationAuthorityAddress) {
+        require(implementationAuthorityAddress != address(0), ZeroAddress());
+        _implementationAuthority = implementationAuthorityAddress;
     }
 
     /**
      *  @dev See {IdFactory-addTokenFactory}.
      */
     function addTokenFactory(address _factory) external override onlyOwner {
-        require(_factory != address(0), "invalid argument - zero address");
-        require(!isTokenFactory(_factory), "already a factory");
+        require(_factory != address(0), ZeroAddress());
+        require(!isTokenFactory(_factory), AlreadyFactory());
         _tokenFactories[_factory] = true;
         emit TokenFactoryAdded(_factory);
     }
@@ -50,8 +70,8 @@ contract IdFactory is IIdFactory, Ownable {
      *  @dev See {IdFactory-removeTokenFactory}.
      */
     function removeTokenFactory(address _factory) external override onlyOwner {
-        require(_factory != address(0), "invalid argument - zero address");
-        require(isTokenFactory(_factory), "not a factory");
+        require(_factory != address(0), ZeroAddress());
+        require(isTokenFactory(_factory), NotFactory());
         _tokenFactories[_factory] = false;
         emit TokenFactoryRemoved(_factory);
     }
@@ -63,11 +83,11 @@ contract IdFactory is IIdFactory, Ownable {
         address _wallet,
         string memory _salt)
     external onlyOwner override returns (address) {
-        require(_wallet != address(0), "invalid argument - zero address");
-        require(keccak256(abi.encode(_salt)) != keccak256(abi.encode("")), "invalid argument - empty string");
-        string memory oidSalt = string.concat("OID",_salt);
-        require (!_saltTaken[oidSalt], "salt already taken");
-        require (_userIdentity[_wallet] == address(0), "wallet already linked to an identity");
+        require(_wallet != address(0), ZeroAddress());
+        require(keccak256(abi.encode(_salt)) != keccak256(abi.encode("")), EmptyString());
+        string memory oidSalt = string.concat("OID", _salt);
+        require (!_saltTaken[oidSalt], SaltTaken());
+        require (_userIdentity[_wallet] == address(0), WalletAlreadyLinkedToIdentity());
         address identity = _deployIdentity(oidSalt, _implementationAuthority, _wallet);
         _saltTaken[oidSalt] = true;
         _userIdentity[_wallet] = identity;
@@ -84,19 +104,19 @@ contract IdFactory is IIdFactory, Ownable {
         string memory _salt,
         bytes32[] memory _managementKeys
     ) external onlyOwner override returns (address) {
-        require(_wallet != address(0), "invalid argument - zero address");
-        require(keccak256(abi.encode(_salt)) != keccak256(abi.encode("")), "invalid argument - empty string");
-        string memory oidSalt = string.concat("OID",_salt);
-        require (!_saltTaken[oidSalt], "salt already taken");
-        require (_userIdentity[_wallet] == address(0), "wallet already linked to an identity");
-        require(_managementKeys.length > 0, "invalid argument - empty list of keys");
+        require(_wallet != address(0), ZeroAddress());
+        require(keccak256(abi.encode(_salt)) != keccak256(abi.encode("")), EmptyString());
+        string memory oidSalt = string.concat("OID", _salt);
+        require (!_saltTaken[oidSalt], SaltTaken());
+        require (_userIdentity[_wallet] == address(0), WalletAlreadyLinkedToIdentity());
+        require(_managementKeys.length > 0, EmptyListOfKeys());
 
         address identity = _deployIdentity(oidSalt, _implementationAuthority, address(this));
 
         for (uint i = 0; i < _managementKeys.length; i++) {
             require(
                 _managementKeys[i] != keccak256(abi.encode(_wallet))
-                , "invalid argument - wallet is also listed in management keys");
+                , WalletAlsoListedInManagementKeys());
             IERC734(identity).addKey(
                 _managementKeys[i],
                 1,
@@ -125,13 +145,13 @@ contract IdFactory is IIdFactory, Ownable {
         address _tokenOwner,
         string memory _salt)
     external override returns (address) {
-        require(isTokenFactory(msg.sender) || msg.sender == owner(), "only Factory or owner can call");
-        require(_token != address(0), "invalid argument - zero address");
-        require(_tokenOwner != address(0), "invalid argument - zero address");
-        require(keccak256(abi.encode(_salt)) != keccak256(abi.encode("")), "invalid argument - empty string");
+        require(isTokenFactory(msg.sender) || msg.sender == owner(), OwnableUnauthorizedAccount(msg.sender));
+        require(_token != address(0), ZeroAddress());
+        require(_tokenOwner != address(0), ZeroAddress());
+        require(keccak256(abi.encode(_salt)) != keccak256(abi.encode("")), EmptyString());
         string memory tokenIdSalt = string.concat("Token",_salt);
-        require(!_saltTaken[tokenIdSalt], "salt already taken");
-        require(_tokenIdentity[_token] == address(0), "token already linked to an identity");
+        require(!_saltTaken[tokenIdSalt], SaltTaken());
+        require(_tokenIdentity[_token] == address(0), TokenAlreadyLinked());
         address identity = _deployIdentity(tokenIdSalt, _implementationAuthority, _tokenOwner);
         _saltTaken[tokenIdSalt] = true;
         _tokenIdentity[_token] = identity;
@@ -144,12 +164,12 @@ contract IdFactory is IIdFactory, Ownable {
      *  @dev See {IdFactory-linkWallet}.
      */
     function linkWallet(address _newWallet) external override {
-        require(_newWallet != address(0), "invalid argument - zero address");
-        require(_userIdentity[msg.sender] != address(0), "wallet not linked to an identity contract");
-        require(_userIdentity[_newWallet] == address(0), "new wallet already linked");
-        require(_tokenIdentity[_newWallet] == address(0), "invalid argument - token address");
+        require(_newWallet != address(0), ZeroAddress());
+        require(_userIdentity[msg.sender] != address(0), WalletNotLinkedToIdentity());
+        require(_userIdentity[_newWallet] == address(0), WalletAlreadyLinkedToIdentity());
+        require(_tokenIdentity[_newWallet] == address(0), TokenAddress());
         address identity = _userIdentity[msg.sender];
-        require(_wallets[identity].length < 101, "max amount of wallets per ID exceeded");
+        require(_wallets[identity].length < 101, MaxWalletsPerIdentityExceeded());
         _userIdentity[_newWallet] = identity;
         _wallets[identity].push(_newWallet);
         emit WalletLinked(_newWallet, identity);
@@ -159,9 +179,9 @@ contract IdFactory is IIdFactory, Ownable {
      *  @dev See {IdFactory-unlinkWallet}.
      */
     function unlinkWallet(address _oldWallet) external override {
-        require(_oldWallet != address(0), "invalid argument - zero address");
-        require(_oldWallet != msg.sender, "cannot be called on sender address");
-        require(_userIdentity[msg.sender] == _userIdentity[_oldWallet], "only a linked wallet can unlink");
+        require(_oldWallet != address(0), ZeroAddress());
+        require(_oldWallet != msg.sender, CannotBeCalledOnSenderAddress());
+        require(_userIdentity[msg.sender] == _userIdentity[_oldWallet], OnlyLinkedWalletCanUnlink());
         address _identity = _userIdentity[_oldWallet];
         delete _userIdentity[_oldWallet];
         uint256 length = _wallets[_identity].length;
@@ -241,14 +261,13 @@ contract IdFactory is IIdFactory, Ownable {
     }
 
     // function used to deploy an identity using CREATE2
-    function _deployIdentity
-    (
+    function _deployIdentity(
         string memory _salt,
-        address implementationAuthority,
+        address implementationAuthorityAddress,
         address _wallet
     ) private returns (address){
         bytes memory _code = type(IdentityProxy).creationCode;
-        bytes memory _constructData = abi.encode(implementationAuthority, _wallet);
+        bytes memory _constructData = abi.encode(implementationAuthorityAddress, _wallet);
         bytes memory bytecode = abi.encodePacked(_code, _constructData);
         return _deploy(_salt, bytecode);
     }

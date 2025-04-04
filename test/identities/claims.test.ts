@@ -84,7 +84,7 @@ describe('Identity', () => {
             it('should revert for missing permission', async () => {
               const { aliceIdentity, bobWallet } = await loadFixture(deployIdentityFixture);
 
-              await expect(aliceIdentity.connect(bobWallet).addClaim(claim.topic, claim.scheme, claim.issuer, claim.signature, claim.data, claim.uri)).to.be.revertedWith('Permissions: Sender does not have claim signer key');
+              await expect(aliceIdentity.connect(bobWallet).addClaim(claim.topic, claim.scheme, claim.issuer, claim.signature, claim.data, claim.uri)).to.be.revertedWithCustomError(aliceIdentity, 'SenderDoesNotHaveClaimSignerKey');
             });
           });
         });
@@ -106,7 +106,7 @@ describe('Identity', () => {
             };
             claim.signature = await claimIssuerWallet.signMessage(ethers.utils.arrayify(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address', 'uint256', 'bytes'], [claim.identity, claim.topic, '0x10101010']))));
 
-            await expect(aliceIdentity.connect(aliceWallet).addClaim(claim.topic, claim.scheme, claim.issuer, claim.signature, claim.data, claim.uri)).to.be.revertedWith('invalid claim');
+            await expect(aliceIdentity.connect(aliceWallet).addClaim(claim.topic, claim.scheme, claim.issuer, claim.signature, claim.data, claim.uri)).to.be.revertedWithCustomError(aliceIdentity, 'InvalidClaim');
           });
         });
 
@@ -164,7 +164,7 @@ describe('Identity', () => {
             it('should revert for missing permission', async () => {
               const { aliceIdentity, bobWallet } = await loadFixture(deployIdentityFixture);
 
-              await expect(aliceIdentity.connect(bobWallet).addClaim(claim.topic, claim.scheme, claim.issuer, claim.signature, claim.data, claim.uri)).to.be.revertedWith('Permissions: Sender does not have claim signer key');
+              await expect(aliceIdentity.connect(bobWallet).addClaim(claim.topic, claim.scheme, claim.issuer, claim.signature, claim.data, claim.uri)).to.be.revertedWithCustomError(aliceIdentity, 'SenderDoesNotHaveClaimSignerKey');
             });
           });
         });
@@ -270,7 +270,7 @@ describe('Identity', () => {
 
           const claimId = ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address', 'uint256'], [claimIssuer.address, 42]));
 
-          await expect(aliceIdentity.connect(bobWallet).removeClaim(claimId)).to.be.revertedWith('Permissions: Sender does not have claim signer key');
+          await expect(aliceIdentity.connect(bobWallet).removeClaim(claimId)).to.be.revertedWithCustomError(aliceIdentity, 'SenderDoesNotHaveClaimSignerKey');
         });
       });
 
@@ -280,7 +280,7 @@ describe('Identity', () => {
 
           const claimId = ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address', 'uint256'], [claimIssuer.address, 42]));
 
-          await expect(aliceIdentity.connect(carolWallet).removeClaim(claimId)).to.be.revertedWith('NonExisting: There is no claim with this ID');
+          await expect(aliceIdentity.connect(carolWallet).removeClaim(claimId)).to.be.revertedWithCustomError(aliceIdentity, 'ClaimNotExists');
         });
       });
 

@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.27;
 
-import "./interface/IClaimIssuer.sol";
-import "./Identity.sol";
+import { IClaimIssuer } from "./interface/IClaimIssuer.sol";
+import { Identity, IIdentity } from "./Identity.sol";
+
+error ClaimAlreadyRevoked();
 
 contract ClaimIssuer is IClaimIssuer, Identity {
     mapping (bytes => bool) public revokedClaims;
@@ -14,7 +16,7 @@ contract ClaimIssuer is IClaimIssuer, Identity {
      *  @dev See {IClaimIssuer-revokeClaimBySignature}.
      */
     function revokeClaimBySignature(bytes calldata signature) external override delegatedOnly onlyManager {
-        require(!revokedClaims[signature], "Conflict: Claim already revoked");
+        require(!revokedClaims[signature], ClaimAlreadyRevoked());
 
         revokedClaims[signature] = true;
 
@@ -33,7 +35,7 @@ contract ClaimIssuer is IClaimIssuer, Identity {
 
         ( foundClaimTopic, scheme, issuer, sig, data, ) = Identity(_identity).getClaim(_claimId);
 
-        require(!revokedClaims[sig], "Conflict: Claim already revoked");
+        require(!revokedClaims[sig], ClaimAlreadyRevoked());
 
         revokedClaims[sig] = true;
         emit ClaimRevoked(sig);

@@ -35,6 +35,7 @@
   },
   "homepage": "https://github.com/onchain-id/solidity#readme",
   "devDependencies": {
+    "@nomicfoundation/hardhat-foundry": "^1.1.3",
     "@nomicfoundation/hardhat-toolbox": "^2.0.1",
     "@nomiclabs/hardhat-solhint": "^3.0.0",
     "@openzeppelin/contracts": "^4.8.3",

@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.27;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "../factory/IdFactory.sol";
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+
+import { IdFactory } from "../factory/IdFactory.sol";
 
 using ECDSA for bytes32;
 
@@ -27,6 +29,9 @@ error ExpiredSignature(bytes signature);
 error SignatureAlreadyRevoked(bytes signature);
 /// Attempted to approve a signature that was not revoked.
 error SignatureNotRevoked(bytes signature);
+
+error CallToFactoryFailed();
+
 
 contract Gateway is Ownable {
     IdFactory public idFactory;
@@ -244,6 +249,6 @@ contract Gateway is Ownable {
      */
     function callFactory(bytes memory data) external onlyOwner {
         (bool success,) = address(idFactory).call(data);
-        require(success, "Gateway: call to factory failed");
+        require(success, CallToFactoryFailed());
     }
 }

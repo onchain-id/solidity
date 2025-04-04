@@ -80,7 +80,7 @@ describe('Identity', () => {
           );
           await expect(
             aliceIdentity.connect(bobWallet).addKey(bobKeyHash, 1, 1)
-          ).to.be.revertedWith('Permissions: Sender does not have management key');
+          ).to.be.revertedWithCustomError(aliceIdentity, 'SenderDoesNotHaveManagementKey');
         });
       });
 
@@ -119,7 +119,7 @@ describe('Identity', () => {
           );
           await expect(
             aliceIdentity.connect(aliceWallet).addKey(aliceKeyHash, 1, 1)
-          ).to.be.revertedWith('Conflict: Key already has purpose');
+          ).to.be.revertedWithCustomError(aliceIdentity, 'KeyAlreadyHasPurpose');
         });
       });
     });
@@ -134,7 +134,7 @@ describe('Identity', () => {
           );
           await expect(
             aliceIdentity.connect(bobWallet).removeKey(aliceKeyHash, 1)
-          ).to.be.revertedWith('Permissions: Sender does not have management key');
+          ).to.be.revertedWithCustomError(aliceIdentity, 'SenderDoesNotHaveManagementKey');
         });
       });
 
@@ -160,7 +160,7 @@ describe('Identity', () => {
           );
           await expect(
             aliceIdentity.connect(aliceWallet).removeKey(bobKeyHash, 2)
-          ).to.be.revertedWith("NonExisting: Key isn't registered");
+          ).to.be.revertedWithCustomError(aliceIdentity, 'KeyNotRegistered');
         });
 
         it('should revert because key does not have the purpose', async () => {
@@ -171,7 +171,7 @@ describe('Identity', () => {
           );
           await expect(
             aliceIdentity.connect(aliceWallet).removeKey(aliceKeyHash, 2)
-          ).to.be.revertedWith("NonExisting: Key doesn't have such purpose");
+          ).to.be.revertedWithCustomError(aliceIdentity, 'KeyDoesNotHavePurpose');
         });
       });
     });

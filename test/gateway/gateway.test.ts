@@ -435,7 +435,7 @@ describe('Gateway', () => {
 
         await gateway.connect(aliceWallet).deployIdentityForWallet(aliceWallet.address);
 
-        await expect(gateway.connect(aliceWallet).deployIdentityForWallet(aliceWallet.address)).to.be.revertedWith('salt already taken');
+        await expect(gateway.connect(aliceWallet).deployIdentityForWallet(aliceWallet.address)).to.be.revertedWithCustomError(identityFactory, 'SaltTaken');
       });
     });
   });
@@ -806,7 +806,7 @@ describe('Gateway', () => {
 
         await expect(gateway.connect(deployerWallet).callFactory(
           new ethers.utils.Interface(['function addTokenFactory(address)']).encodeFunctionData('addTokenFactory', [ethers.constants.AddressZero]))
-        ).to.be.revertedWith('Gateway: call to factory failed');
+        ).to.be.revertedWithCustomError(gateway, 'CallToFactoryFailed');
       });
     });
 
