@@ -26,7 +26,7 @@ describe("TopicIdMapping", () => {
     const topicIdMapping = await ethers.deployContract("TopicIdMapping", []);
     await expect(
       topicIdMapping.connect(otherWallet).setTopicName(TEST_TOPIC_ID, TEST_TOPIC_NAME)
-    ).to.be.revertedWith("Ownable: caller is not the owner");
+    ).to.be.revertedWithCustomError(topicIdMapping, 'OwnableUnauthorizedAccount');
 
     await expect(
       topicIdMapping

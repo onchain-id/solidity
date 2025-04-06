@@ -16,7 +16,7 @@ describe('IdFactory', () => {
   it('should revert because sender is not allowed to create identities', async () => {
     const {identityFactory, aliceWallet} = await loadFixture(deployIdentityFixture);
 
-    await expect(identityFactory.connect(aliceWallet).createIdentity(ethers.ZeroAddress, 'salt1')).to.be.revertedWith('Ownable: caller is not the owner');
+    await expect(identityFactory.connect(aliceWallet).createIdentity(ethers.ZeroAddress, 'salt1')).to.be.revertedWithCustomError(identityFactory, 'OwnableUnauthorizedAccount');
   });
 
   it('should revert because wallet of identity cannot be Zero address', async () => {

@@ -471,7 +471,7 @@ describe('Gateway', () => {
         const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
         await identityFactory.transferOwnership(gateway.target);
 
-        await expect(gateway.connect(aliceWallet).transferFactoryOwnership(bobWallet.address)).to.be.revertedWith('Ownable: caller is not the owner')
+        await expect(gateway.connect(aliceWallet).transferFactoryOwnership(bobWallet.address)).to.be.revertedWithCustomError(gateway, 'OwnableUnauthorizedAccount');
       });
     });
   });
@@ -502,7 +502,7 @@ describe('Gateway', () => {
           ),
         );
 
-        await expect(gateway.connect(aliceWallet).revokeSignature(signature)).to.be.revertedWith('Ownable: caller is not the owner');
+        await expect(gateway.connect(aliceWallet).revokeSignature(signature)).to.be.revertedWithCustomError(gateway, 'OwnableUnauthorizedAccount');
       });
     });
 
@@ -564,7 +564,7 @@ describe('Gateway', () => {
           ),
         );
 
-        await expect(gateway.connect(aliceWallet).approveSignature(signature)).to.be.revertedWith('Ownable: caller is not the owner');
+        await expect(gateway.connect(aliceWallet).approveSignature(signature)).to.be.revertedWithCustomError(gateway, 'OwnableUnauthorizedAccount');
       });
     });
 
@@ -660,7 +660,7 @@ describe('Gateway', () => {
         const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
         await identityFactory.transferOwnership(gateway.target);
 
-        await expect(gateway.connect(aliceWallet).approveSigner(bobWallet.address)).to.be.revertedWith('Ownable: caller is not the owner');
+        await expect(gateway.connect(aliceWallet).approveSigner(bobWallet.address)).to.be.revertedWithCustomError(gateway, 'OwnableUnauthorizedAccount');
       });
     });
 
@@ -731,7 +731,7 @@ describe('Gateway', () => {
         const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [bobWallet.address]]);
         await identityFactory.transferOwnership(gateway.target);
 
-        await expect(gateway.connect(aliceWallet).revokeSigner(bobWallet.address)).to.be.revertedWith('Ownable: caller is not the owner');
+        await expect(gateway.connect(aliceWallet).revokeSigner(bobWallet.address)).to.be.revertedWithCustomError(gateway, 'OwnableUnauthorizedAccount');
       });
     });
 
@@ -748,7 +748,7 @@ describe('Gateway', () => {
         const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [aliceWallet.address]]);
         await identityFactory.transferOwnership(gateway.target);
 
-        await expect(gateway.revokeSigner(bobWallet.address)).to.be.revertedWithCustomError(gateway, 'SignerAlreadyNotApproved');
+        await expect(gateway.revokeSigner(bobWallet.address)).to.be.revertedWithCustomError(gateway, 'SignerNotApproved');
       });
     });
 
@@ -788,7 +788,7 @@ describe('Gateway', () => {
 
         await expect(gateway.connect(aliceWallet).callFactory(
           identityFactory.interface.encodeFunctionData('addTokenFactory', [ethers.ZeroAddress]))
-        ).to.be.revertedWith('Ownable: caller is not the owner');
+        ).to.be.revertedWithCustomError(gateway, 'OwnableUnauthorizedAccount');
       });
     });
 

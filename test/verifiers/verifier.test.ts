@@ -308,7 +308,7 @@ describe('Verifier', () => {
         const [, aliceWallet] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
 
-        await expect(verifier.connect(aliceWallet).removeClaimTopic(2)).to.be.revertedWith('Ownable: caller is not the owner');
+        await expect(verifier.connect(aliceWallet).removeClaimTopic(2)).to.be.revertedWithCustomError(verifier, 'OwnableUnauthorizedAccount');
       });
     });
 
@@ -335,7 +335,7 @@ describe('Verifier', () => {
         const verifier = await ethers.deployContract('Verifier');
         const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
 
-        await expect(verifier.connect(aliceWallet).removeTrustedIssuer(claimIssuer.target)).to.be.revertedWith('Ownable: caller is not the owner');
+        await expect(verifier.connect(aliceWallet).removeTrustedIssuer(claimIssuer.target)).to.be.revertedWithCustomError(verifier, 'OwnableUnauthorizedAccount');
       });
     });
 
@@ -381,7 +381,7 @@ describe('Verifier', () => {
         const verifier = await ethers.deployContract('Verifier');
         const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
 
-        await expect(verifier.connect(aliceWallet).addTrustedIssuer(claimIssuer.target, [1])).to.be.revertedWith('Ownable: caller is not the owner');
+        await expect(verifier.connect(aliceWallet).addTrustedIssuer(claimIssuer.target, [1])).to.be.revertedWithCustomError(verifier, 'OwnableUnauthorizedAccount');
       });
     });
 
@@ -444,7 +444,7 @@ describe('Verifier', () => {
         const verifier = await ethers.deployContract('Verifier');
         const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
 
-        await expect(verifier.connect(aliceWallet).updateIssuerClaimTopics(claimIssuer.target, [1])).to.be.revertedWith('Ownable: caller is not the owner');
+        await expect(verifier.connect(aliceWallet).updateIssuerClaimTopics(claimIssuer.target, [1])).to.be.revertedWithCustomError(verifier, 'OwnableUnauthorizedAccount');
       });
     });
 

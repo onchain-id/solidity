@@ -8,7 +8,7 @@ describe('Proxy', () => {
     const [deployerWallet, identityOwnerWallet] = await ethers.getSigners();
 
     const IdentityProxy = await ethers.getContractFactory('IdentityProxy');
-    await expect(IdentityProxy.connect(deployerWallet).deploy(ethers.ZeroAddress, identityOwnerWallet.address)).to.be.revertedWith('ERC1967: new beacon is not a contract');
+    await expect(IdentityProxy.connect(deployerWallet).deploy(ethers.ZeroAddress, identityOwnerWallet.address)).to.be.revertedWithCustomError(IdentityProxy, 'ERC1967InvalidBeacon');
   });
 
   it('should revert because implementation is not an identity', async () => {
@@ -19,7 +19,7 @@ describe('Proxy', () => {
     const authority = await ethers.deployContract('ImplementationAuthority', [claimIssuer.target]);
 
     const IdentityProxy = await ethers.getContractFactory('IdentityProxy');
-    await expect(IdentityProxy.connect(deployerWallet).deploy(authority.target, identityOwnerWallet.address)).to.be.revertedWith('Address: low-level delegate call failed');
+    await expect(IdentityProxy.connect(deployerWallet).deploy(authority.target, identityOwnerWallet.address)).to.be.revertedWithCustomError(IdentityProxy, 'FailedCall');
   });
 
   it('should revert because initial key is Zero address', async () => {
@@ -36,19 +36,19 @@ describe('Proxy', () => {
     const [deployerWallet] = await ethers.getSigners();
 
     const ImplementationAuthority = await ethers.getContractFactory('ImplementationAuthority');
-    await expect(ImplementationAuthority.connect(deployerWallet).deploy(ethers.ZeroAddress)).to.be.revertedWith('UpgradeableBeacon: implementation is not a contract');
+    await expect(ImplementationAuthority.connect(deployerWallet).deploy(ethers.ZeroAddress)).to.be.revertedWithCustomError(ImplementationAuthority, 'BeaconInvalidImplementation');
   });
 
   it('should prevent updating to a Zero address implementation', async () => {
     const {implementationAuthority, deployerWallet} = await loadFixture(deployIdentityFixture);
 
-    await expect(implementationAuthority.connect(deployerWallet).upgradeTo(ethers.ZeroAddress)).to.be.revertedWith('UpgradeableBeacon: implementation is not a contract');
+    await expect(implementationAuthority.connect(deployerWallet).upgradeTo(ethers.ZeroAddress)).to.be.revertedWithCustomError(implementationAuthority, 'BeaconInvalidImplementation');
   });
 
   it('should prevent updating when not owner', async () => {
     const {implementationAuthority, aliceWallet} = await loadFixture(deployIdentityFixture);
 
-    await expect(implementationAuthority.connect(aliceWallet).upgradeTo(ethers.ZeroAddress)).to.be.revertedWith('Ownable: caller is not the owner');
+    await expect(implementationAuthority.connect(aliceWallet).upgradeTo(ethers.ZeroAddress)).to.be.revertedWithCustomError(implementationAuthority, 'OwnableUnauthorizedAccount');
   });
 
   it('should update the implementation address', async () => {

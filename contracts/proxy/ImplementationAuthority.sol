@@ -5,7 +5,7 @@ import { UpgradeableBeacon } from "@openzeppelin/contracts/proxy/beacon/Upgradea
 
 contract ImplementationAuthority is UpgradeableBeacon {
 
-    constructor(address implementation) UpgradeableBeacon(implementation) {
+    constructor(address implementation) UpgradeableBeacon(implementation, msg.sender) {
     }
 
 }

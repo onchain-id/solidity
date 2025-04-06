@@ -9,7 +9,7 @@ describe('IdFactory', () => {
     it('should manipulate Token factory list', async () => {
       const { identityFactory, deployerWallet, aliceWallet, bobWallet } = await loadFixture(deployFactoryFixture);
 
-      await expect(identityFactory.connect(aliceWallet).addTokenFactory(aliceWallet.address)).to.be.revertedWith('Ownable: caller is not the owner');
+      await expect(identityFactory.connect(aliceWallet).addTokenFactory(aliceWallet.address)).to.be.revertedWithCustomError(identityFactory, 'OwnableUnauthorizedAccount');
 
       await expect(identityFactory.connect(deployerWallet).addTokenFactory(ethers.ZeroAddress)).to.be.revertedWithCustomError(identityFactory, 'ZeroAddress');
 
@@ -18,7 +18,7 @@ describe('IdFactory', () => {
 
       await expect(identityFactory.connect(deployerWallet).addTokenFactory(aliceWallet.address)).to.be.revertedWithCustomError(identityFactory, 'AlreadyFactory');
 
-      await expect(identityFactory.connect(aliceWallet).removeTokenFactory(bobWallet.address)).to.be.revertedWith('Ownable: caller is not the owner');
+      await expect(identityFactory.connect(aliceWallet).removeTokenFactory(bobWallet.address)).to.be.revertedWithCustomError(identityFactory, 'OwnableUnauthorizedAccount');
 
       await expect(identityFactory.connect(deployerWallet).removeTokenFactory(ethers.ZeroAddress)).to.be.revertedWithCustomError(identityFactory, 'ZeroAddress');
 
