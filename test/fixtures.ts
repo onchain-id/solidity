@@ -12,7 +12,7 @@ export async function deployFactoryFixture() {
     'ImplementationAuthority'
   );
   const implementationAuthority = await ImplementationAuthority.connect(deployerWallet).deploy(
-    identityImplementation.target,
+    identityImplementation.target
   );
 
   const IdentityFactory = await ethers.getContractFactory('IdFactory');
