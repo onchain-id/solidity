@@ -1,27 +1,27 @@
-import {expect} from "chai";
-import {ethers} from "hardhat";
-import {loadFixture} from "@nomicfoundation/hardhat-network-helpers";
+import { expect } from "chai";
+import { ethers } from "hardhat";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
-import {deployIdentityFixture} from "../fixtures";
+import { deployIdentityFixture } from "../fixtures";
 
 describe('IdFactory', () => {
   it('should revert because authority is Zero address', async () => {
     const [deployerWallet] = await ethers.getSigners();
 
     const IdFactory = await ethers.getContractFactory('IdFactory');
-    await expect(IdFactory.connect(deployerWallet).deploy(ethers.constants.AddressZero)).to.be.revertedWith('invalid argument - zero address');
+    await expect(IdFactory.connect(deployerWallet).deploy(ethers.ZeroAddress)).to.be.revertedWith('invalid argument - zero address');
   });
 
   it('should revert because sender is not allowed to create identities', async () => {
     const {identityFactory, aliceWallet} = await loadFixture(deployIdentityFixture);
 
-    await expect(identityFactory.connect(aliceWallet).createIdentity(ethers.constants.AddressZero, 'salt1')).to.be.revertedWith('Ownable: caller is not the owner');
+    await expect(identityFactory.connect(aliceWallet).createIdentity(ethers.ZeroAddress, 'salt1')).to.be.revertedWith('Ownable: caller is not the owner');
   });
 
   it('should revert because wallet of identity cannot be Zero address', async () => {
     const {identityFactory, deployerWallet} = await loadFixture(deployIdentityFixture);
 
-    await expect(identityFactory.connect(deployerWallet).createIdentity(ethers.constants.AddressZero, 'salt1')).to.be.revertedWith('invalid argument - zero address');
+    await expect(identityFactory.connect(deployerWallet).createIdentity(ethers.ZeroAddress, 'salt1')).to.be.revertedWith('invalid argument - zero address');
   });
 
   it('should revert because salt cannot be empty', async () => {
@@ -49,7 +49,7 @@ describe('IdFactory', () => {
       it('should revert for new wallet being zero address', async () => {
         const { identityFactory, aliceWallet } = await loadFixture(deployIdentityFixture);
 
-        await expect(identityFactory.connect(aliceWallet).linkWallet(ethers.constants.AddressZero)).to.be.revertedWith('invalid argument - zero address');
+        await expect(identityFactory.connect(aliceWallet).linkWallet(ethers.ZeroAddress)).to.be.revertedWith('invalid argument - zero address');
       });
 
       it('should revert for sender wallet being not linked', async () => {
@@ -74,9 +74,9 @@ describe('IdFactory', () => {
         const { identityFactory, aliceIdentity, aliceWallet, davidWallet } = await loadFixture(deployIdentityFixture);
 
         const tx = await identityFactory.connect(aliceWallet).linkWallet(davidWallet.address);
-        await expect(tx).to.emit(identityFactory, 'WalletLinked').withArgs(davidWallet.address, aliceIdentity.address);
+        await expect(tx).to.emit(identityFactory, 'WalletLinked').withArgs(davidWallet.address, aliceIdentity.target);
 
-        expect(await identityFactory.getWallets(aliceIdentity.address)).to.deep.equal([aliceWallet.address, davidWallet.address]);
+        expect(await identityFactory.getWallets(aliceIdentity.target)).to.deep.equal([aliceWallet.address, davidWallet.address]);
       });
     });
 
@@ -84,7 +84,7 @@ describe('IdFactory', () => {
       it('should revert for wallet to unlink being zero address', async () => {
         const { identityFactory, aliceWallet } = await loadFixture(deployIdentityFixture);
 
-        await expect(identityFactory.connect(aliceWallet).unlinkWallet(ethers.constants.AddressZero)).to.be.revertedWith('invalid argument - zero address');
+        await expect(identityFactory.connect(aliceWallet).unlinkWallet(ethers.ZeroAddress)).to.be.revertedWith('invalid argument - zero address');
       });
 
       it('should revert for sender wallet attemoting to unlink itself', async () => {
@@ -104,9 +104,9 @@ describe('IdFactory', () => {
 
         await identityFactory.connect(aliceWallet).linkWallet(davidWallet.address);
         const tx = await identityFactory.connect(aliceWallet).unlinkWallet(davidWallet.address);
-        await expect(tx).to.emit(identityFactory, 'WalletUnlinked').withArgs(davidWallet.address, aliceIdentity.address);
+        await expect(tx).to.emit(identityFactory, 'WalletUnlinked').withArgs(davidWallet.address, aliceIdentity.target);
 
-        expect(await identityFactory.getWallets(aliceIdentity.address)).to.deep.equal([aliceWallet.address]);
+        expect(await identityFactory.getWallets(aliceIdentity.target)).to.deep.equal([aliceWallet.address]);
       });
     });
   });
@@ -125,8 +125,8 @@ describe('IdFactory', () => {
         const {identityFactory, deployerWallet, aliceWallet, davidWallet} = await loadFixture(deployIdentityFixture);
 
         await expect(identityFactory.connect(deployerWallet).createIdentityWithManagementKeys(davidWallet.address, 'salt1', [
-          ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address])),
-          ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address'], [davidWallet.address])),
+          ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])),
+          ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address'], [davidWallet.address])),
         ])).to.be.revertedWith('invalid argument - wallet is also listed in management keys');
       });
     });
@@ -135,24 +135,24 @@ describe('IdFactory', () => {
       it('should deploy the identity proxy, set keys and wallet as management, and link wallet to identity', async () => {
         const {identityFactory, deployerWallet, aliceWallet, davidWallet} = await loadFixture(deployIdentityFixture);
 
-        const tx = await identityFactory.connect(deployerWallet).createIdentityWithManagementKeys(davidWallet.address, 'salt1', [ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address]))]);
+        const tx = await identityFactory.connect(deployerWallet).createIdentityWithManagementKeys(davidWallet.address, 'salt1', [ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address]))]);
 
         await expect(tx).to.emit(identityFactory, 'WalletLinked');
         await expect(tx).to.emit(identityFactory, 'Deployed');
 
         const identity = await ethers.getContractAt('Identity', await identityFactory.getIdentity(davidWallet.address));
 
-        await expect(tx).to.emit(identity, 'KeyAdded').withArgs(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address])), 1, 1);
+        await expect(tx).to.emit(identity, 'KeyAdded').withArgs(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])), 1, 1);
         await expect(identity.keyHasPurpose(
-          ethers.utils.defaultAbiCoder.encode(['address'], [identityFactory.address]),
+          ethers.AbiCoder.defaultAbiCoder().encode(['address'], [identityFactory.target]),
           1
         )).to.eventually.be.false;
         await expect(identity.keyHasPurpose(
-          ethers.utils.defaultAbiCoder.encode(['address'], [davidWallet.address]),
+          ethers.AbiCoder.defaultAbiCoder().encode(['address'], [davidWallet.address]),
           1
         )).to.eventually.be.false;
         await expect(identity.keyHasPurpose(
-          ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address]),
+          ethers.AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address]),
           1
         )).to.eventually.be.false;
       });

@@ -1,7 +1,7 @@
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from "chai";
-import {ethers} from "hardhat";
-import {deployIdentityFixture} from "../fixtures";
+import { ethers } from "hardhat";
+import { deployIdentityFixture } from "../fixtures";
 
 describe('ClaimIssuer - Reference (with revoke)', () => {
   describe('revokeClaim (deprecated)', () => {
@@ -82,7 +82,7 @@ describe('ClaimIssuer - Reference (with revoke)', () => {
     it('should return with a zero address with signature is not of proper length', async () => {
       const { claimIssuer, aliceClaim666 } = await loadFixture(deployIdentityFixture);
 
-      expect(await claimIssuer.getRecoveredAddress(aliceClaim666.signature + "00", ethers.utils.arrayify(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address', 'uint256', 'bytes'], [aliceClaim666.identity, aliceClaim666.topic, aliceClaim666.data]))))).to.be.equal(ethers.constants.AddressZero);
+      expect(await claimIssuer.getRecoveredAddress(aliceClaim666.signature + "00", ethers.getBytes(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address', 'uint256', 'bytes'], [aliceClaim666.identity, aliceClaim666.topic, aliceClaim666.data]))))).to.be.equal(ethers.ZeroAddress);
     });
   });
 });

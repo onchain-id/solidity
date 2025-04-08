@@ -1,6 +1,6 @@
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from "chai";
-import {ethers} from "hardhat";
+import { ethers } from "hardhat";
 
 import { deployIdentityFixture } from '../fixtures';
 
@@ -10,8 +10,8 @@ describe('Identity', () => {
       it('should retrieve an existing key', async () => {
         const { aliceIdentity, aliceWallet } = await loadFixture(deployIdentityFixture);
 
-        const aliceKeyHash = ethers.utils.keccak256(
-          ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address])
+        const aliceKeyHash = ethers.keccak256(
+          ethers.AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])
         );
         const aliceKey = await aliceIdentity.getKey(aliceKeyHash);
         expect(aliceKey.key).to.equal(aliceKeyHash);
@@ -22,8 +22,8 @@ describe('Identity', () => {
       it('should retrieve existing key purposes', async () => {
         const { aliceIdentity, aliceWallet } = await loadFixture(deployIdentityFixture);
 
-        const aliceKeyHash = ethers.utils.keccak256(
-          ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address])
+        const aliceKeyHash = ethers.keccak256(
+          ethers.AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])
         );
         const purposes = await aliceIdentity.getKeyPurposes(aliceKeyHash);
         expect(purposes).to.deep.equal([1]);
@@ -32,8 +32,8 @@ describe('Identity', () => {
       it('should retrieve existing keys with given purpose', async () => {
         const { aliceIdentity, aliceWallet } = await loadFixture(deployIdentityFixture);
 
-        const aliceKeyHash = ethers.utils.keccak256(
-          ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address])
+        const aliceKeyHash = ethers.keccak256(
+          ethers.AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])
         );
         const keys = await aliceIdentity.getKeysByPurpose(1);
         expect(keys).to.deep.equal([aliceKeyHash]);
@@ -42,8 +42,8 @@ describe('Identity', () => {
       it('should return true if a key has a given purpose', async () => {
         const { aliceIdentity, aliceWallet } = await loadFixture(deployIdentityFixture);
 
-        const aliceKeyHash = ethers.utils.keccak256(
-          ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address])
+        const aliceKeyHash = ethers.keccak256(
+          ethers.AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])
         );
         const hasPurpose = await aliceIdentity.keyHasPurpose(aliceKeyHash, 1);
         expect(hasPurpose).to.equal(true);
@@ -52,8 +52,8 @@ describe('Identity', () => {
       it('should return false if a key has not a given purpose but is a MANAGEMENT key', async () => {
         const { aliceIdentity, aliceWallet } = await loadFixture(deployIdentityFixture);
 
-        const aliceKeyHash = ethers.utils.keccak256(
-          ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address])
+        const aliceKeyHash = ethers.keccak256(
+          ethers.AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])
         );
         const hasPurpose = await aliceIdentity.keyHasPurpose(aliceKeyHash, 2);
         expect(hasPurpose).to.equal(true);
@@ -62,8 +62,8 @@ describe('Identity', () => {
       it('should return false if a key has not a given purpose', async () => {
         const { aliceIdentity, bobWallet } = await loadFixture(deployIdentityFixture);
 
-        const bobKeyHash = ethers.utils.keccak256(
-          ethers.utils.defaultAbiCoder.encode(['address'], [bobWallet.address])
+        const bobKeyHash = ethers.keccak256(
+          ethers.AbiCoder.defaultAbiCoder().encode(['address'], [bobWallet.address])
         );
         const hasPurpose = await aliceIdentity.keyHasPurpose(bobKeyHash, 2);
         expect(hasPurpose).to.equal(false);
@@ -75,8 +75,8 @@ describe('Identity', () => {
         it('should revert because the signer is not a MANAGEMENT key', async () => {
           const { aliceIdentity, bobWallet } = await loadFixture(deployIdentityFixture);
 
-          const bobKeyHash = ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(['address'], [bobWallet.address])
+          const bobKeyHash = ethers.keccak256(
+            ethers.AbiCoder.defaultAbiCoder().encode(['address'], [bobWallet.address])
           );
           await expect(
             aliceIdentity.connect(bobWallet).addKey(bobKeyHash, 1, 1)
@@ -88,8 +88,8 @@ describe('Identity', () => {
         it('should add the purpose to the existing key', async () => {
           const { aliceIdentity, aliceWallet } = await loadFixture(deployIdentityFixture);
 
-          const aliceKeyHash = ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address])
+          const aliceKeyHash = ethers.keccak256(
+            ethers.AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])
           );
           await aliceIdentity.connect(aliceWallet).addKey(aliceKeyHash, 2, 1);
           const aliceKey = await aliceIdentity.getKey(aliceKeyHash);
@@ -101,8 +101,8 @@ describe('Identity', () => {
         it('should add a new key with a purpose', async () => {
           const { aliceIdentity, bobWallet, aliceWallet } = await loadFixture(deployIdentityFixture);
 
-          const bobKeyHash = ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(['address'], [bobWallet.address])
+          const bobKeyHash = ethers.keccak256(
+            ethers.AbiCoder.defaultAbiCoder().encode(['address'], [bobWallet.address])
           );
           await aliceIdentity.connect(aliceWallet).addKey(bobKeyHash, 1, 1);
           const bobKey = await aliceIdentity.getKey(bobKeyHash);
@@ -114,8 +114,8 @@ describe('Identity', () => {
         it('should revert because key already has the purpose', async () => {
           const { aliceIdentity, aliceWallet } = await loadFixture(deployIdentityFixture);
 
-          const aliceKeyHash = ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address])
+          const aliceKeyHash = ethers.keccak256(
+            ethers.AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])
           );
           await expect(
             aliceIdentity.connect(aliceWallet).addKey(aliceKeyHash, 1, 1)
@@ -129,8 +129,8 @@ describe('Identity', () => {
         it('should revert because the signer is not a MANAGEMENT key', async () => {
           const { aliceIdentity, aliceWallet, bobWallet } = await loadFixture(deployIdentityFixture);
 
-          const aliceKeyHash = ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address])
+          const aliceKeyHash = ethers.keccak256(
+            ethers.AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])
           );
           await expect(
             aliceIdentity.connect(bobWallet).removeKey(aliceKeyHash, 1)
@@ -142,8 +142,8 @@ describe('Identity', () => {
         it('should remove the purpose from the existing key', async () => {
           const { aliceIdentity, aliceWallet } = await loadFixture(deployIdentityFixture);
 
-          const aliceKeyHash = ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address])
+          const aliceKeyHash = ethers.keccak256(
+            ethers.AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])
           );
           await aliceIdentity.connect(aliceWallet).removeKey(aliceKeyHash, 1);
           const aliceKey = await aliceIdentity.getKey(aliceKeyHash);
@@ -155,8 +155,8 @@ describe('Identity', () => {
         it('should revert because key does not exists', async () => {
           const { aliceIdentity, aliceWallet, bobWallet } = await loadFixture(deployIdentityFixture);
 
-          const bobKeyHash = ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(['address'], [bobWallet.address])
+          const bobKeyHash = ethers.keccak256(
+            ethers.AbiCoder.defaultAbiCoder().encode(['address'], [bobWallet.address])
           );
           await expect(
             aliceIdentity.connect(aliceWallet).removeKey(bobKeyHash, 2)
@@ -166,8 +166,8 @@ describe('Identity', () => {
         it('should revert because key does not have the purpose', async () => {
           const { aliceIdentity, aliceWallet } = await loadFixture(deployIdentityFixture);
 
-          const aliceKeyHash = ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address])
+          const aliceKeyHash = ethers.keccak256(
+            ethers.AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])
           );
           await expect(
             aliceIdentity.connect(aliceWallet).removeKey(aliceKeyHash, 2)

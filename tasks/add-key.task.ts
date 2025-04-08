@@ -12,8 +12,8 @@ task("add-key", "Add a purpose to a key on an identity")
 
     const identity = await hre.ethers.getContractAt('Identity', args.identity, signer);
 
-    const keyHash = hre.ethers.utils.keccak256(
-      hre.ethers.utils.defaultAbiCoder.encode(['address'], [args.key]),
+    const keyHash = hre.ethers.keccak256(
+      hre.ethers.AbiCoder.defaultAbiCoder().encode(['address'], [args.key]),
     );
 
     const tx = await identity.addKey(

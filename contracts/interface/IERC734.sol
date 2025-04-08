@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
+<<<<<<< HEAD
 pragma solidity ^0.8.17;
+=======
+pragma solidity 0.8.27;
+>>>>>>> 6145b8f (⬆️ Update Solidity and Ethers versions)
 
 /**
  * @dev interface of the ERC734 (Key Holder) standard as defined in the EIP.

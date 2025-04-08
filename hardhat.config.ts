@@ -12,7 +12,7 @@ import "./tasks/remove-key.task";
 import "./tasks/revoke.task";
 
 const config: HardhatUserConfig = {
-  solidity: "0.8.17",
+  solidity: "0.8.27",
   networks: {
     mumbai: {
       url: 'https://rpc-mumbai.maticvigil.com/v1/9cd3d6ce21f0a25bb8f33504a1820d616f700d24',

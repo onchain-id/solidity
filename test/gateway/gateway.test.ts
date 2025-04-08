@@ -1,21 +1,22 @@
-import {ethers} from "hardhat";
-import {expect} from "chai";
-import {loadFixture} from "@nomicfoundation/hardhat-network-helpers";
-import {deployFactoryFixture} from "../fixtures";
-import {BigNumber} from "ethers";
+import { ethers } from "hardhat";
+import { expect } from "chai";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { deployFactoryFixture } from "../fixtures";
+
+const oneYearInSeconds = 365n * 24n * 60n * 60n;
 
 describe('Gateway', () => {
   describe('constructor', () => {
     describe('when factory address is not specified', () => {
       it('should revert', async () => {
-        await expect(ethers.deployContract('Gateway', [ethers.constants.AddressZero, []])).to.be.reverted;
+        await expect(ethers.deployContract('Gateway', [ethers.ZeroAddress, []])).to.be.reverted;
       });
     });
 
     describe('when specifying more than 10 signer', () => {
       it('should revert', async () => {
         const {identityFactory, carolWallet} = await loadFixture(deployFactoryFixture);
-        await expect(ethers.deployContract('Gateway', [identityFactory.address, Array(11).fill(ethers.constants.AddressZero)])).to.be.reverted;
+        await expect(ethers.deployContract('Gateway', [identityFactory.target, Array(11).fill(ethers.ZeroAddress)])).to.be.reverted;
       });
     });
   });
@@ -24,33 +25,33 @@ describe('Gateway', () => {
     describe('when input address is the zero address', () => {
       it('should revert', async () => {
         const {identityFactory, carolWallet} = await loadFixture(deployFactoryFixture);
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
 
-        await expect(gateway.deployIdentityWithSalt(ethers.constants.AddressZero, 'saltToUse', BigNumber.from(new Date().getTime()).div(1000).add(365 * 24 * 60 * 60), ethers.utils.randomBytes(65))).to.be.reverted;
+        await expect(gateway.deployIdentityWithSalt(ethers.ZeroAddress, 'saltToUse', BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds, ethers.randomBytes(65))).to.be.reverted;
       });
     });
 
     describe('when signature is not valid', () => {
       it('should revert with UnsignedDeployment', async () => {
         const {identityFactory, aliceWallet, carolWallet} = await loadFixture(deployFactoryFixture);
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
 
-        await expect(gateway.deployIdentityWithSalt(aliceWallet.address, 'saltToUse', BigNumber.from(new Date().getTime()).div(1000).add(365 * 24 * 60 * 60), ethers.utils.randomBytes(65))).to.be.reverted;
+        await expect(gateway.deployIdentityWithSalt(aliceWallet.address, 'saltToUse', BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds, ethers.randomBytes(65))).to.be.reverted;
       });
     });
 
     describe('when signature is signed by a non authorized signer', () => {
       it('should revert with UnsignedDeployment', async () => {
         const {identityFactory, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
 
         await expect(
           gateway.deployIdentityWithSalt(
             aliceWallet.address,
             'saltToUse',
-            BigNumber.from(new Date().getTime()).div(1000).add(365 * 24 * 60 * 60),
+            BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds,
             bobWallet.signMessage(
-              ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['string', 'address', 'string', 'uint256'], ['Authorize ONCHAINID deployment', aliceWallet.address, 'saltToUse', BigNumber.from(new Date().getTime()).div(1000).add(365 * 24 * 60 * 60)])),
+              ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['string', 'address', 'string', 'uint256'], ['Authorize ONCHAINID deployment', aliceWallet.address, 'saltToUse', BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds])),
             ),
           ),
         ).to.be.revertedWithCustomError(gateway, 'UnapprovedSigner');
@@ -60,18 +61,18 @@ describe('Gateway', () => {
     describe('when signature is correct and signed by an authorized signer', () => {
       it('should deploy the identity', async () => {
         const {identityFactory, aliceWallet, carolWallet} = await loadFixture(deployFactoryFixture);
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
-        await identityFactory.transferOwnership(gateway.address);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.target);
 
         const digest =
-          ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(
+          ethers.keccak256(
+            ethers.AbiCoder.defaultAbiCoder().encode(
               ['string', 'address', 'string', 'uint256'],
-              ['Authorize ONCHAINID deployment', aliceWallet.address, 'saltToUse', BigNumber.from(new Date().getTime()).div(1000).add(365 * 24 * 60 * 60)],
+              ['Authorize ONCHAINID deployment', aliceWallet.address, 'saltToUse', BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds],
             ),
           );
         const signature = await carolWallet.signMessage(
-          ethers.utils.arrayify(
+          ethers.getBytes(
             digest,
           ),
         );
@@ -79,32 +80,32 @@ describe('Gateway', () => {
         const tx = await gateway.deployIdentityWithSalt(
           aliceWallet.address,
           'saltToUse',
-          BigNumber.from(new Date().getTime()).div(1000).add(365 * 24 * 60 * 60),
+          BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds,
           signature,
         );
         await expect(tx).to.emit(identityFactory, "WalletLinked").withArgs(aliceWallet.address, await identityFactory.getIdentity(aliceWallet.address));
         await expect(tx).to.emit(identityFactory, "Deployed").withArgs(await identityFactory.getIdentity(aliceWallet.address));
         const identityAddress = await identityFactory.getIdentity(aliceWallet.address);
         const identity = await ethers.getContractAt('Identity', identityAddress);
-        expect(await identity.keyHasPurpose(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address])), 1)).to.be.true;
+        expect(await identity.keyHasPurpose(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])), 1)).to.be.true;
       });
     });
 
     describe('when signature is correct with no expiry', () => {
       it('should deploy the identity', async () => {
         const {identityFactory, aliceWallet, carolWallet} = await loadFixture(deployFactoryFixture);
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
-        await identityFactory.transferOwnership(gateway.address);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.target);
 
         const digest =
-          ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(
+          ethers.keccak256(
+            ethers.AbiCoder.defaultAbiCoder().encode(
               ['string', 'address', 'string', 'uint256'],
               ['Authorize ONCHAINID deployment', aliceWallet.address, 'saltToUse', 0],
             ),
           );
         const signature = await carolWallet.signMessage(
-          ethers.utils.arrayify(
+          ethers.getBytes(
             digest,
           ),
         );
@@ -119,25 +120,25 @@ describe('Gateway', () => {
         await expect(tx).to.emit(identityFactory, "Deployed").withArgs(await identityFactory.getIdentity(aliceWallet.address));
         const identityAddress = await identityFactory.getIdentity(aliceWallet.address);
         const identity = await ethers.getContractAt('Identity', identityAddress);
-        expect(await identity.keyHasPurpose(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address])), 1)).to.be.true;
+        expect(await identity.keyHasPurpose(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])), 1)).to.be.true;
       });
     });
 
     describe('when signature is correct and signed by an authorized signer, but revoked', () => {
       it('should revert', async () => {
         const {identityFactory, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
-        await identityFactory.transferOwnership(gateway.address);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.target);
 
         const digest =
-          ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(
+          ethers.keccak256(
+            ethers.AbiCoder.defaultAbiCoder().encode(
               ['string', 'address', 'string', 'uint256'],
-              ['Authorize ONCHAINID deployment', aliceWallet.address, 'saltToUse', BigNumber.from(new Date().getTime()).div(1000).add(365 * 24 * 60 * 60)],
+              ['Authorize ONCHAINID deployment', aliceWallet.address, 'saltToUse', BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds],
             ),
           );
         const signature = await carolWallet.signMessage(
-          ethers.utils.arrayify(
+          ethers.getBytes(
             digest,
           ),
         );
@@ -147,7 +148,7 @@ describe('Gateway', () => {
         await expect(gateway.deployIdentityWithSalt(
           aliceWallet.address,
           'saltToUse',
-          BigNumber.from(new Date().getTime()).div(1000).add(365 * 24 * 60 * 60),
+          BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds,
           signature,
         )).to.be.revertedWithCustomError(gateway, 'RevokedSignature');
       });
@@ -156,18 +157,18 @@ describe('Gateway', () => {
     describe('when signature is correct and signed by an authorized signer, but has expired', () => {
       it('should revert', async () => {
         const {identityFactory, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
-        await identityFactory.transferOwnership(gateway.address);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.target);
 
         const digest =
-          ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(
+          ethers.keccak256(
+            ethers.AbiCoder.defaultAbiCoder().encode(
               ['string', 'address', 'string', 'uint256'],
-              ['Authorize ONCHAINID deployment', aliceWallet.address, 'saltToUse', BigNumber.from(new Date().getTime()).div(1000).sub(2 * 24 * 60 * 60)],
+              ['Authorize ONCHAINID deployment', aliceWallet.address, 'saltToUse', BigInt(Math.floor(Date.now() / 1000)) - 2n * 24n * 60n * 60n],
             ),
           );
         const signature = await carolWallet.signMessage(
-          ethers.utils.arrayify(
+          ethers.getBytes(
             digest,
           ),
         );
@@ -177,7 +178,7 @@ describe('Gateway', () => {
         await expect(gateway.deployIdentityWithSalt(
           aliceWallet.address,
           'saltToUse',
-          BigNumber.from(new Date().getTime()).div(1000).sub(2 * 24 * 60 * 60),
+          BigInt(Math.floor(Date.now() / 1000)) - 2n * 24n * 60n * 60n,
           signature,
         )).to.be.revertedWithCustomError(gateway, 'ExpiredSignature');
       });
@@ -188,45 +189,45 @@ describe('Gateway', () => {
     describe('when input address is the zero address', () => {
       it('should revert', async () => {
         const {identityFactory, carolWallet} = await loadFixture(deployFactoryFixture);
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
 
-        await expect(gateway.deployIdentityWithSaltAndManagementKeys(ethers.constants.AddressZero, 'saltToUse', [], BigNumber.from(new Date().getTime()).div(1000).add(365 * 24 * 60 * 60), ethers.utils.randomBytes(65))).to.be.reverted;
+        await expect(gateway.deployIdentityWithSaltAndManagementKeys(ethers.ZeroAddress, 'saltToUse', [], BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds, ethers.randomBytes(65))).to.be.reverted;
       });
     });
 
     describe('when signature is not valid', () => {
       it('should revert with UnsignedDeployment', async () => {
         const {identityFactory, aliceWallet, carolWallet} = await loadFixture(deployFactoryFixture);
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
 
-        await expect(gateway.deployIdentityWithSaltAndManagementKeys(aliceWallet.address, 'saltToUse', [], BigNumber.from(new Date().getTime()).div(1000).add(365 * 24 * 60 * 60), ethers.utils.randomBytes(65))).to.be.reverted;
+        await expect(gateway.deployIdentityWithSaltAndManagementKeys(aliceWallet.address, 'saltToUse', [], BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds, ethers.randomBytes(65))).to.be.reverted;
       });
     });
 
     describe('when signature is signed by a non authorized signer', () => {
       it('should revert with UnsignedDeployment', async () => {
         const {identityFactory, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
 
         await expect(
           gateway.deployIdentityWithSaltAndManagementKeys(
             aliceWallet.address,
             'saltToUse',
             [
-              ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address'], [bobWallet.address])),
+              ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address'], [bobWallet.address])),
             ],
-            BigNumber.from(new Date().getTime()).div(1000).add(365 * 24 * 60 * 60),
+            BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds,
             bobWallet.signMessage(
-              ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(
+              ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(
                 ['string', 'address', 'string', 'bytes32[]', 'uint256'],
                 [
                   'Authorize ONCHAINID deployment',
                   aliceWallet.address,
                   'saltToUse',
                   [
-                    ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address'], [bobWallet.address])),
+                    ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address'], [bobWallet.address])),
                   ],
-                  BigNumber.from(new Date().getTime()).div(1000).add(365 * 24 * 60 * 60)
+                  BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds
                 ],
               )),
             ),
@@ -238,20 +239,20 @@ describe('Gateway', () => {
     describe('when signature is correct and signed by an authorized signer', () => {
       it('should deploy the identity', async () => {
         const {identityFactory, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
-        await identityFactory.transferOwnership(gateway.address);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.target);
 
         const digest =
-          ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(
+          ethers.keccak256(
+            ethers.AbiCoder.defaultAbiCoder().encode(
               ['string', 'address', 'string', 'bytes32[]', 'uint256'],
               ['Authorize ONCHAINID deployment', aliceWallet.address, 'saltToUse', [
-                ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address'], [bobWallet.address])),
-              ], BigNumber.from(new Date().getTime()).div(1000).add(365 * 24 * 60 * 60)],
+                ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address'], [bobWallet.address])),
+              ], BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds],
             ),
           );
         const signature = await carolWallet.signMessage(
-          ethers.utils.arrayify(
+          ethers.getBytes(
             digest,
           ),
         );
@@ -260,37 +261,37 @@ describe('Gateway', () => {
           aliceWallet.address,
           'saltToUse',
           [
-            ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address'], [bobWallet.address])),
+            ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address'], [bobWallet.address])),
           ],
-          BigNumber.from(new Date().getTime()).div(1000).add(365 * 24 * 60 * 60),
+          BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds,
           signature,
         );
         await expect(tx).to.emit(identityFactory, "WalletLinked").withArgs(aliceWallet.address, await identityFactory.getIdentity(aliceWallet.address));
         await expect(tx).to.emit(identityFactory, "Deployed").withArgs(await identityFactory.getIdentity(aliceWallet.address));
         const identityAddress = await identityFactory.getIdentity(aliceWallet.address);
         const identity = await ethers.getContractAt('Identity', identityAddress);
-        expect(await identity.keyHasPurpose(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address])), 1)).to.be.false;
-        expect(await identity.keyHasPurpose(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address'], [bobWallet.address])), 1)).to.be.true;
+        expect(await identity.keyHasPurpose(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])), 1)).to.be.false;
+        expect(await identity.keyHasPurpose(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address'], [bobWallet.address])), 1)).to.be.true;
       });
     });
 
     describe('when signature is correct with no expiry', () => {
       it('should deploy the identity', async () => {
         const {identityFactory, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
-        await identityFactory.transferOwnership(gateway.address);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.target);
 
         const digest =
-          ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(
+          ethers.keccak256(
+            ethers.AbiCoder.defaultAbiCoder().encode(
               ['string', 'address', 'string', 'bytes32[]', 'uint256'],
               ['Authorize ONCHAINID deployment', aliceWallet.address, 'saltToUse', [
-                ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address'], [bobWallet.address])),
+                ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address'], [bobWallet.address])),
               ], 0],
             ),
           );
         const signature = await carolWallet.signMessage(
-          ethers.utils.arrayify(
+          ethers.getBytes(
             digest,
           ),
         );
@@ -299,7 +300,7 @@ describe('Gateway', () => {
           aliceWallet.address,
           'saltToUse',
           [
-            ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address'], [bobWallet.address])),
+            ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address'], [bobWallet.address])),
           ],
           0,
           signature,
@@ -308,28 +309,28 @@ describe('Gateway', () => {
         await expect(tx).to.emit(identityFactory, "Deployed").withArgs(await identityFactory.getIdentity(aliceWallet.address));
         const identityAddress = await identityFactory.getIdentity(aliceWallet.address);
         const identity = await ethers.getContractAt('Identity', identityAddress);
-        expect(await identity.keyHasPurpose(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address])), 1)).to.be.false;
-        expect(await identity.keyHasPurpose(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address'], [bobWallet.address])), 1)).to.be.true;
+        expect(await identity.keyHasPurpose(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])), 1)).to.be.false;
+        expect(await identity.keyHasPurpose(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address'], [bobWallet.address])), 1)).to.be.true;
       });
     });
 
     describe('when signature is correct and signed by an authorized signer, but revoked', () => {
       it('should revert', async () => {
         const {identityFactory, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
-        await identityFactory.transferOwnership(gateway.address);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.target);
 
         const digest =
-          ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(
+          ethers.keccak256(
+            ethers.AbiCoder.defaultAbiCoder().encode(
               ['string', 'address', 'string', 'bytes32[]', 'uint256'],
               ['Authorize ONCHAINID deployment', aliceWallet.address, 'saltToUse', [
-                ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address'], [bobWallet.address])),
-              ], BigNumber.from(new Date().getTime()).div(1000).add(365 * 24 * 60 * 60)],
+                ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address'], [bobWallet.address])),
+              ], BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds],
             ),
           );
         const signature = await carolWallet.signMessage(
-          ethers.utils.arrayify(
+          ethers.getBytes(
             digest,
           ),
         );
@@ -340,9 +341,9 @@ describe('Gateway', () => {
           aliceWallet.address,
           'saltToUse',
           [
-            ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address'], [bobWallet.address])),
+            ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address'], [bobWallet.address])),
           ],
-          BigNumber.from(new Date().getTime()).div(1000).add(365 * 24 * 60 * 60),
+          BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds,
           signature,
         )).to.be.revertedWithCustomError(gateway, 'RevokedSignature');
       });
@@ -351,20 +352,20 @@ describe('Gateway', () => {
     describe('when signature is correct and signed by an authorized signer, but has expired', () => {
       it('should revert', async () => {
         const {identityFactory, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
-        await identityFactory.transferOwnership(gateway.address);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.target);
 
         const digest =
-          ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(
+          ethers.keccak256(
+            ethers.AbiCoder.defaultAbiCoder().encode(
               ['string', 'address', 'string', 'bytes32[]', 'uint256'],
               ['Authorize ONCHAINID deployment', aliceWallet.address, 'saltToUse', [
-                ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address'], [bobWallet.address])),
-              ], BigNumber.from(new Date().getTime()).div(1000).sub(2 * 24 * 60 * 60)],
+                ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address'], [bobWallet.address])),
+              ], BigInt(Math.floor(Date.now() / 1000)) - 2n * 24n * 60n * 60n],
             ),
           );
         const signature = await carolWallet.signMessage(
-          ethers.utils.arrayify(
+          ethers.getBytes(
             digest,
           ),
         );
@@ -375,9 +376,9 @@ describe('Gateway', () => {
           aliceWallet.address,
           'saltToUse',
           [
-            ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address'], [bobWallet.address])),
+            ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address'], [bobWallet.address])),
           ],
-          BigNumber.from(new Date().getTime()).div(1000).sub(2 * 24 * 60 * 60),
+          BigInt(Math.floor(Date.now() / 1000)) - 2n * 24n * 60n * 60n,
           signature,
         )).to.be.revertedWithCustomError(gateway, 'ExpiredSignature');
       });
@@ -388,17 +389,17 @@ describe('Gateway', () => {
     describe('when input address is the zero address', () => {
       it('should revert', async () => {
         const {identityFactory, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
-        await identityFactory.transferOwnership(gateway.address);
-        await expect(gateway.deployIdentityForWallet(ethers.constants.AddressZero)).to.revertedWithCustomError(gateway, 'ZeroAddress');
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.target);
+        await expect(gateway.deployIdentityForWallet(ethers.ZeroAddress)).to.revertedWithCustomError(gateway, 'ZeroAddress');
       });
     });
 
     describe('when sender is not the desired identity owner', () => {
       it('should deploy the identity for the identity owner', async () => {
         const {identityFactory, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
-        await identityFactory.transferOwnership(gateway.address);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.target);
 
         const tx = await gateway.connect(bobWallet).deployIdentityForWallet(aliceWallet.address);
 
@@ -407,15 +408,15 @@ describe('Gateway', () => {
         const identityAddress = await identityFactory.getIdentity(aliceWallet.address);
         const identity = await ethers.getContractAt('Identity', identityAddress);
 
-        expect(await identity.keyHasPurpose(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address])), 1)).to.be.true;
+        expect(await identity.keyHasPurpose(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])), 1)).to.be.true;
       });
     });
 
     describe('when an identity was not yet deployed for this walet', () => {
       it('should deploy the identity', async () => {
         const {identityFactory, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
-        await identityFactory.transferOwnership(gateway.address);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.target);
         const tx = await gateway.connect(aliceWallet).deployIdentityForWallet(aliceWallet.address);
 
         await expect(tx).to.emit(identityFactory, "WalletLinked").withArgs(aliceWallet.address, await identityFactory.getIdentity(aliceWallet.address));
@@ -423,15 +424,15 @@ describe('Gateway', () => {
         const identityAddress = await identityFactory.getIdentity(aliceWallet.address);
         const identity = await ethers.getContractAt('Identity', identityAddress);
 
-        expect(await identity.keyHasPurpose(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address'], [aliceWallet.address])), 1)).to.be.true;
+        expect(await identity.keyHasPurpose(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address'], [aliceWallet.address])), 1)).to.be.true;
       });
     });
 
     describe('when an identity was already deployed for this wallet as salt with the factory', () => {
       it('should revert because factory reverts', async () => {
         const {identityFactory, aliceWallet, bobWallet, carolWallet} = await loadFixture(deployFactoryFixture);
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
-        await identityFactory.transferOwnership(gateway.address);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.target);
 
         await gateway.connect(aliceWallet).deployIdentityForWallet(aliceWallet.address);
 
@@ -450,10 +451,10 @@ describe('Gateway', () => {
           bobWallet,
           carolWallet
         } = await loadFixture(deployFactoryFixture);
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
-        await identityFactory.transferOwnership(gateway.address);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.target);
 
-        await expect(gateway.transferFactoryOwnership(bobWallet.address)).to.emit(identityFactory, "OwnershipTransferred").withArgs(gateway.address, bobWallet.address);
+        await expect(gateway.transferFactoryOwnership(bobWallet.address)).to.emit(identityFactory, "OwnershipTransferred").withArgs(gateway.target, bobWallet.address);
         expect(await identityFactory.owner()).to.be.equal(bobWallet.address);
       });
     });
@@ -467,8 +468,8 @@ describe('Gateway', () => {
           bobWallet,
           carolWallet
         } = await loadFixture(deployFactoryFixture);
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
-        await identityFactory.transferOwnership(gateway.address);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.target);
 
         await expect(gateway.connect(aliceWallet).transferFactoryOwnership(bobWallet.address)).to.be.revertedWith('Ownable: caller is not the owner')
       });
@@ -485,18 +486,18 @@ describe('Gateway', () => {
           bobWallet,
           carolWallet
         } = await loadFixture(deployFactoryFixture);
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
-        await identityFactory.transferOwnership(gateway.address);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.target);
 
         const digest =
-          ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(
+          ethers.keccak256(
+            ethers.AbiCoder.defaultAbiCoder().encode(
               ['string', 'address', 'string', 'uint256'],
-              ['Authorize ONCHAINID deployment', aliceWallet.address, 'saltToUse', BigNumber.from(new Date().getTime()).div(1000).add(365 * 24 * 60 * 60)],
+              ['Authorize ONCHAINID deployment', aliceWallet.address, 'saltToUse', BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds],
             ),
           );
         const signature = await carolWallet.signMessage(
-          ethers.utils.arrayify(
+          ethers.getBytes(
             digest,
           ),
         );
@@ -514,18 +515,18 @@ describe('Gateway', () => {
           bobWallet,
           carolWallet
         } = await loadFixture(deployFactoryFixture);
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
-        await identityFactory.transferOwnership(gateway.address);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.target);
 
         const digest =
-          ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(
+          ethers.keccak256(
+            ethers.AbiCoder.defaultAbiCoder().encode(
               ['string', 'address', 'string', 'uint256'],
-              ['Authorize ONCHAINID deployment', aliceWallet.address, 'saltToUse', BigNumber.from(new Date().getTime()).div(1000).add(365 * 24 * 60 * 60)],
+              ['Authorize ONCHAINID deployment', aliceWallet.address, 'saltToUse', BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds],
             ),
           );
         const signature = await carolWallet.signMessage(
-          ethers.utils.arrayify(
+          ethers.getBytes(
             digest,
           ),
         );
@@ -547,18 +548,18 @@ describe('Gateway', () => {
           bobWallet,
           carolWallet
         } = await loadFixture(deployFactoryFixture);
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
-        await identityFactory.transferOwnership(gateway.address);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.target);
 
         const digest =
-          ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(
+          ethers.keccak256(
+            ethers.AbiCoder.defaultAbiCoder().encode(
               ['string', 'address', 'string', 'uint256'],
-              ['Authorize ONCHAINID deployment', aliceWallet.address, 'saltToUse', BigNumber.from(new Date().getTime()).div(1000).add(365 * 24 * 60 * 60)],
+              ['Authorize ONCHAINID deployment', aliceWallet.address, 'saltToUse', BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds],
             ),
           );
         const signature = await carolWallet.signMessage(
-          ethers.utils.arrayify(
+          ethers.getBytes(
             digest,
           ),
         );
@@ -576,18 +577,18 @@ describe('Gateway', () => {
           bobWallet,
           carolWallet
         } = await loadFixture(deployFactoryFixture);
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
-        await identityFactory.transferOwnership(gateway.address);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.target);
 
         const digest =
-          ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(
+          ethers.keccak256(
+            ethers.AbiCoder.defaultAbiCoder().encode(
               ['string', 'address', 'string', 'uint256'],
-              ['Authorize ONCHAINID deployment', aliceWallet.address, 'saltToUse', BigNumber.from(new Date().getTime()).div(1000).add(365 * 24 * 60 * 60)],
+              ['Authorize ONCHAINID deployment', aliceWallet.address, 'saltToUse', BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds],
             ),
           );
         const signature = await carolWallet.signMessage(
-          ethers.utils.arrayify(
+          ethers.getBytes(
             digest,
           ),
         );
@@ -605,18 +606,18 @@ describe('Gateway', () => {
           bobWallet,
           carolWallet
         } = await loadFixture(deployFactoryFixture);
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
-        await identityFactory.transferOwnership(gateway.address);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.target);
 
         const digest =
-          ethers.utils.keccak256(
-            ethers.utils.defaultAbiCoder.encode(
+          ethers.keccak256(
+            ethers.AbiCoder.defaultAbiCoder().encode(
               ['string', 'address', 'string', 'uint256'],
-              ['Authorize ONCHAINID deployment', aliceWallet.address, 'saltToUse', BigNumber.from(new Date().getTime()).div(1000).add(365 * 24 * 60 * 60)],
+              ['Authorize ONCHAINID deployment', aliceWallet.address, 'saltToUse', BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds],
             ),
           );
         const signature = await carolWallet.signMessage(
-          ethers.utils.arrayify(
+          ethers.getBytes(
             digest,
           ),
         );
@@ -640,10 +641,10 @@ describe('Gateway', () => {
           bobWallet,
           carolWallet
         } = await loadFixture(deployFactoryFixture);
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
-        await identityFactory.transferOwnership(gateway.address);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.target);
 
-        await expect(gateway.approveSigner(ethers.constants.AddressZero)).to.be.revertedWithCustomError(gateway, 'ZeroAddress');
+        await expect(gateway.approveSigner(ethers.ZeroAddress)).to.be.revertedWithCustomError(gateway, 'ZeroAddress');
       });
     });
 
@@ -656,8 +657,8 @@ describe('Gateway', () => {
           bobWallet,
           carolWallet
         } = await loadFixture(deployFactoryFixture);
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
-        await identityFactory.transferOwnership(gateway.address);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.target);
 
         await expect(gateway.connect(aliceWallet).approveSigner(bobWallet.address)).to.be.revertedWith('Ownable: caller is not the owner');
       });
@@ -672,8 +673,8 @@ describe('Gateway', () => {
           bobWallet,
           carolWallet
         } = await loadFixture(deployFactoryFixture);
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
-        await identityFactory.transferOwnership(gateway.address);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.target);
 
         await gateway.approveSigner(bobWallet.address);
 
@@ -690,8 +691,8 @@ describe('Gateway', () => {
           bobWallet,
           carolWallet
         } = await loadFixture(deployFactoryFixture);
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [carolWallet.address]]);
-        await identityFactory.transferOwnership(gateway.address);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [carolWallet.address]]);
+        await identityFactory.transferOwnership(gateway.target);
 
         const tx = await gateway.approveSigner(bobWallet.address);
 
@@ -711,10 +712,10 @@ describe('Gateway', () => {
           carolWallet
         } = await loadFixture(deployFactoryFixture);
 
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [aliceWallet.address]]);
-        await identityFactory.transferOwnership(gateway.address);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [aliceWallet.address]]);
+        await identityFactory.transferOwnership(gateway.target);
 
-        await expect(gateway.revokeSigner(ethers.constants.AddressZero)).to.be.revertedWithCustomError(gateway, 'ZeroAddress');
+        await expect(gateway.revokeSigner(ethers.ZeroAddress)).to.be.revertedWithCustomError(gateway, 'ZeroAddress');
       });
     });
 
@@ -727,8 +728,8 @@ describe('Gateway', () => {
           bobWallet,
           carolWallet
         } = await loadFixture(deployFactoryFixture);
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [bobWallet.address]]);
-        await identityFactory.transferOwnership(gateway.address);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [bobWallet.address]]);
+        await identityFactory.transferOwnership(gateway.target);
 
         await expect(gateway.connect(aliceWallet).revokeSigner(bobWallet.address)).to.be.revertedWith('Ownable: caller is not the owner');
       });
@@ -744,8 +745,8 @@ describe('Gateway', () => {
           carolWallet
         } = await loadFixture(deployFactoryFixture);
 
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [aliceWallet.address]]);
-        await identityFactory.transferOwnership(gateway.address);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [aliceWallet.address]]);
+        await identityFactory.transferOwnership(gateway.target);
 
         await expect(gateway.revokeSigner(bobWallet.address)).to.be.revertedWithCustomError(gateway, 'SignerAlreadyNotApproved');
       });
@@ -761,8 +762,8 @@ describe('Gateway', () => {
           carolWallet
         } = await loadFixture(deployFactoryFixture);
 
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [bobWallet.address]]);
-        await identityFactory.transferOwnership(gateway.address);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [bobWallet.address]]);
+        await identityFactory.transferOwnership(gateway.target);
 
         const tx = await gateway.revokeSigner(bobWallet.address);
 
@@ -782,11 +783,11 @@ describe('Gateway', () => {
           carolWallet
         } = await loadFixture(deployFactoryFixture);
 
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [aliceWallet.address]]);
-        await identityFactory.transferOwnership(gateway.address);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [aliceWallet.address]]);
+        await identityFactory.transferOwnership(gateway.target);
 
         await expect(gateway.connect(aliceWallet).callFactory(
-          new ethers.utils.Interface(['function addTokenFactory(address)']).encodeFunctionData('addTokenFactory', [ethers.constants.AddressZero]))
+          identityFactory.interface.encodeFunctionData('addTokenFactory', [ethers.ZeroAddress]))
         ).to.be.revertedWith('Ownable: caller is not the owner');
       });
     });
@@ -801,12 +802,12 @@ describe('Gateway', () => {
           carolWallet
         } = await loadFixture(deployFactoryFixture);
 
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [aliceWallet.address]]);
-        await identityFactory.transferOwnership(gateway.address);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [aliceWallet.address]]);
+        await identityFactory.transferOwnership(gateway.target);
 
         await expect(gateway.connect(deployerWallet).callFactory(
-          new ethers.utils.Interface(['function addTokenFactory(address)']).encodeFunctionData('addTokenFactory', [ethers.constants.AddressZero]))
-        ).to.be.revertedWith('Gateway: call to factory failed');
+          identityFactory.interface.encodeFunctionData('addTokenFactory', [ethers.ZeroAddress])
+        )).to.be.revertedWith('Gateway: call to factory failed');
       });
     });
 
@@ -819,10 +820,10 @@ describe('Gateway', () => {
           bobWallet,
         } = await loadFixture(deployFactoryFixture);
 
-        const gateway = await ethers.deployContract('Gateway', [identityFactory.address, [aliceWallet.address]]);
-        await identityFactory.transferOwnership(gateway.address);
+        const gateway = await ethers.deployContract('Gateway', [identityFactory.target, [aliceWallet.address]]);
+        await identityFactory.transferOwnership(gateway.target);
 
-        const tx = await gateway.connect(deployerWallet).callFactory(new ethers.utils.Interface(['function addTokenFactory(address)']).encodeFunctionData('addTokenFactory', [bobWallet.address]));
+        const tx = await gateway.connect(deployerWallet).callFactory(identityFactory.interface.encodeFunctionData('addTokenFactory', [bobWallet.address]));
 
         expect(tx).to.emit(identityFactory, "TokenFactoryAdded").withArgs(bobWallet.address);
       });
