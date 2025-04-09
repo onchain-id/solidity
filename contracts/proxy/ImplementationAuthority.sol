@@ -2,8 +2,10 @@
 
 pragma solidity 0.8.27;
 
-import "../interface/IImplementationAuthority.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { IImplementationAuthority } from "../interface/IImplementationAuthority.sol";
+import { Errors } from "../libraries/Errors.sol";
+
 
 contract ImplementationAuthority is IImplementationAuthority, Ownable {
 
@@ -11,7 +13,7 @@ contract ImplementationAuthority is IImplementationAuthority, Ownable {
     address internal _implementation;
 
     constructor(address implementation) {
-        require(implementation != address(0), "invalid argument - zero address");
+        require(implementation != address(0), Errors.ZeroAddress());
         _implementation = implementation;
         emit UpdatedImplementation(implementation);
     }
@@ -20,7 +22,7 @@ contract ImplementationAuthority is IImplementationAuthority, Ownable {
      *  @dev See {IImplementationAuthority-updateImplementation}.
      */
     function updateImplementation(address _newImplementation) external override onlyOwner {
-        require(_newImplementation != address(0), "invalid argument - zero address");
+        require(_newImplementation != address(0), Errors.ZeroAddress());
         _implementation = _newImplementation;
         emit UpdatedImplementation(_newImplementation);
     }

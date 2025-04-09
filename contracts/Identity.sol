@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.27;
 
-import "./interface/IIdentity.sol";
-import "./interface/IClaimIssuer.sol";
-import "./version/Version.sol";
-import "./storage/Storage.sol";
+import { IIdentity } from "./interface/IIdentity.sol";
+import { IClaimIssuer } from "./interface/IClaimIssuer.sol";
+import { Version } from "./version/Version.sol";
+import { Storage } from "./storage/Storage.sol";
+import { Errors } from "./libraries/Errors.sol";
 
 /**
  * @dev Implementation of the `IERC734` "KeyHolder" and the `IERC735` "ClaimHolder" interfaces
@@ -18,7 +19,7 @@ contract Identity is Storage, IIdentity, Version {
      * @notice Prevent any direct calls to the implementation contract (marked by _canInteract = false).
      */
     modifier delegatedOnly() {
-        require(_canInteract == true, "Interacting with the library contract is forbidden.");
+        require(_canInteract == true, Errors.InteractingWithLibraryContractForbidden());
         _;
     }
 
@@ -27,7 +28,7 @@ contract Identity is Storage, IIdentity, Version {
      */
     modifier onlyManager() {
         require(msg.sender == address(this) || keyHasPurpose(keccak256(abi.encode(msg.sender)), 1)
-        , "Permissions: Sender does not have management key");
+        , Errors.SenderDoesNotHaveManagementKey());
         _;
     }
 
@@ -36,7 +37,7 @@ contract Identity is Storage, IIdentity, Version {
      */
     modifier onlyClaimKey() {
         require(msg.sender == address(this) || keyHasPurpose(keccak256(abi.encode(msg.sender)), 3)
-        , "Permissions: Sender does not have claim signer key");
+        , Errors.SenderDoesNotHaveClaimSignerKey());
         _;
     }
 
@@ -47,7 +48,7 @@ contract Identity is Storage, IIdentity, Version {
      * calls __Identity_init if contract is not library
      */
     constructor(address initialManagementKey, bool _isLibrary) {
-        require(initialManagementKey != address(0), "invalid argument - zero address");
+        require(initialManagementKey != address(0), Errors.ZeroAddress());
 
         if (!_isLibrary) {
             __Identity_init(initialManagementKey);
@@ -62,7 +63,7 @@ contract Identity is Storage, IIdentity, Version {
      * @param initialManagementKey The ethereum address to be set as the management key of the ONCHAINID.
      */
     function initialize(address initialManagementKey) external {
-        require(initialManagementKey != address(0), "invalid argument - zero address");
+        require(initialManagementKey != address(0), Errors.ZeroAddress());
         __Identity_init(initialManagementKey);
     }
 
@@ -191,7 +192,7 @@ contract Identity is Storage, IIdentity, Version {
                 uint256 purpose = _purposes[keyPurposeIndex];
 
                 if (purpose == _purpose) {
-                    revert("Conflict: Key already has purpose");
+                    revert Errors.KeyAlreadyHasPurpose(_key, _purpose);
                 }
             }
 
@@ -223,14 +224,14 @@ contract Identity is Storage, IIdentity, Version {
     override
     returns (bool success)
     {
-        require(_id < _executionNonce, "Cannot approve a non-existing execution");
-        require(!_executions[_id].executed, "Request already executed");
+        require(_id < _executionNonce, Errors.InvalidRequestId());
+        require(!_executions[_id].executed, Errors.RequestAlreadyExecuted());
 
         if(_executions[_id].to == address(this)) {
-            require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 1), "Sender does not have management key");
+            require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 1), Errors.SenderDoesNotHaveManagementKey());
         }
         else {
-            require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 2), "Sender does not have action key");
+            require(keyHasPurpose(keccak256(abi.encode(msg.sender)), 2), Errors.SenderDoesNotHaveActionKey());
         }
 
         emit Approved(_id, _approve);
@@ -279,7 +280,7 @@ contract Identity is Storage, IIdentity, Version {
     override
     returns (bool success)
     {
-        require(_keys[_key].key == _key, "NonExisting: Key isn't registered");
+        require(_keys[_key].key == _key, Errors.KeyNotRegistered(_key));
         uint256[] memory _purposes = _keys[_key].purposes;
 
         uint purposeIndex = 0;
@@ -287,7 +288,7 @@ contract Identity is Storage, IIdentity, Version {
             purposeIndex++;
 
             if (purposeIndex == _purposes.length) {
-                revert("NonExisting: Key doesn't have such purpose");
+                revert Errors.KeyDoesNotHavePurpose(_key, _purpose);
             }
         }
 
@@ -354,7 +355,7 @@ contract Identity is Storage, IIdentity, Version {
     returns (bytes32 claimRequestId)
     {
         if (_issuer != address(this)) {
-            require(IClaimIssuer(_issuer).isClaimValid(IIdentity(address(this)), _topic, _signature, _data), "invalid claim");
+            require(IClaimIssuer(_issuer).isClaimValid(IIdentity(address(this)), _topic, _signature, _data), Errors.InvalidClaim());
         }
 
         bytes32 claimId = keccak256(abi.encode(_issuer, _topic));
@@ -395,9 +396,7 @@ contract Identity is Storage, IIdentity, Version {
     returns
     (bool success) {
         uint256 _topic = _claims[_claimId].topic;
-        if (_topic == 0) {
-            revert("NonExisting: There is no claim with this ID");
-        }
+        require(_topic != 0, Errors.ClaimNotRegistered(_claimId));
 
         uint claimIndex = 0;
         uint arrayLength = _claimsByTopic[_topic].length;
@@ -572,7 +571,7 @@ contract Identity is Storage, IIdentity, Version {
      */
     // solhint-disable-next-line func-name-mixedcase
     function __Identity_init(address initialManagementKey) internal {
-        require(!_initialized || _isConstructor(), "Initial key was already setup.");
+        require(!_initialized || _isConstructor(), Errors.InitialKeyAlreadySetup());
         _initialized = true;
         _canInteract = true;
 

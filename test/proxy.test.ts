@@ -8,7 +8,7 @@ describe('Proxy', () => {
     const [deployerWallet, identityOwnerWallet] = await ethers.getSigners();
 
     const IdentityProxy = await ethers.getContractFactory('IdentityProxy');
-    await expect(IdentityProxy.connect(deployerWallet).deploy(ethers.ZeroAddress, identityOwnerWallet.address)).to.be.revertedWith('invalid argument - zero address');
+    await expect(IdentityProxy.connect(deployerWallet).deploy(ethers.ZeroAddress, identityOwnerWallet.address)).to.be.revertedWithCustomError(IdentityProxy, 'ZeroAddress');
   });
 
   it('should revert because implementation is not an identity', async () => {
@@ -19,7 +19,7 @@ describe('Proxy', () => {
     const authority = await ethers.deployContract('ImplementationAuthority', [claimIssuer.target]);
 
     const IdentityProxy = await ethers.getContractFactory('IdentityProxy');
-    await expect(IdentityProxy.connect(deployerWallet).deploy(authority.target, identityOwnerWallet.address)).to.be.revertedWith('Initialization failed.');
+    await expect(IdentityProxy.connect(deployerWallet).deploy(authority.target, identityOwnerWallet.address)).to.be.revertedWithCustomError(IdentityProxy, 'InitializationFailed');
   });
 
   it('should revert because initial key is Zero address', async () => {
@@ -29,20 +29,20 @@ describe('Proxy', () => {
     const implementationAuthority = await ethers.deployContract('ImplementationAuthority', [implementation.target]);
 
     const IdentityProxy = await ethers.getContractFactory('IdentityProxy');
-    await expect(IdentityProxy.connect(deployerWallet).deploy(implementationAuthority.target, ethers.ZeroAddress)).to.be.revertedWith('invalid argument - zero address');
+    await expect(IdentityProxy.connect(deployerWallet).deploy(implementationAuthority.target, ethers.ZeroAddress)).to.be.revertedWithCustomError(IdentityProxy, 'ZeroAddress');
   });
 
   it('should prevent creating an implementation authority with a zero address implementation', async () => {
     const [deployerWallet] = await ethers.getSigners();
 
     const ImplementationAuthority = await ethers.getContractFactory('ImplementationAuthority');
-    await expect(ImplementationAuthority.connect(deployerWallet).deploy(ethers.ZeroAddress)).to.be.revertedWith('invalid argument - zero address');
+    await expect(ImplementationAuthority.connect(deployerWallet).deploy(ethers.ZeroAddress)).to.be.revertedWithCustomError(ImplementationAuthority, 'ZeroAddress');
   });
 
   it('should prevent updating to a Zero address implementation', async () => {
     const {implementationAuthority, deployerWallet} = await loadFixture(deployIdentityFixture);
 
-    await expect(implementationAuthority.connect(deployerWallet).updateImplementation(ethers.ZeroAddress)).to.be.revertedWith('invalid argument - zero address');
+    await expect(implementationAuthority.connect(deployerWallet).updateImplementation(ethers.ZeroAddress)).to.be.revertedWithCustomError(implementationAuthority, 'ZeroAddress');
   });
 
   it('should prevent updating when not owner', async () => {

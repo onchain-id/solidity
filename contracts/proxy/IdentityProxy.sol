@@ -2,7 +2,8 @@
 
 pragma solidity 0.8.27;
 
-import "../interface/IImplementationAuthority.sol";
+import { IImplementationAuthority } from "../interface/IImplementationAuthority.sol";
+import { Errors } from "../libraries/Errors.sol";
 
 contract IdentityProxy {
 
@@ -14,8 +15,8 @@ contract IdentityProxy {
      *  deployed at an address listed in the ImplementationAuthority contract
      */
     constructor(address _implementationAuthority, address initialManagementKey) {
-        require(_implementationAuthority != address(0), "invalid argument - zero address");
-        require(initialManagementKey != address(0), "invalid argument - zero address");
+        require(_implementationAuthority != address(0), Errors.ZeroAddress());
+        require(initialManagementKey != address(0), Errors.ZeroAddress());
 
         // solhint-disable-next-line no-inline-assembly
         assembly {
@@ -26,7 +27,7 @@ contract IdentityProxy {
 
         // solhint-disable-next-line avoid-low-level-calls
         (bool success,) = logic.delegatecall(abi.encodeWithSignature("initialize(address)", initialManagementKey));
-        require(success, "Initialization failed.");
+        require(success, Errors.InitializationFailed());
     }
 
     /**

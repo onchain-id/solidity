@@ -9,7 +9,7 @@ describe('ClaimIssuer - Reference (with revoke)', () => {
       it('should revert for missing permissions', async () => {
         const { claimIssuer, aliceWallet, aliceClaim666 } = await loadFixture(deployIdentityFixture);
 
-        await expect(claimIssuer.connect(aliceWallet).revokeClaim(aliceClaim666.id, aliceClaim666.identity)).to.be.revertedWith('Permissions: Sender does not have management key');
+        await expect(claimIssuer.connect(aliceWallet).revokeClaim(aliceClaim666.id, aliceClaim666.identity)).to.be.revertedWithCustomError(claimIssuer, 'SenderDoesNotHaveManagementKey');
       });
     });
 
@@ -20,7 +20,7 @@ describe('ClaimIssuer - Reference (with revoke)', () => {
 
           await claimIssuer.connect(claimIssuerWallet).revokeClaim(aliceClaim666.id, aliceClaim666.identity);
 
-          await expect(claimIssuer.connect(claimIssuerWallet).revokeClaim(aliceClaim666.id, aliceClaim666.identity)).to.be.revertedWith('Conflict: Claim already revoked');
+          await expect(claimIssuer.connect(claimIssuerWallet).revokeClaim(aliceClaim666.id, aliceClaim666.identity)).to.be.revertedWithCustomError(claimIssuer, 'ClaimAlreadyRevoked');
         });
       });
 
@@ -46,7 +46,7 @@ describe('ClaimIssuer - Reference (with revoke)', () => {
       it('should revert for missing permissions', async () => {
         const { claimIssuer, aliceWallet, aliceClaim666 } = await loadFixture(deployIdentityFixture);
 
-        await expect(claimIssuer.connect(aliceWallet).revokeClaimBySignature(aliceClaim666.signature)).to.be.revertedWith('Permissions: Sender does not have management key');
+        await expect(claimIssuer.connect(aliceWallet).revokeClaimBySignature(aliceClaim666.signature)).to.be.revertedWithCustomError(claimIssuer, 'SenderDoesNotHaveManagementKey');
       });
     });
 
@@ -57,7 +57,7 @@ describe('ClaimIssuer - Reference (with revoke)', () => {
 
           await claimIssuer.connect(claimIssuerWallet).revokeClaimBySignature(aliceClaim666.signature);
 
-          await expect(claimIssuer.connect(claimIssuerWallet).revokeClaimBySignature(aliceClaim666.signature)).to.be.revertedWith('Conflict: Claim already revoked');
+          await expect(claimIssuer.connect(claimIssuerWallet).revokeClaimBySignature(aliceClaim666.signature)).to.be.revertedWithCustomError(claimIssuer, 'ClaimAlreadyRevoked');
         });
       });
 

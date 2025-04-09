@@ -192,7 +192,7 @@ describe('Identity', () => {
       it('should revert for execution request not found', async () => {
         const { aliceIdentity, aliceWallet } = await loadFixture(deployIdentityFixture);
 
-        await expect(aliceIdentity.connect(aliceWallet).approve(2, true)).to.be.revertedWith('Cannot approve a non-existing execution');
+        await expect(aliceIdentity.connect(aliceWallet).approve(2, true)).to.be.revertedWithCustomError(aliceIdentity, 'InvalidRequestId');
       });
     });
 
@@ -202,7 +202,7 @@ describe('Identity', () => {
 
         await aliceIdentity.connect(aliceWallet).execute(bobWallet.address, 10, '0x', { value: 10 });
 
-        await expect(aliceIdentity.connect(aliceWallet).approve(0, true)).to.be.revertedWith('Request already executed');
+        await expect(aliceIdentity.connect(aliceWallet).approve(0, true)).to.be.revertedWithCustomError(aliceIdentity, 'RequestAlreadyExecuted');
       });
     });
 
@@ -212,7 +212,7 @@ describe('Identity', () => {
 
         await aliceIdentity.connect(bobWallet).execute(carolWallet.address, 10, '0x', { value: 10 });
 
-        await expect(aliceIdentity.connect(bobWallet).approve(0, true)).to.be.revertedWith('Sender does not have action key');
+        await expect(aliceIdentity.connect(bobWallet).approve(0, true)).to.be.revertedWithCustomError(aliceIdentity, 'SenderDoesNotHaveActionKey');
       });
     });
 
@@ -222,7 +222,7 @@ describe('Identity', () => {
 
         await aliceIdentity.connect(bobWallet).execute(aliceIdentity.target, 10n, '0x', { value: 10n });
 
-        await expect(aliceIdentity.connect(davidWallet).approve(0, true)).to.be.revertedWith('Sender does not have management key');
+        await expect(aliceIdentity.connect(davidWallet).approve(0, true)).to.be.revertedWithCustomError(aliceIdentity, 'SenderDoesNotHaveManagementKey');
       });
     });
 

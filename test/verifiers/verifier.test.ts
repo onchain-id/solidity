@@ -361,7 +361,7 @@ describe('Verifier', () => {
         const [deployer] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
 
-        await expect(verifier.removeTrustedIssuer(ethers.ZeroAddress)).to.be.revertedWith('invalid argument - zero address');
+        await expect(verifier.removeTrustedIssuer(ethers.ZeroAddress)).to.be.revertedWithCustomError(verifier, 'ZeroAddress');
       });
     });
 
@@ -371,7 +371,7 @@ describe('Verifier', () => {
         const verifier = await ethers.deployContract('Verifier');
         const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
 
-        await expect(verifier.removeTrustedIssuer(claimIssuer.target)).to.be.revertedWith('NOT a trusted issuer');
+        await expect(verifier.removeTrustedIssuer(claimIssuer.target)).to.be.revertedWithCustomError(verifier, 'NotATrustedIssuer');
       });
     });
   });
@@ -392,7 +392,7 @@ describe('Verifier', () => {
         const [deployer] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
 
-        await expect(verifier.addTrustedIssuer(ethers.ZeroAddress, [1])).to.be.revertedWith('invalid argument - zero address');
+        await expect(verifier.addTrustedIssuer(ethers.ZeroAddress, [1])).to.be.revertedWithCustomError(verifier, 'ZeroAddress');
       });
     });
 
@@ -403,7 +403,7 @@ describe('Verifier', () => {
         const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
         await verifier.addTrustedIssuer(claimIssuer.target, [1]);
 
-        await expect(verifier.addTrustedIssuer(claimIssuer.target, [2])).to.be.revertedWith('trusted Issuer already exists');
+        await expect(verifier.addTrustedIssuer(claimIssuer.target, [2])).to.be.revertedWithCustomError(verifier, 'TrustedIssuerAlreadyExists');
       });
     });
 
@@ -412,7 +412,7 @@ describe('Verifier', () => {
         const [deployer] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
 
-        await expect(verifier.addTrustedIssuer(deployer.address, [])).to.be.revertedWith('trusted claim topics cannot be empty');
+        await expect(verifier.addTrustedIssuer(deployer.address, [])).to.be.revertedWithCustomError(verifier, 'TrustedClaimTopicsCannotBeEmpty');
       });
     });
 
@@ -421,7 +421,7 @@ describe('Verifier', () => {
         const [deployer] = await ethers.getSigners();
         const verifier = await ethers.deployContract('Verifier');
 
-        await expect(verifier.addTrustedIssuer(deployer.address, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16])).to.be.revertedWith('cannot have more than 15 claim topics');
+        await expect(verifier.addTrustedIssuer(deployer.address, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16])).to.be.revertedWithCustomError(verifier, 'MaxClaimTopicsExceeded');
       });
     });
 
@@ -435,7 +435,7 @@ describe('Verifier', () => {
         }
 
         const claimIssuer = await ethers.deployContract('ClaimIssuer', [deployer.address]);
-        await expect(verifier.addTrustedIssuer(claimIssuer.target, [1])).to.be.revertedWith('cannot have more than 50 trusted issuers');
+        await expect(verifier.addTrustedIssuer(claimIssuer.target, [1])).to.be.revertedWithCustomError(verifier, 'MaxTrustedIssuersExceeded');
       });
     });
   });
@@ -472,7 +472,7 @@ describe('Verifier', () => {
       it('should revert', async () => {
         const verifier = await ethers.deployContract('Verifier');
 
-        await expect(verifier.updateIssuerClaimTopics(ethers.ZeroAddress, [1])).to.be.revertedWith('invalid argument - zero address');
+        await expect(verifier.updateIssuerClaimTopics(ethers.ZeroAddress, [1])).to.be.revertedWithCustomError(verifier, 'ZeroAddress');
       });
     });
 
@@ -482,7 +482,7 @@ describe('Verifier', () => {
         const verifier = await ethers.deployContract('Verifier');
         const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
 
-        await expect(verifier.updateIssuerClaimTopics(claimIssuer.target, [1])).to.be.revertedWith('NOT a trusted issuer');
+        await expect(verifier.updateIssuerClaimTopics(claimIssuer.target, [1])).to.be.revertedWithCustomError(verifier, 'NotATrustedIssuer');
       });
     });
 
@@ -493,7 +493,7 @@ describe('Verifier', () => {
         const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
         await verifier.addTrustedIssuer(claimIssuer.target, [1]);
 
-        await expect(verifier.updateIssuerClaimTopics(claimIssuer.target, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])).to.be.revertedWith('cannot have more than 15 claim topics');
+        await expect(verifier.updateIssuerClaimTopics(claimIssuer.target, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])).to.be.revertedWithCustomError(verifier, 'MaxClaimTopicsExceeded');
       });
     });
 
@@ -504,7 +504,7 @@ describe('Verifier', () => {
         const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
         await verifier.addTrustedIssuer(claimIssuer.target, [1]);
 
-        await expect(verifier.updateIssuerClaimTopics(claimIssuer.target, [])).to.be.revertedWith('claim topics cannot be empty');
+        await expect(verifier.updateIssuerClaimTopics(claimIssuer.target, [])).to.be.revertedWithCustomError(verifier, 'TrustedClaimTopicsCannotBeEmpty');
       });
     });
   });
@@ -516,7 +516,7 @@ describe('Verifier', () => {
         const verifier = await ethers.deployContract('Verifier');
         const claimIssuer = await ethers.deployContract('ClaimIssuer', [aliceWallet.address]);
 
-        await expect(verifier.getTrustedIssuerClaimTopics(claimIssuer.target)).to.be.revertedWith('trusted Issuer doesn\'t exist');
+        await expect(verifier.getTrustedIssuerClaimTopics(claimIssuer.target)).to.be.revertedWithCustomError(verifier, 'NotATrustedIssuer');
       });
     });
   });

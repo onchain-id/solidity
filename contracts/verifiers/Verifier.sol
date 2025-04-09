@@ -2,8 +2,10 @@
 
 pragma solidity 0.8.27;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "../interface/IClaimIssuer.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { IClaimIssuer } from "../interface/IClaimIssuer.sol";
+import { IIdentity } from "../interface/IIdentity.sol";
+import { Errors } from "../libraries/Errors.sol";
 
 contract Verifier is Ownable {
     /// @dev All topics of claims required to pass verification.
@@ -65,9 +67,9 @@ contract Verifier is Ownable {
      */
     function addClaimTopic(uint256 claimTopic) public onlyOwner {
         uint256 length = requiredClaimTopics.length;
-        require(length < 15, "cannot require more than 15 topics");
+        require(length < 15, Errors.MaxClaimTopicsExceeded());
         for (uint256 i = 0; i < length; i++) {
-            require(requiredClaimTopics[i] != claimTopic, "claimTopic already exists");
+            require(requiredClaimTopics[i] != claimTopic, Errors.ClaimTopicAlreadyExists(claimTopic));
         }
         requiredClaimTopics.push(claimTopic);
         emit ClaimTopicAdded(claimTopic);
@@ -92,11 +94,11 @@ contract Verifier is Ownable {
      *  @dev See {ITrustedIssuersRegistry-addTrustedIssuer}.
      */
     function addTrustedIssuer(IClaimIssuer trustedIssuer, uint256[] calldata claimTopics) public onlyOwner {
-        require(address(trustedIssuer) != address(0), "invalid argument - zero address");
-        require(trustedIssuerClaimTopics[address(trustedIssuer)].length == 0, "trusted Issuer already exists");
-        require(claimTopics.length > 0, "trusted claim topics cannot be empty");
-        require(claimTopics.length <= 15, "cannot have more than 15 claim topics");
-        require(trustedIssuers.length < 50, "cannot have more than 50 trusted issuers");
+        require(address(trustedIssuer) != address(0), Errors.ZeroAddress());
+        require(trustedIssuerClaimTopics[address(trustedIssuer)].length == 0, Errors.TrustedIssuerAlreadyExists(address(trustedIssuer)));
+        require(claimTopics.length > 0, Errors.TrustedClaimTopicsCannotBeEmpty());
+        require(claimTopics.length <= 15, Errors.MaxClaimTopicsExceeded());
+        require(trustedIssuers.length < 50, Errors.MaxTrustedIssuersExceeded());
         trustedIssuers.push(trustedIssuer);
         trustedIssuerClaimTopics[address(trustedIssuer)] = claimTopics;
         for (uint256 i = 0; i < claimTopics.length; i++) {
@@ -109,8 +111,8 @@ contract Verifier is Ownable {
      *  @dev See {ITrustedIssuersRegistry-removeTrustedIssuer}.
      */
     function removeTrustedIssuer(IClaimIssuer trustedIssuer) public onlyOwner {
-        require(address(trustedIssuer) != address(0), "invalid argument - zero address");
-        require(trustedIssuerClaimTopics[address(trustedIssuer)].length != 0, "NOT a trusted issuer");
+        require(address(trustedIssuer) != address(0), Errors.ZeroAddress());
+        require(trustedIssuerClaimTopics[address(trustedIssuer)].length != 0, Errors.NotATrustedIssuer(address(trustedIssuer)));
         uint256 length = trustedIssuers.length;
         for (uint256 i = 0; i < length; i++) {
             if (trustedIssuers[i] == trustedIssuer) {
@@ -142,10 +144,10 @@ contract Verifier is Ownable {
      *  @dev See {ITrustedIssuersRegistry-updateIssuerClaimTopics}.
      */
     function updateIssuerClaimTopics(IClaimIssuer trustedIssuer, uint256[] calldata newClaimTopics) public onlyOwner {
-        require(address(trustedIssuer) != address(0), "invalid argument - zero address");
-        require(trustedIssuerClaimTopics[address(trustedIssuer)].length != 0, "NOT a trusted issuer");
-        require(newClaimTopics.length <= 15, "cannot have more than 15 claim topics");
-        require(newClaimTopics.length > 0, "claim topics cannot be empty");
+        require(address(trustedIssuer) != address(0), Errors.ZeroAddress());
+        require(trustedIssuerClaimTopics[address(trustedIssuer)].length != 0, Errors.NotATrustedIssuer(address(trustedIssuer)));
+        require(newClaimTopics.length <= 15, Errors.MaxClaimTopicsExceeded());
+        require(newClaimTopics.length > 0, Errors.TrustedClaimTopicsCannotBeEmpty());
 
         for (uint256 i = 0; i < trustedIssuerClaimTopics[address(trustedIssuer)].length; i++) {
             uint256 claimTopic = trustedIssuerClaimTopics[address(trustedIssuer)][i];
@@ -194,7 +196,7 @@ contract Verifier is Ownable {
      *  @dev See {ITrustedIssuersRegistry-getTrustedIssuerClaimTopics}.
      */
     function getTrustedIssuerClaimTopics(IClaimIssuer trustedIssuer) public view returns (uint256[] memory) {
-        require(trustedIssuerClaimTopics[address(trustedIssuer)].length != 0, "trusted Issuer doesn\'t exist");
+        require(trustedIssuerClaimTopics[address(trustedIssuer)].length != 0, Errors.NotATrustedIssuer(address(trustedIssuer)));
         return trustedIssuerClaimTopics[address(trustedIssuer)];
     }
 

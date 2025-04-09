@@ -1,34 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.27;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "../factory/IdFactory.sol";
-
-using ECDSA for bytes32;
-
-/// A required parameter was set to the Zero address.
-error ZeroAddress();
-/// The maximum number of signers was reached at deployment.
-error TooManySigners();
-/// The signed attempted to add was already approved.
-error SignerAlreadyApproved(address signer);
-/// The signed attempted to remove was not approved.
-error SignerAlreadyNotApproved(address signer);
-/// A requested ONCHAINID deployment was requested without a valid signature while the Gateway requires one.
-error UnsignedDeployment();
-/// A requested ONCHAINID deployment was requested and signer by a non approved signer.
-error UnapprovedSigner(address signer);
-/// A requested ONCHAINID deployment was requested with a signature revoked.
-error RevokedSignature(bytes signature);
-/// A requested ONCHAINID deployment was requested with a signature that expired.
-error ExpiredSignature(bytes signature);
-/// Attempted to revoke a signature that was already revoked.
-error SignatureAlreadyRevoked(bytes signature);
-/// Attempted to approve a signature that was not revoked.
-error SignatureNotRevoked(bytes signature);
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { IdFactory } from "../factory/IdFactory.sol";
+import { Errors } from "../libraries/Errors.sol";
 
 contract Gateway is Ownable {
+    using ECDSA for bytes32;
+
     IdFactory public idFactory;
     mapping(address => bool) public approvedSigners;
     mapping(bytes => bool) public revokedSignatures;
@@ -43,12 +24,8 @@ contract Gateway is Ownable {
      *  @param idFactoryAddress the address of the factory to operate (the Gateway must be owner of the Factory).
      */
     constructor(address idFactoryAddress, address[] memory signersToApprove) Ownable() {
-        if (idFactoryAddress == address(0)) {
-            revert ZeroAddress();
-        }
-        if (signersToApprove.length > 10) {
-            revert TooManySigners();
-        }
+        require(idFactoryAddress != address(0), Errors.ZeroAddress());
+        require(signersToApprove.length <= 10, Errors.TooManySigners());
 
         for (uint i = 0; i < signersToApprove.length; i++) {
             approvedSigners[signersToApprove[i]] = true;
@@ -64,13 +41,8 @@ contract Gateway is Ownable {
      *  @param signer the signer address to approve.
      */
     function approveSigner(address signer) external onlyOwner {
-        if (signer == address(0)) {
-            revert ZeroAddress();
-        }
-
-        if (approvedSigners[signer]) {
-            revert SignerAlreadyApproved(signer);
-        }
+        require(signer != address(0), Errors.ZeroAddress());
+        require(!approvedSigners[signer], Errors.SignerAlreadyApproved(signer));
 
         approvedSigners[signer] = true;
 
@@ -82,13 +54,8 @@ contract Gateway is Ownable {
      *  @param signer the signer address to revoke.
      */
     function revokeSigner(address signer) external onlyOwner {
-        if (signer == address(0)) {
-            revert ZeroAddress();
-        }
-
-        if (!approvedSigners[signer]) {
-            revert SignerAlreadyNotApproved(signer);
-        }
+        require(signer != address(0), Errors.ZeroAddress());
+        require(approvedSigners[signer], Errors.SignerAlreadyNotApproved(signer));
 
         delete approvedSigners[signer];
 
@@ -109,13 +76,8 @@ contract Gateway is Ownable {
         uint256 signatureExpiry,
         bytes calldata signature
     ) external returns (address) {
-        if (identityOwner == address(0)) {
-            revert ZeroAddress();
-        }
-
-        if (signatureExpiry != 0 && signatureExpiry < block.timestamp) {
-            revert ExpiredSignature(signature);
-        }
+        require(identityOwner != address(0), Errors.ZeroAddress());
+        require(signatureExpiry == 0 || block.timestamp <= signatureExpiry, Errors.ExpiredSignature(signature));
 
         address signer = ECDSA.recover(
             keccak256(
@@ -129,13 +91,8 @@ contract Gateway is Ownable {
             signature
         );
 
-        if (!approvedSigners[signer]) {
-            revert UnapprovedSigner(signer);
-        }
-
-        if (revokedSignatures[signature]) {
-            revert RevokedSignature(signature);
-        }
+        require(approvedSigners[signer], Errors.UnapprovedSigner(signer));
+        require(!revokedSignatures[signature], Errors.RevokedSignature(signature));
 
         return idFactory.createIdentity(identityOwner, salt);
     }
@@ -158,13 +115,8 @@ contract Gateway is Ownable {
         uint256 signatureExpiry,
         bytes calldata signature
     ) external returns (address) {
-        if (identityOwner == address(0)) {
-            revert ZeroAddress();
-        }
-
-        if (signatureExpiry != 0 && signatureExpiry < block.timestamp) {
-            revert ExpiredSignature(signature);
-        }
+        require(identityOwner != address(0), Errors.ZeroAddress());
+        require(signatureExpiry == 0 || block.timestamp <= signatureExpiry, Errors.ExpiredSignature(signature));
 
         address signer = ECDSA.recover(
             keccak256(
@@ -179,13 +131,8 @@ contract Gateway is Ownable {
             signature
         );
 
-        if (!approvedSigners[signer]) {
-            revert UnapprovedSigner(signer);
-        }
-
-        if (revokedSignatures[signature]) {
-            revert RevokedSignature(signature);
-        }
+        require(approvedSigners[signer], Errors.UnapprovedSigner(signer));
+        require(!revokedSignatures[signature], Errors.RevokedSignature(signature));
 
         return idFactory.createIdentityWithManagementKeys(identityOwner, salt, managementKeys);
     }
@@ -195,9 +142,7 @@ contract Gateway is Ownable {
      *  @param identityOwner the address to set as a management key.
      */
     function deployIdentityForWallet(address identityOwner) external returns (address) {
-        if (identityOwner == address(0)) {
-            revert ZeroAddress();
-        }
+        require(identityOwner != address(0), Errors.ZeroAddress());
 
         return idFactory.createIdentity(identityOwner, Strings.toHexString(identityOwner));
     }
@@ -207,9 +152,7 @@ contract Gateway is Ownable {
      *  @param signature the signature to revoke.
      */
     function revokeSignature(bytes calldata signature) external onlyOwner {
-        if (revokedSignatures[signature]) {
-            revert SignatureAlreadyRevoked(signature);
-        }
+        require(!revokedSignatures[signature], Errors.SignatureAlreadyRevoked(signature));
 
         revokedSignatures[signature] = true;
 
@@ -221,9 +164,7 @@ contract Gateway is Ownable {
      *  @param signature the signature to approve.
      */
     function approveSignature(bytes calldata signature) external onlyOwner {
-        if (!revokedSignatures[signature]) {
-            revert SignatureNotRevoked(signature);
-        }
+        require(revokedSignatures[signature], Errors.SignatureNotRevoked(signature));
 
         delete revokedSignatures[signature];
 
@@ -244,6 +185,6 @@ contract Gateway is Ownable {
      */
     function callFactory(bytes memory data) external onlyOwner {
         (bool success,) = address(idFactory).call(data);
-        require(success, "Gateway: call to factory failed");
+        require(success, Errors.CallToFactoryFailed());
     }
 }

@@ -8,7 +8,7 @@ describe('Identity', () => {
   it('should revert when attempting to initialize an already deployed identity', async () => {
     const {aliceIdentity, aliceWallet} = await loadFixture(deployIdentityFixture);
 
-    await expect(aliceIdentity.connect(aliceWallet).initialize(aliceWallet.address)).to.be.revertedWith('Initial key was already setup.');
+    await expect(aliceIdentity.connect(aliceWallet).initialize(aliceWallet.address)).to.be.revertedWithCustomError(aliceIdentity, 'InitialKeyAlreadySetup');
   });
 
   it('should revert because interaction with library is forbidden', async () => {
@@ -20,17 +20,17 @@ describe('Identity', () => {
       ),
       3,
       1,
-    )).to.be.revertedWith('Interacting with the library contract is forbidden.');
+    )).to.be.revertedWithCustomError(identityImplementation, 'InteractingWithLibraryContractForbidden');
 
     await expect(identityImplementation.connect(aliceWallet).initialize(deployerWallet.address))
-      .to.be.revertedWith('Initial key was already setup.');
+      .to.be.revertedWithCustomError(identityImplementation, 'InitialKeyAlreadySetup');
   });
 
   it('should prevent creating an identity with an invalid initial key', async () => {
     const [identityOwnerWallet] = await ethers.getSigners();
 
     const Identity = await ethers.getContractFactory('Identity');
-    await expect(Identity.connect(identityOwnerWallet).deploy(ethers.ZeroAddress, false)).to.be.revertedWith('invalid argument - zero address');
+    await expect(Identity.connect(identityOwnerWallet).deploy(ethers.ZeroAddress, false)).to.be.revertedWithCustomError(Identity, 'ZeroAddress');
   });
 
   it('should return the version of the implementation', async () => {
