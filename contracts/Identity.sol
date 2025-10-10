@@ -704,6 +704,7 @@ contract Identity is Storage, IIdentity, Version, MulticallUpgradeable {
         // For identity contract calls, check if it's an addClaim call with CLAIM_SIGNER key
         if (_to == address(this) && _data.length >= 4) {
             bytes4 selector;
+            // solhint-disable-next-line no-inline-assembly
             assembly {
                 selector := mload(add(_data, 32))
             }
