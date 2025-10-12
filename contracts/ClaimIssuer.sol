@@ -144,6 +144,9 @@ contract ClaimIssuer is IClaimIssuer, Identity {
         // Initialize UUPS upgradeability
         __UUPSUpgradeable_init();
 
+        // Initialize IdentitySmartAccount functionality
+        __IdentitySmartAccount_init();
+
         // Initialize Identity functionality
         __Identity_init(initialManagementKey);
 

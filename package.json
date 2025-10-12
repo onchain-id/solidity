@@ -59,6 +59,7 @@
     "solidity-coverage": "^0.8.14"
   },
   "dependencies": {
+    "@account-abstraction/contracts": "^0.8.0",
     "@openzeppelin/contracts-upgradeable": "^4.9.6",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-node": "^11.1.0"

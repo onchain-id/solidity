@@ -15,4 +15,7 @@ library KeyPurposes {
 
     /// @dev 4: ENCRYPTION keys, used to encrypt data e.g. hold in claims.
     uint256 internal constant ENCRYPTION = 4;
+
+    /// @dev 5: ERC4337_SIGNER keys, used to sign UserOperations for ERC-4337 Account Abstraction
+    uint256 internal constant ERC4337_SIGNER = 5;
 }

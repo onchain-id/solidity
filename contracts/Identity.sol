@@ -5,6 +5,15 @@ import { MulticallUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { IdentitySmartAccount } from "./IdentitySmartAccount.sol";
+import {
+    SIG_VALIDATION_FAILED,
+    SIG_VALIDATION_SUCCESS
+} from "@account-abstraction/contracts/core/Helpers.sol";
+import { PackedUserOperation } from "@account-abstraction/contracts/interfaces/PackedUserOperation.sol";
+import { IEntryPoint } from "@account-abstraction/contracts/interfaces/IEntryPoint.sol";
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { Exec } from "@account-abstraction/contracts/utils/Exec.sol";
 import { IIdentity } from "./interface/IIdentity.sol";
 import { IClaimIssuer } from "./interface/IClaimIssuer.sol";
 import { IERC734 } from "./interface/IERC734.sol";
@@ -12,7 +21,6 @@ import { IERC735 } from "./interface/IERC735.sol";
 import { Version } from "./version/Version.sol";
 import { Errors } from "./libraries/Errors.sol";
 import { KeyPurposes } from "./libraries/KeyPurposes.sol";
-import { KeyTypes } from "./libraries/KeyTypes.sol";
 import { Structs } from "./storage/Structs.sol";
 import { KeyManager } from "./KeyManager.sol";
 
@@ -41,6 +49,7 @@ contract Identity is
     Initializable,
     UUPSUpgradeable,
     IIdentity,
+    IdentitySmartAccount,
     Version,
     KeyManager,
     MulticallUpgradeable
@@ -113,6 +122,44 @@ contract Identity is
     }
 
     /**
+     * @dev See {IERC734-execute}.
+     * @notice Executes a single call from the account (ERC-734 compatible)
+     */
+    function execute(
+        address _to,
+        uint256 _value,
+        bytes calldata _data
+    )
+        external
+        payable
+        virtual
+        override(IERC734, KeyManager)
+        returns (uint256 executionId)
+    {
+        // Allow entry point calls
+        if (msg.sender == address(entryPoint())) {
+            // For entry point calls, use direct execution
+            _executeDirect(_to, _value, _data);
+            return 0; // Return 0 for entry point calls
+        }
+
+        // For regular calls, use KeyManager's execution logic
+        KeyStorage storage ks = _getKeyStorage();
+        executionId = ks.executionNonce;
+        ks.executions[executionId].to = _to;
+        ks.executions[executionId].value = _value;
+        ks.executions[executionId].data = _data;
+        ks.executionNonce++;
+
+        emit ExecutionRequested(executionId, _to, _value, _data);
+
+        // Check if execution can be auto-approved
+        if (_canAutoApproveExecution(_to)) {
+            _approve(executionId, true);
+        }
+    }
+
+    /**
      * @notice When using this contract as an implementation for a proxy, call this initializer with a delegatecall.
      * @dev This function initializes the upgradeable contract and sets up the initial management key.
      * It calls the UUPS upgradeability initialization and the Identity-specific initialization.
@@ -123,6 +170,7 @@ contract Identity is
     ) external virtual initializer {
         require(initialManagementKey != address(0), Errors.ZeroAddress());
         __UUPSUpgradeable_init();
+        __IdentitySmartAccount_init();
         __Identity_init(initialManagementKey);
         __Version_init("2.2.2");
     }
@@ -438,7 +486,12 @@ contract Identity is
      */
     function _authorizeUpgrade(
         address newImplementation
-    ) internal virtual override onlyManager {
+    )
+        internal
+        virtual
+        override(IdentitySmartAccount, UUPSUpgradeable)
+        onlyManager
+    {
         // Only management keys can authorize upgrades
         // This prevents unauthorized upgrades and potential rug pulls
     }
@@ -552,6 +605,88 @@ contract Identity is
                 _uri
             );
         }
+    }
+
+    /**
+     * @dev Internal function for direct execution (used by entry point)
+     * @param _to The target address
+     * @param _value The value to send
+     * @param _data The calldata
+     *
+     * @notice Uses the professional Exec library pattern from BaseAccount for consistent
+     * and gas-optimized execution with proper error handling.
+     */
+    function _executeDirect(
+        address _to,
+        uint256 _value,
+        bytes calldata _data
+    ) internal {
+        bool ok = Exec.call(_to, _value, _data, gasleft());
+        if (!ok) {
+            Exec.revertWithReturnData();
+        }
+    }
+
+    /**
+     * @dev See {IdentitySmartAccount-_requireManager}.
+     * @notice Requires the caller to have management permissions
+     */
+    function _requireManager() internal view override onlyManager {
+        // The onlyManager modifier handles the access control
+    }
+
+    /**
+     * @dev See {IdentitySmartAccount-_validateSignature}.
+     * @notice Validates the signature of a UserOperation and the signer's permissions
+     * This function performs complete validation:
+     * 1. Recovers the signer address from the signature
+     * 2. Validates that the signature is valid (not address(0))
+     * 3. Validates that the signer has required permissions (ERC4337_SIGNER or MANAGEMENT)
+     * @param userOp The UserOperation to validate
+     * @param userOpHash The hash of the UserOperation
+     * @return validationData Packed validation data (0 for success, 1 for signature/permission failure)
+     */
+    function _validateSignature(
+        PackedUserOperation calldata userOp,
+        bytes32 userOpHash
+    ) internal view override returns (uint256 validationData) {
+        // 1. Recover the signer address from the signature
+        address signer = ECDSA.recover(userOpHash, userOp.signature);
+
+        // 2. Validate that the signature is valid
+        if (signer == address(0)) {
+            return SIG_VALIDATION_FAILED;
+        }
+
+        // 3. Validate that the signer has required permissions
+        if (
+            !keyHasPurpose(
+                keccak256(abi.encode(signer)),
+                KeyPurposes.ERC4337_SIGNER
+            ) &&
+            !keyHasPurpose(
+                keccak256(abi.encode(signer)),
+                KeyPurposes.MANAGEMENT
+            )
+        ) {
+            return SIG_VALIDATION_FAILED;
+        }
+
+        return SIG_VALIDATION_SUCCESS;
+    }
+
+    /**
+     * @dev See {IdentitySmartAccount-_requireForExecute}.
+     * @notice Requires the caller to be authorized for execution
+     */
+    function _requireForExecute() internal view override {
+        // Allow entry point calls
+        if (msg.sender == address(entryPoint())) {
+            return;
+        }
+
+        // For all other calls, require management permissions
+        _requireManager();
     }
 
     /**
