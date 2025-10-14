@@ -1,25 +1,34 @@
-# Logs
-logs
-*.log
+# Hardhat files
+/cache
+/artifacts
 
-# Coverage
-coverage
+# Forge files
+/out
+/cache_forge
+/lib
 
-# Dependencies
+# TypeChain files
+/typechain
+/typechain-types
+
+# solidity-coverage files
+/.coverage_artifacts
+/.coverage_cache
+/coverage
+/coverage.json
+
+# Hardhat Ignition default folder for deployments against a local node
+/ignition/deployments/chain-31337
+
+# Npm
 node_modules
 
-# Build
-build/
-
-# macOS
-.DS_Store
+# Env file
+.env
 
 # IDE
 .idea
 .vscode
 
-# Artifacts
-artifacts
-coverage.json
-cache
-typechain-types
+# OS
+.DS_Store
