@@ -2,6 +2,7 @@ import "@nomicfoundation/hardhat-toolbox";
 import "@nomiclabs/hardhat-solhint";
 import { HardhatUserConfig } from "hardhat/config";
 import "solidity-coverage";
+import "hardhat-gas-reporter";
 
 import "./tasks/add-claim.task";
 import "./tasks/add-key.task";
@@ -41,6 +42,15 @@ const config: HardhatUserConfig = {
         "1d79b7c95d2456a55f55a0e17f856412637fa6b3c332fa557ce2c8a89139ec74",
       ],
     },
+  },
+  paths: {
+    tests: "./test",
+  },
+  gasReporter: {
+    enabled: process.env.REPORT_GAS === "true",
+    currency: "USD",
+    outputFile: process.env.REPORT_GAS_FILE,
+    noColors: !!process.env.REPORT_GAS_FILE,
   },
 };
 
