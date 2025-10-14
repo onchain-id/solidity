@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.8.27;
+pragma solidity ^0.8.27;
 
 import { IIdentityUtilities } from "./interface/IIdentityUtilities.sol";
 import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
