@@ -96,6 +96,31 @@ interface IIdFactory {
     function unlinkWallet(address _oldWallet) external;
 
     /**
+     *  @dev function used to register a wallet to an identity using signature verification
+     *  @param wallet the address of the wallet to register
+     *  @param signature signature provided by the wallet
+     *  @param expiry expiry timestamp for the signature
+     *  requires the wallet to sign a message binding wallet, identity, expiry, contract and chain id
+     *  requires the wallet to hold a MANAGEMENT key on the identity
+     *  requires msg.sender to be the identity contract
+     *  wallet cannot be address 0
+     *  signature must not be expired
+     */
+    function registerWalletToIdentity(
+        address wallet,
+        bytes calldata signature,
+        uint256 expiry
+    ) external;
+
+    /**
+     *  @dev function used to unregister a wallet from an identity
+     *  @param wallet the address of the wallet to unregister
+     *  requires msg.sender to be the identity contract that the wallet is linked to
+     *  wallet cannot be address 0
+     */
+    function unregisterWalletFromIdentity(address wallet) external;
+
+    /**
      *  @dev function used to register an address as a token factory
      *  @param _factory the address of the token factory
      *  can be called only by Owner

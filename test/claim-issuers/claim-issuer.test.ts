@@ -228,10 +228,11 @@ describe("ClaimIssuer - Reference (with revoke)", () => {
         .connect(claimIssuerWallet)
         .deployClaimIssuer();
       await tx.wait();
+
       const proxyAddress = await claimIssuerFactory.claimIssuer(
         claimIssuerWallet.address,
       );
-      const proxy = await ethers.getContractAt("UUPSUpgradeable", proxyAddress);
+      const proxy = await ethers.getContractAt("ClaimIssuer", proxyAddress);
 
       return { claimIssuer, claimIssuerWallet, aliceWallet, proxy };
     }

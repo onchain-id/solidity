@@ -1,6 +1,6 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
 import { deployIdentityFixture, KeyPurposes, KeyTypes } from "../fixtures";
 
@@ -10,46 +10,46 @@ describe("IdFactory", () => {
 
     const IdFactory = await ethers.getContractFactory("IdFactory");
     await expect(
-      IdFactory.connect(deployerWallet).deploy(ethers.ZeroAddress)
+      IdFactory.connect(deployerWallet).deploy(ethers.ZeroAddress),
     ).to.be.revertedWithCustomError(IdFactory, "ZeroAddress");
   });
 
   it("should revert because sender is not allowed to create identities", async () => {
     const { identityFactory, aliceWallet } = await loadFixture(
-      deployIdentityFixture
+      deployIdentityFixture,
     );
 
     await expect(
       identityFactory
         .connect(aliceWallet)
-        .createIdentity(ethers.ZeroAddress, "salt1")
+        .createIdentity(ethers.ZeroAddress, "salt1"),
     ).to.be.revertedWithCustomError(
       identityFactory,
-      "OwnableUnauthorizedAccount"
+      "OwnableUnauthorizedAccount",
     );
   });
 
   it("should revert because wallet of identity cannot be Zero address", async () => {
     const { identityFactory, deployerWallet } = await loadFixture(
-      deployIdentityFixture
+      deployIdentityFixture,
     );
 
     await expect(
       identityFactory
         .connect(deployerWallet)
-        .createIdentity(ethers.ZeroAddress, "salt1")
+        .createIdentity(ethers.ZeroAddress, "salt1"),
     ).to.be.revertedWithCustomError(identityFactory, "ZeroAddress");
   });
 
   it("should revert because salt cannot be empty", async () => {
     const { identityFactory, deployerWallet, davidWallet } = await loadFixture(
-      deployIdentityFixture
+      deployIdentityFixture,
     );
 
     await expect(
       identityFactory
         .connect(deployerWallet)
-        .createIdentity(davidWallet.address, "")
+        .createIdentity(davidWallet.address, ""),
     ).to.be.revertedWithCustomError(identityFactory, "EmptyString");
   });
 
@@ -64,22 +64,22 @@ describe("IdFactory", () => {
     await expect(
       identityFactory
         .connect(deployerWallet)
-        .createIdentity(davidWallet.address, "saltUsed")
+        .createIdentity(davidWallet.address, "saltUsed"),
     ).to.be.revertedWithCustomError(identityFactory, "SaltTaken");
   });
 
   it("should revert because wallet is already linked to an identity", async () => {
     const { identityFactory, deployerWallet, aliceWallet } = await loadFixture(
-      deployIdentityFixture
+      deployIdentityFixture,
     );
 
     await expect(
       identityFactory
         .connect(deployerWallet)
-        .createIdentity(aliceWallet.address, "newSalt")
+        .createIdentity(aliceWallet.address, "newSalt"),
     ).to.be.revertedWithCustomError(
       identityFactory,
-      "WalletAlreadyLinkedToIdentity"
+      "WalletAlreadyLinkedToIdentity",
     );
   });
 
@@ -87,47 +87,47 @@ describe("IdFactory", () => {
     describe("linkWallet", () => {
       it("should revert for new wallet being zero address", async () => {
         const { identityFactory, aliceWallet } = await loadFixture(
-          deployIdentityFixture
+          deployIdentityFixture,
         );
 
         await expect(
-          identityFactory.connect(aliceWallet).linkWallet(ethers.ZeroAddress)
+          identityFactory.connect(aliceWallet).linkWallet(ethers.ZeroAddress),
         ).to.be.revertedWithCustomError(identityFactory, "ZeroAddress");
       });
 
       it("should revert for sender wallet being not linked", async () => {
         const { identityFactory, davidWallet } = await loadFixture(
-          deployIdentityFixture
+          deployIdentityFixture,
         );
 
         await expect(
-          identityFactory.connect(davidWallet).linkWallet(davidWallet.address)
+          identityFactory.connect(davidWallet).linkWallet(davidWallet.address),
         ).to.be.revertedWithCustomError(
           identityFactory,
-          "WalletNotLinkedToIdentity"
+          "WalletNotLinkedToIdentity",
         );
       });
 
       it("should revert for new wallet being already linked", async () => {
         const { identityFactory, bobWallet, aliceWallet } = await loadFixture(
-          deployIdentityFixture
+          deployIdentityFixture,
         );
 
         await expect(
-          identityFactory.connect(bobWallet).linkWallet(aliceWallet.address)
+          identityFactory.connect(bobWallet).linkWallet(aliceWallet.address),
         ).to.be.revertedWithCustomError(
           identityFactory,
-          "WalletAlreadyLinkedToIdentity"
+          "WalletAlreadyLinkedToIdentity",
         );
       });
 
       it("should revert for new wallet being already to a token identity", async () => {
         const { identityFactory, bobWallet, tokenAddress } = await loadFixture(
-          deployIdentityFixture
+          deployIdentityFixture,
         );
 
         await expect(
-          identityFactory.connect(bobWallet).linkWallet(tokenAddress)
+          identityFactory.connect(bobWallet).linkWallet(tokenAddress),
         ).to.be.revertedWithCustomError(identityFactory, "TokenAlreadyLinked");
       });
 
@@ -143,7 +143,7 @@ describe("IdFactory", () => {
           .withArgs(davidWallet.address, await aliceIdentity.getAddress());
 
         expect(
-          await identityFactory.getWallets(await aliceIdentity.getAddress())
+          await identityFactory.getWallets(await aliceIdentity.getAddress()),
         ).to.deep.equal([aliceWallet.address, davidWallet.address]);
       });
     });
@@ -151,37 +151,41 @@ describe("IdFactory", () => {
     describe("unlinkWallet", () => {
       it("should revert for wallet to unlink being zero address", async () => {
         const { identityFactory, aliceWallet } = await loadFixture(
-          deployIdentityFixture
+          deployIdentityFixture,
         );
 
         await expect(
-          identityFactory.connect(aliceWallet).unlinkWallet(ethers.ZeroAddress)
+          identityFactory.connect(aliceWallet).unlinkWallet(ethers.ZeroAddress),
         ).to.be.revertedWithCustomError(identityFactory, "ZeroAddress");
       });
 
       it("should revert for sender wallet attemoting to unlink itself", async () => {
         const { identityFactory, aliceWallet } = await loadFixture(
-          deployIdentityFixture
+          deployIdentityFixture,
         );
 
         await expect(
-          identityFactory.connect(aliceWallet).unlinkWallet(aliceWallet.address)
+          identityFactory
+            .connect(aliceWallet)
+            .unlinkWallet(aliceWallet.address),
         ).to.be.revertedWithCustomError(
           identityFactory,
-          "CannotBeCalledOnSenderAddress"
+          "CannotBeCalledOnSenderAddress",
         );
       });
 
       it("should revert for sender wallet being not linked", async () => {
         const { identityFactory, aliceWallet, davidWallet } = await loadFixture(
-          deployIdentityFixture
+          deployIdentityFixture,
         );
 
         await expect(
-          identityFactory.connect(davidWallet).unlinkWallet(aliceWallet.address)
+          identityFactory
+            .connect(davidWallet)
+            .unlinkWallet(aliceWallet.address),
         ).to.be.revertedWithCustomError(
           identityFactory,
-          "OnlyLinkedWalletCanUnlink"
+          "OnlyLinkedWalletCanUnlink",
         );
       });
 
@@ -200,7 +204,7 @@ describe("IdFactory", () => {
           .withArgs(davidWallet.address, await aliceIdentity.getAddress());
 
         expect(
-          await identityFactory.getWallets(await aliceIdentity.getAddress())
+          await identityFactory.getWallets(await aliceIdentity.getAddress()),
         ).to.deep.equal([aliceWallet.address]);
       });
     });
@@ -215,7 +219,7 @@ describe("IdFactory", () => {
         await expect(
           identityFactory
             .connect(deployerWallet)
-            .createIdentityWithManagementKeys(davidWallet.address, "salt1", [])
+            .createIdentityWithManagementKeys(davidWallet.address, "salt1", []),
         ).to.be.revertedWithCustomError(identityFactory, "EmptyListOfKeys");
       });
     });
@@ -232,19 +236,19 @@ describe("IdFactory", () => {
               ethers.keccak256(
                 ethers.AbiCoder.defaultAbiCoder().encode(
                   ["address"],
-                  [aliceWallet.address]
-                )
+                  [aliceWallet.address],
+                ),
               ),
               ethers.keccak256(
                 ethers.AbiCoder.defaultAbiCoder().encode(
                   ["address"],
-                  [davidWallet.address]
-                )
+                  [davidWallet.address],
+                ),
               ),
-            ])
+            ]),
         ).to.be.revertedWithCustomError(
           identityFactory,
-          "WalletAlsoListedInManagementKeys"
+          "WalletAlsoListedInManagementKeys",
         );
       });
     });
@@ -260,8 +264,8 @@ describe("IdFactory", () => {
             ethers.keccak256(
               ethers.AbiCoder.defaultAbiCoder().encode(
                 ["address"],
-                [aliceWallet.address]
-              )
+                [aliceWallet.address],
+              ),
             ),
           ]);
 
@@ -270,7 +274,7 @@ describe("IdFactory", () => {
 
         const identity = await ethers.getContractAt(
           "Identity",
-          await identityFactory.getIdentity(davidWallet.address)
+          await identityFactory.getIdentity(davidWallet.address),
         );
 
         await expect(tx)
@@ -279,39 +283,470 @@ describe("IdFactory", () => {
             ethers.keccak256(
               ethers.AbiCoder.defaultAbiCoder().encode(
                 ["address"],
-                [aliceWallet.address]
-              )
+                [aliceWallet.address],
+              ),
             ),
             KeyPurposes.MANAGEMENT,
-            KeyTypes.ECDSA
+            KeyTypes.ECDSA,
           );
         expect(
           await identity.keyHasPurpose(
             ethers.AbiCoder.defaultAbiCoder().encode(
               ["address"],
-              [await identityFactory.getAddress()]
+              [await identityFactory.getAddress()],
             ),
-            KeyPurposes.MANAGEMENT
-          )
+            KeyPurposes.MANAGEMENT,
+          ),
         ).to.be.false;
         expect(
           await identity.keyHasPurpose(
             ethers.AbiCoder.defaultAbiCoder().encode(
               ["address"],
-              [davidWallet.address]
+              [davidWallet.address],
             ),
-            KeyPurposes.MANAGEMENT
-          )
+            KeyPurposes.MANAGEMENT,
+          ),
         ).to.be.false;
         expect(
           await identity.keyHasPurpose(
             ethers.AbiCoder.defaultAbiCoder().encode(
               ["address"],
-              [aliceWallet.address]
+              [aliceWallet.address],
             ),
-            KeyPurposes.MANAGEMENT
-          )
+            KeyPurposes.MANAGEMENT,
+          ),
         ).to.be.false;
+      });
+    });
+  });
+
+  describe("registerWalletToIdentity - unregisterWalletFromIdentity", () => {
+    describe("registerWalletToIdentity", () => {
+      it("should revert when wallet is zero address", async () => {
+        const { identityFactory, aliceIdentity, aliceWallet } =
+          await loadFixture(deployIdentityFixture);
+
+        const expiry = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now
+        const signature = "0x";
+
+        const data = identityFactory.interface.encodeFunctionData(
+          "registerWalletToIdentity",
+          [ethers.ZeroAddress, signature, expiry],
+        );
+
+        const nonceBefore = await aliceIdentity.getCurrentNonce();
+        await aliceIdentity
+          .connect(aliceWallet)
+          .execute(await identityFactory.getAddress(), 0, data);
+
+        const executionId = Number(nonceBefore);
+        const result = await aliceIdentity
+          .connect(aliceWallet)
+          .approve(executionId, true);
+
+        // Check that the execution failed (Identity contract catches reverts from the IdFactory)
+        const executionData = await aliceIdentity.getExecutionData(executionId);
+        expect(executionData.executed).to.be.false;
+
+        // Verify state didn't change, wallet should not be linked
+        expect(await identityFactory.getIdentity(ethers.ZeroAddress)).to.equal(
+          ethers.ZeroAddress,
+        );
+      });
+
+      it("should revert when signature is expired", async () => {
+        const { identityFactory, aliceIdentity, aliceWallet, davidWallet } =
+          await loadFixture(deployIdentityFixture);
+
+        const expiredTime = Math.floor(Date.now() / 1000) - 3600; // 1 hour ago
+        const network = await ethers.provider.getNetwork();
+        const chainId = network.chainId;
+        const identityAddress = await aliceIdentity.getAddress();
+        const factoryAddress = await identityFactory.getAddress();
+
+        const encodedData = ethers.AbiCoder.defaultAbiCoder().encode(
+          ["address", "address", "uint256", "address", "uint256"],
+          [
+            davidWallet.address,
+            identityAddress,
+            expiredTime,
+            factoryAddress,
+            chainId,
+          ],
+        );
+        const structHash = ethers.keccak256(encodedData);
+
+        // signMessage automatically adds the "\x19Ethereum Signed Message:\n32" prefix
+        const signature = await davidWallet.signMessage(
+          ethers.getBytes(structHash),
+        );
+
+        const data = identityFactory.interface.encodeFunctionData(
+          "registerWalletToIdentity",
+          [davidWallet.address, signature, expiredTime],
+        );
+
+        const nonceBefore = await aliceIdentity.getCurrentNonce();
+        await aliceIdentity
+          .connect(aliceWallet)
+          .execute(await identityFactory.getAddress(), 0, data);
+
+        const executionId = Number(nonceBefore);
+        await aliceIdentity.connect(aliceWallet).approve(executionId, true);
+
+        // Check that the execution failed (Identity contract catches reverts from the IdFactory)
+        const executionData = await aliceIdentity.getExecutionData(executionId);
+        expect(executionData.executed).to.be.false;
+
+        // Verify state didn't change, wallet should not be linked
+        expect(await identityFactory.getIdentity(davidWallet.address)).to.equal(
+          ethers.ZeroAddress,
+        );
+      });
+
+      it("should revert when signature is invalid", async () => {
+        const {
+          identityFactory,
+          aliceIdentity,
+          aliceWallet,
+          davidWallet,
+          bobWallet,
+        } = await loadFixture(deployIdentityFixture);
+
+        const expiry = Math.floor(Date.now() / 1000) + 3600;
+        const network = await ethers.provider.getNetwork();
+        const chainId = network.chainId;
+        const identityAddress = await aliceIdentity.getAddress();
+        const factoryAddress = await identityFactory.getAddress();
+
+        const encodedData = ethers.AbiCoder.defaultAbiCoder().encode(
+          ["address", "address", "uint256", "address", "uint256"],
+          [
+            davidWallet.address,
+            identityAddress,
+            expiry,
+            factoryAddress,
+            chainId,
+          ],
+        );
+        const structHash = ethers.keccak256(encodedData);
+        // Sign with wrong wallet (bob instead of david)
+        // signMessage automatically adds the "\x19Ethereum Signed Message:\n32" prefix
+        const signature = await bobWallet.signMessage(
+          ethers.getBytes(structHash),
+        );
+
+        const data = identityFactory.interface.encodeFunctionData(
+          "registerWalletToIdentity",
+          [davidWallet.address, signature, expiry],
+        );
+
+        const nonceBefore = await aliceIdentity.getCurrentNonce();
+        await aliceIdentity
+          .connect(aliceWallet)
+          .execute(await identityFactory.getAddress(), 0, data);
+
+        const executionId = Number(nonceBefore);
+        await aliceIdentity.connect(aliceWallet).approve(executionId, true);
+
+        // Check that the execution failed (Identity contract catches reverts from the IdFactory)
+        const executionData = await aliceIdentity.getExecutionData(executionId);
+        expect(executionData.executed).to.be.false;
+
+        // Verify state didn't change, wallet should not be linked
+        expect(await identityFactory.getIdentity(davidWallet.address)).to.equal(
+          ethers.ZeroAddress,
+        );
+      });
+
+      it("should revert when wallet does not have MANAGEMENT key", async () => {
+        const { identityFactory, aliceIdentity, aliceWallet, davidWallet } =
+          await loadFixture(deployIdentityFixture);
+
+        const expiry = Math.floor(Date.now() / 1000) + 3600;
+        const network = await ethers.provider.getNetwork();
+        const chainId = network.chainId;
+        const identityAddress = await aliceIdentity.getAddress();
+        const factoryAddress = await identityFactory.getAddress();
+
+        const encodedData = ethers.AbiCoder.defaultAbiCoder().encode(
+          ["address", "address", "uint256", "address", "uint256"],
+          [
+            davidWallet.address,
+            identityAddress,
+            expiry,
+            factoryAddress,
+            chainId,
+          ],
+        );
+        const structHash = ethers.keccak256(encodedData);
+        // signMessage automatically adds the "\x19Ethereum Signed Message:\n32" prefix
+        const signature = await davidWallet.signMessage(
+          ethers.getBytes(structHash),
+        );
+
+        // davidWallet has ACTION key, not MANAGEMENT key
+        const data = identityFactory.interface.encodeFunctionData(
+          "registerWalletToIdentity",
+          [davidWallet.address, signature, expiry],
+        );
+
+        const nonceBefore = await aliceIdentity.getCurrentNonce();
+        await aliceIdentity
+          .connect(aliceWallet)
+          .execute(await identityFactory.getAddress(), 0, data);
+
+        const executionId = Number(nonceBefore);
+        await aliceIdentity.connect(aliceWallet).approve(executionId, true);
+
+        // Check that the execution failed (Identity contract catches reverts from the IdFactory)
+        const executionData = await aliceIdentity.getExecutionData(executionId);
+        expect(executionData.executed).to.be.false;
+
+        // Verify state didn't change, wallet should not be linked
+        expect(await identityFactory.getIdentity(davidWallet.address)).to.equal(
+          ethers.ZeroAddress,
+        );
+      });
+
+      it("should revert when wallet is already linked", async () => {
+        const { identityFactory, aliceIdentity, aliceWallet } =
+          await loadFixture(deployIdentityFixture);
+
+        const expiry = Math.floor(Date.now() / 1000) + 3600;
+        const network = await ethers.provider.getNetwork();
+        const chainId = network.chainId;
+        const identityAddress = await aliceIdentity.getAddress();
+        const factoryAddress = await identityFactory.getAddress();
+
+        const encodedData = ethers.AbiCoder.defaultAbiCoder().encode(
+          ["address", "address", "uint256", "address", "uint256"],
+          [
+            aliceWallet.address,
+            identityAddress,
+            expiry,
+            factoryAddress,
+            chainId,
+          ],
+        );
+        const structHash = ethers.keccak256(encodedData);
+        // signMessage automatically adds the "\x19Ethereum Signed Message:\n32" prefix
+        const signature = await aliceWallet.signMessage(
+          ethers.getBytes(structHash),
+        );
+
+        const data = identityFactory.interface.encodeFunctionData(
+          "registerWalletToIdentity",
+          [aliceWallet.address, signature, expiry],
+        );
+
+        const nonceBefore = await aliceIdentity.getCurrentNonce();
+        await aliceIdentity
+          .connect(aliceWallet)
+          .execute(await identityFactory.getAddress(), 0, data);
+
+        const executionId = Number(nonceBefore);
+        await aliceIdentity.connect(aliceWallet).approve(executionId, true);
+
+        // Check that the execution failed (Identity contract catches reverts from the IdFactory)
+        const executionData = await aliceIdentity.getExecutionData(executionId);
+        expect(executionData.executed).to.be.false;
+
+        // Verify state didn't change - wallet should still be linked to the same identity
+        expect(await identityFactory.getIdentity(aliceWallet.address)).to.equal(
+          await aliceIdentity.getAddress(),
+        );
+      });
+
+      it("should successfully register wallet to identity", async () => {
+        const { identityFactory, aliceIdentity, aliceWallet, carolWallet } =
+          await loadFixture(deployIdentityFixture);
+
+        // Add carolWallet as MANAGEMENT key first
+        await aliceIdentity
+          .connect(aliceWallet)
+          .addKey(
+            ethers.keccak256(
+              ethers.AbiCoder.defaultAbiCoder().encode(
+                ["address"],
+                [carolWallet.address],
+              ),
+            ),
+            KeyPurposes.MANAGEMENT,
+            KeyTypes.ECDSA,
+          );
+
+        const expiry = Math.floor(Date.now() / 1000) + 3600;
+        const network = await ethers.provider.getNetwork();
+        const chainId = network.chainId;
+        const identityAddress = await aliceIdentity.getAddress();
+        const factoryAddress = await identityFactory.getAddress();
+
+        const encodedData = ethers.AbiCoder.defaultAbiCoder().encode(
+          ["address", "address", "uint256", "address", "uint256"],
+          [
+            carolWallet.address,
+            identityAddress,
+            expiry,
+            factoryAddress,
+            chainId,
+          ],
+        );
+        const structHash = ethers.keccak256(encodedData);
+        // signMessage automatically adds the "\x19Ethereum Signed Message:\n32" prefix
+        const signature = await carolWallet.signMessage(
+          ethers.getBytes(structHash),
+        );
+
+        const data = identityFactory.interface.encodeFunctionData(
+          "registerWalletToIdentity",
+          [carolWallet.address, signature, expiry],
+        );
+
+        // Since aliceWallet has MANAGEMENT key, execute() will auto-approve and execute
+        const tx = await aliceIdentity
+          .connect(aliceWallet)
+          .execute(await identityFactory.getAddress(), 0, data);
+
+        await expect(tx)
+          .to.emit(identityFactory, "WalletLinked")
+          .withArgs(carolWallet.address, await aliceIdentity.getAddress());
+
+        expect(await identityFactory.getIdentity(carolWallet.address)).to.equal(
+          await aliceIdentity.getAddress(),
+        );
+        expect(
+          await identityFactory.getWallets(await aliceIdentity.getAddress()),
+        ).to.include(carolWallet.address);
+      });
+    });
+
+    describe("unregisterWalletFromIdentity", () => {
+      it("should revert when wallet is zero address", async () => {
+        const { identityFactory, aliceIdentity, aliceWallet } =
+          await loadFixture(deployIdentityFixture);
+
+        const data = identityFactory.interface.encodeFunctionData(
+          "unregisterWalletFromIdentity",
+          [ethers.ZeroAddress],
+        );
+
+        const nonceBefore = await aliceIdentity.getCurrentNonce();
+        await aliceIdentity
+          .connect(aliceWallet)
+          .execute(await identityFactory.getAddress(), 0, data);
+
+        const executionId = Number(nonceBefore);
+        await aliceIdentity.connect(aliceWallet).approve(executionId, true);
+
+        // Check that the execution failed (Identity contract catches reverts from the IdFactory)
+        const executionData = await aliceIdentity.getExecutionData(executionId);
+        expect(executionData.executed).to.be.false;
+      });
+
+      it("should revert when wallet is not linked to the identity", async () => {
+        const { identityFactory, aliceIdentity, aliceWallet, davidWallet } =
+          await loadFixture(deployIdentityFixture);
+
+        const data = identityFactory.interface.encodeFunctionData(
+          "unregisterWalletFromIdentity",
+          [davidWallet.address],
+        );
+
+        const nonceBefore = await aliceIdentity.getCurrentNonce();
+        await aliceIdentity
+          .connect(aliceWallet)
+          .execute(await identityFactory.getAddress(), 0, data);
+
+        const executionId = Number(nonceBefore);
+        await aliceIdentity.connect(aliceWallet).approve(executionId, true);
+
+        // Check that the execution failed (Identity contract catches reverts from the IdFactory)
+        const executionData = await aliceIdentity.getExecutionData(executionId);
+        expect(executionData.executed).to.be.false;
+
+        // Verify state didn't change - wallet should still not be linked
+        expect(await identityFactory.getIdentity(davidWallet.address)).to.equal(
+          ethers.ZeroAddress,
+        );
+      });
+
+      it("should successfully unregister wallet from identity", async () => {
+        const { identityFactory, aliceIdentity, aliceWallet, carolWallet } =
+          await loadFixture(deployIdentityFixture);
+
+        // Add carolWallet as MANAGEMENT key and register it
+        await aliceIdentity
+          .connect(aliceWallet)
+          .addKey(
+            ethers.keccak256(
+              ethers.AbiCoder.defaultAbiCoder().encode(
+                ["address"],
+                [carolWallet.address],
+              ),
+            ),
+            KeyPurposes.MANAGEMENT,
+            KeyTypes.ECDSA,
+          );
+
+        const expiry = Math.floor(Date.now() / 1000) + 3600;
+        const network = await ethers.provider.getNetwork();
+        const chainId = network.chainId;
+        const identityAddress = await aliceIdentity.getAddress();
+        const factoryAddress = await identityFactory.getAddress();
+
+        const encodedData = ethers.AbiCoder.defaultAbiCoder().encode(
+          ["address", "address", "uint256", "address", "uint256"],
+          [
+            carolWallet.address,
+            identityAddress,
+            expiry,
+            factoryAddress,
+            chainId,
+          ],
+        );
+        const structHash = ethers.keccak256(encodedData);
+        // signMessage automatically adds the "\x19Ethereum Signed Message:\n32" prefix
+        const signature = await carolWallet.signMessage(
+          ethers.getBytes(structHash),
+        );
+
+        const registerData = identityFactory.interface.encodeFunctionData(
+          "registerWalletToIdentity",
+          [carolWallet.address, signature, expiry],
+        );
+
+        // Since aliceWallet has MANAGEMENT key, execute() will auto-approve and execute
+        await aliceIdentity
+          .connect(aliceWallet)
+          .execute(await identityFactory.getAddress(), 0, registerData);
+
+        const walletsBefore = await identityFactory.getWallets(
+          await aliceIdentity.getAddress(),
+        );
+        expect(walletsBefore).to.include(carolWallet.address);
+
+        const unregisterData = identityFactory.interface.encodeFunctionData(
+          "unregisterWalletFromIdentity",
+          [carolWallet.address],
+        );
+
+        // Since aliceWallet has MANAGEMENT key, execute() will auto-approve and execute
+        const tx = await aliceIdentity
+          .connect(aliceWallet)
+          .execute(await identityFactory.getAddress(), 0, unregisterData);
+
+        await expect(tx)
+          .to.emit(identityFactory, "WalletUnlinked")
+          .withArgs(carolWallet.address, await aliceIdentity.getAddress());
+
+        expect(await identityFactory.getIdentity(carolWallet.address)).to.equal(
+          ethers.ZeroAddress,
+        );
+        const walletsAfter = await identityFactory.getWallets(
+          await aliceIdentity.getAddress(),
+        );
+        expect(walletsAfter).to.not.include(carolWallet.address);
       });
     });
   });

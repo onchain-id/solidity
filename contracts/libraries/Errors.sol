@@ -14,6 +14,18 @@ library Errors {
     /// @notice Reverts if the factory is already registered
     error AlreadyAFactory(address factory);
 
+    /// @notice Reverts when the recovered signer does not match the wallet being registered
+    error InvalidSignature();
+
+    /// @notice Reverts when the provided signature has expired
+    error SignatureExpired(uint256 expiry);
+
+    /// @notice Reverts when the wallet does not hold a management key on the identity
+    error MissingManagementKey();
+
+    /// @notice Reverts when the wallet is not linked to msg.sender during removal
+    error WalletNotLinked();
+
     /// @notice Reverts if the function is called on the sender address
     error CannotBeCalledOnSenderAddress();
 
