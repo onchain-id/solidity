@@ -2,7 +2,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-import { deployIdentityFixture, KeyPurposes, KeyTypes } from "../fixtures";
+import { deployIdentityFixture } from "../fixtures";
 
 describe("Identity", () => {
   it("should revert when attempting to initialize an already deployed identity", async () => {
@@ -12,39 +12,7 @@ describe("Identity", () => {
 
     await expect(
       aliceIdentity.connect(aliceWallet).initialize(aliceWallet.address),
-    ).to.be.revertedWithCustomError(aliceIdentity, "InitialKeyAlreadySetup");
-  });
-
-  it("should revert because interaction with library is forbidden", async () => {
-    const { identityImplementation, aliceWallet, deployerWallet } =
-      await loadFixture(deployIdentityFixture);
-
-    await expect(
-      identityImplementation
-        .connect(deployerWallet)
-        .addKey(
-          ethers.keccak256(
-            ethers.AbiCoder.defaultAbiCoder().encode(
-              ["address"],
-              [aliceWallet.address],
-            ),
-          ),
-          KeyPurposes.CLAIM_SIGNER,
-          KeyTypes.ECDSA,
-        ),
-    ).to.be.revertedWithCustomError(
-      identityImplementation,
-      "InteractingWithLibraryContractForbidden",
-    );
-
-    await expect(
-      identityImplementation
-        .connect(aliceWallet)
-        .initialize(deployerWallet.address),
-    ).to.be.revertedWithCustomError(
-      identityImplementation,
-      "InitialKeyAlreadySetup",
-    );
+    ).to.be.revertedWith("Initializable: contract is already initialized");
   });
 
   it("should prevent creating an identity with an invalid initial key", async () => {
@@ -56,9 +24,10 @@ describe("Identity", () => {
     ).to.be.revertedWithCustomError(Identity, "ZeroAddress");
   });
 
-  it("should return the version of the implementation", async () => {
+  it("should have version initialized when deployed as regular contract", async () => {
     const { identityImplementation } = await loadFixture(deployIdentityFixture);
-    expect(await identityImplementation.version()).to.equal("2.2.2");
+    // When deployed as regular contract, version should be initialized
+    expect(await identityImplementation.version()).to.equal("3.0.0");
   });
 
   it("should support ERC165 interface detection", async function () {

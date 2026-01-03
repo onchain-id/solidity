@@ -1,5 +1,9 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
+import {
+  deployClaimIssuerWithProxy,
+  deployIdentityWithProxy,
+} from "../fixtures";
 
 const abi = ethers.AbiCoder.defaultAbiCoder();
 
@@ -319,35 +323,11 @@ describe("IdentityUtilities getClaimsWithTopicInfo", () => {
 
     contract = ImplFactory.attach(await proxy.getAddress());
 
-    // Deploy ClaimIssuer
-    const ClaimIssuerFactory = await ethers.getContractFactory("ClaimIssuer");
-    claimIssuer = await ClaimIssuerFactory.deploy(claimIssuerWallet.address);
-    await claimIssuer.waitForDeployment();
+    // Deploy ClaimIssuer using proxy
+    claimIssuer = await deployClaimIssuerWithProxy(claimIssuerWallet.address);
 
-    // Deploy Identity using the factory pattern
-    const Identity = await ethers.getContractFactory("Identity");
-    const identityImplementation = await Identity.deploy(
-      deployer.address,
-      true,
-    );
-
-    const ImplementationAuthority = await ethers.getContractFactory(
-      "ImplementationAuthority",
-    );
-    const implementationAuthority = await ImplementationAuthority.deploy(
-      identityImplementation.target,
-    );
-
-    const IdFactory = await ethers.getContractFactory("IdFactory");
-    const identityFactory = await IdFactory.deploy(
-      implementationAuthority.target,
-    );
-
-    await identityFactory.createIdentity(aliceWallet.address, "test");
-    const identityAddress = await identityFactory.getIdentity(
-      aliceWallet.address,
-    );
-    identity = await ethers.getContractAt("Identity", identityAddress);
+    // Deploy Identity using proxy
+    identity = await deployIdentityWithProxy(deployer.address);
   });
 
   it("should return claim information with topic info for given identity and topic IDs", async () => {
@@ -378,8 +358,8 @@ describe("IdentityUtilities getClaimsWithTopicInfo", () => {
       1, // ECDSA
     );
 
-    // Add claim signer key to the identity
-    await identity.connect(aliceWallet).addKey(
+    // Add claim signer key to the identity (deployer has management key)
+    await identity.connect(deployer).addKey(
       ethers.keccak256(abi.encode(["address"], [aliceWallet.address])),
       3, // CLAIM_SIGNER
       1, // ECDSA
@@ -1424,10 +1404,8 @@ describe("IdentityUtilities - Additional Test Coverage", () => {
         encodedTypes,
       );
 
-      // Deploy a mock identity contract
-      const IdentityFactory = await ethers.getContractFactory("Identity");
-      const identity = await IdentityFactory.deploy(admin.address, false);
-      await identity.waitForDeployment();
+      // Deploy Identity through proxy
+      const identity = await deployIdentityWithProxy(admin.address);
 
       // Add a claim with the identity itself as issuer (this bypasses validation)
       const scheme = 1;
@@ -1511,10 +1489,8 @@ describe("IdentityUtilities - Additional Test Coverage", () => {
         encodedTypes,
       );
 
-      // Deploy a mock identity contract
-      const IdentityFactory = await ethers.getContractFactory("Identity");
-      const identity = await IdentityFactory.deploy(admin.address, false);
-      await identity.waitForDeployment();
+      // Deploy Identity through proxy
+      const identity = await deployIdentityWithProxy(admin.address);
 
       // Add a claim with the identity itself as issuer
       const scheme = 1;
@@ -1558,10 +1534,8 @@ describe("IdentityUtilities - Additional Test Coverage", () => {
         encodedTypes,
       );
 
-      // Deploy a mock identity contract
-      const IdentityFactory = await ethers.getContractFactory("Identity");
-      const identity = await IdentityFactory.deploy(admin.address, false);
-      await identity.waitForDeployment();
+      // Deploy Identity through proxy
+      const identity = await deployIdentityWithProxy(admin.address);
 
       // Add a claim with the identity itself as issuer
       const scheme = 1;
@@ -1599,10 +1573,8 @@ describe("IdentityUtilities - Additional Test Coverage", () => {
       const testContract = await TestIdentityUtilitiesFactory.deploy();
       await testContract.waitForDeployment();
 
-      // Deploy a mock identity contract
-      const IdentityFactory = await ethers.getContractFactory("Identity");
-      const identity = await IdentityFactory.deploy(admin.address, false);
-      await identity.waitForDeployment();
+      // Deploy Identity through proxy
+      const identity = await deployIdentityWithProxy(admin.address);
 
       // Test _isClaimValid directly with address(0) issuer
       const topicId = 3007;
@@ -1630,10 +1602,8 @@ describe("IdentityUtilities - Additional Test Coverage", () => {
       const testContract = await TestIdentityUtilitiesFactory.deploy();
       await testContract.waitForDeployment();
 
-      // Deploy a mock identity contract
-      const IdentityFactory = await ethers.getContractFactory("Identity");
-      const identity = await IdentityFactory.deploy(admin.address, false);
-      await identity.waitForDeployment();
+      // Deploy Identity through proxy
+      const identity = await deployIdentityWithProxy(admin.address);
 
       // Deploy a simple contract that doesn't have isClaimValid function
       const TestFactory = await ethers.getContractFactory("Test");

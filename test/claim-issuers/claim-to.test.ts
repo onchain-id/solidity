@@ -41,14 +41,16 @@ describe("ClaimIssuer - Add claim to another identity", function () {
         );
         await aliceIdentity.connect(aliceWallet).addKey(claimIssuerKey, 1, 1);
 
-        const tx = await claimIssuer.addClaimTo(
-          newClaim.topic,
-          newClaim.scheme,
-          newClaim.signature,
-          newClaim.data,
-          newClaim.uri,
-          newClaim.identity,
-        );
+        const tx = await claimIssuer
+          .connect(claimIssuerWallet)
+          .addClaimTo(
+            newClaim.topic,
+            newClaim.scheme,
+            newClaim.signature,
+            newClaim.data,
+            newClaim.uri,
+            newClaim.identity,
+          );
 
         // Prepare the expected data for event assertions
         const addClaimData = aliceIdentity.interface.encodeFunctionData(
@@ -250,14 +252,16 @@ describe("ClaimIssuer - Add claim to another identity", function () {
           ),
         );
 
-        const tx = await claimIssuer.addClaimTo(
-          newClaim.topic,
-          newClaim.scheme,
-          newClaim.signature,
-          newClaim.data,
-          newClaim.uri,
-          newClaim.identity,
-        );
+        const tx = await claimIssuer
+          .connect(claimIssuerWallet)
+          .addClaimTo(
+            newClaim.topic,
+            newClaim.scheme,
+            newClaim.signature,
+            newClaim.data,
+            newClaim.uri,
+            newClaim.identity,
+          );
         const receipt = await tx.wait();
 
         // Find the execution ID from the event
@@ -326,14 +330,16 @@ describe("ClaimIssuer - Add claim to another identity", function () {
           ),
         );
 
-        const tx = await claimIssuer.addClaimTo(
-          newClaim.topic,
-          newClaim.scheme,
-          newClaim.signature,
-          newClaim.data,
-          newClaim.uri,
-          newClaim.identity,
-        );
+        const tx = await claimIssuer
+          .connect(claimIssuerWallet)
+          .addClaimTo(
+            newClaim.topic,
+            newClaim.scheme,
+            newClaim.signature,
+            newClaim.data,
+            newClaim.uri,
+            newClaim.identity,
+          );
         const receipt = await tx.wait();
 
         // Verify that ExecutionRequested event was emitted (execution is pending)
@@ -408,14 +414,16 @@ describe("ClaimIssuer - Add claim to another identity", function () {
 
         await aliceIdentity.connect(aliceWallet).addKey(claimIssuerKey, 1, 1);
 
-        const tx = await claimIssuer.addClaimTo(
-          newClaim.topic,
-          newClaim.scheme,
-          newClaim.signature,
-          newClaim.data,
-          newClaim.uri,
-          newClaim.identity,
-        );
+        const tx = await claimIssuer
+          .connect(claimIssuerWallet)
+          .addClaimTo(
+            newClaim.topic,
+            newClaim.scheme,
+            newClaim.signature,
+            newClaim.data,
+            newClaim.uri,
+            newClaim.identity,
+          );
 
         const receipt = await tx.wait();
 
@@ -525,14 +533,16 @@ describe("ClaimIssuer - Add claim to another identity", function () {
 
         // Try to add claim to invalid identity - this should fail at line 86
         await expect(
-          claimIssuer.addClaimTo(
-            invalidClaim.topic,
-            invalidClaim.scheme,
-            invalidClaim.signature,
-            invalidClaim.data,
-            invalidClaim.uri,
-            invalidClaim.identity,
-          ),
+          claimIssuer
+            .connect(claimIssuerWallet)
+            .addClaimTo(
+              invalidClaim.topic,
+              invalidClaim.scheme,
+              invalidClaim.signature,
+              invalidClaim.data,
+              invalidClaim.uri,
+              invalidClaim.identity,
+            ),
         ).to.be.revertedWithCustomError(claimIssuer, "CallFailed");
       });
     });

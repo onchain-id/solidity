@@ -241,8 +241,8 @@ contract IdentityUtilities is
                 signature,
                 data
             )
-        {
-            return true;
+        returns (bool valid) {
+            return valid;
         } catch {
             return false;
         }

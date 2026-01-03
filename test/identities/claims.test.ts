@@ -787,6 +787,119 @@ describe("Identity", () => {
         expect(retrievedClaim.topic).to.equal(0);
         expect(retrievedClaim.issuer).to.equal(ethers.ZeroAddress);
       });
+
+      it("should test swap-and-pop logic by removing middle claim from array", async () => {
+        const { aliceIdentity, aliceWallet, claimIssuer, claimIssuerWallet } =
+          await loadFixture(deployIdentityFixture);
+
+        const topic = 42;
+
+        // Create a second claim issuer to have different issuers
+        const claimIssuer2 = await ethers.deployContract("ClaimIssuer", [
+          aliceWallet.address,
+        ]);
+
+        // Add three claims with different issuers but same topic
+        const issuers = [
+          await claimIssuer.getAddress(),
+          await claimIssuer2.getAddress(),
+          await aliceIdentity.getAddress(), // Self-attested
+        ];
+
+        const claimIds = [];
+
+        for (let i = 0; i < 3; i++) {
+          const claim = {
+            identity: await aliceIdentity.getAddress(),
+            issuer: issuers[i],
+            topic,
+            scheme: 1,
+            data: `0x004${i}`,
+            signature: "",
+            uri: `https://example${i}.com`,
+          };
+
+          const claimId = ethers.keccak256(
+            ethers.AbiCoder.defaultAbiCoder().encode(
+              ["address", "uint256"],
+              [claim.issuer, claim.topic],
+            ),
+          );
+
+          // Sign with appropriate wallet
+          if (i === 0) {
+            claim.signature = await claimIssuerWallet.signMessage(
+              ethers.getBytes(
+                ethers.keccak256(
+                  ethers.AbiCoder.defaultAbiCoder().encode(
+                    ["address", "uint256", "bytes"],
+                    [claim.identity, claim.topic, claim.data],
+                  ),
+                ),
+              ),
+            );
+          } else if (i === 1) {
+            // For the second claim issuer, we need to sign with aliceWallet since it's the owner
+            claim.signature = await aliceWallet.signMessage(
+              ethers.getBytes(
+                ethers.keccak256(
+                  ethers.AbiCoder.defaultAbiCoder().encode(
+                    ["address", "uint256", "bytes"],
+                    [claim.identity, claim.topic, claim.data],
+                  ),
+                ),
+              ),
+            );
+          } else {
+            // Self-attested claim
+            claim.signature = await aliceWallet.signMessage(
+              ethers.getBytes(
+                ethers.keccak256(
+                  ethers.AbiCoder.defaultAbiCoder().encode(
+                    ["address", "uint256", "bytes"],
+                    [claim.identity, claim.topic, claim.data],
+                  ),
+                ),
+              ),
+            );
+          }
+
+          claimIds.push(claimId);
+
+          await aliceIdentity
+            .connect(aliceWallet)
+            .addClaim(
+              claim.topic,
+              claim.scheme,
+              claim.issuer,
+              claim.signature,
+              claim.data,
+              claim.uri,
+            );
+        }
+
+        // Verify all claims are added to the same topic
+        const claimIdsByTopic = await aliceIdentity.getClaimIdsByTopic(topic);
+        expect(claimIdsByTopic).to.have.length(3);
+        expect(claimIdsByTopic).to.include(claimIds[0]);
+        expect(claimIdsByTopic).to.include(claimIds[1]);
+        expect(claimIdsByTopic).to.include(claimIds[2]);
+
+        // Remove the middle claim (index 1) - this should trigger swap-and-pop
+        await aliceIdentity.connect(aliceWallet).removeClaim(claimIds[1]);
+
+        // Verify the remaining claims
+        const remainingClaimIds = await aliceIdentity.getClaimIdsByTopic(topic);
+        expect(remainingClaimIds).to.have.length(2);
+        expect(remainingClaimIds).to.include(claimIds[0]);
+        expect(remainingClaimIds).to.include(claimIds[2]);
+        expect(remainingClaimIds).to.not.include(claimIds[1]);
+
+        // Verify the removed claim no longer exists
+        const removedClaim = await aliceIdentity.getClaim(claimIds[1]);
+        expect(removedClaim.topic).to.equal(0);
+        expect(removedClaim.issuer).to.equal(ethers.ZeroAddress);
+      });
     });
 
     describe("getClaim", () => {

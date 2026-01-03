@@ -75,7 +75,7 @@ interface IERC734 {
      *
      * Triggers Event: `KeyAdded`
      *
-     * Specification: MUST only be done by keys of purpose 1, or the identity
+     * Specification: MUST only be done by keys of purpose KeyPurposes.MANAGEMENT, or the identity
      * itself. If it's the identity itself, the approval process will determine its approval.
      */
     function addKey(
@@ -101,7 +101,7 @@ interface IERC734 {
      *
      * Triggers Event: `KeyRemoved`
      *
-     * Specification: MUST only be done by keys of purpose 1, or the identity itself.
+     * Specification: MUST only be done by keys of purpose KeyPurposes.MANAGEMENT, or the identity itself.
      * If it's the identity itself, the approval process will determine its approval.
      */
     function removeKey(
@@ -112,8 +112,8 @@ interface IERC734 {
     /**
      * @dev Passes an execution instruction to an ERC734 identity.
      * How the execution is handled is up to the identity implementation:
-     * An execution COULD be requested and require `approve` to be called with one or more keys of purpose 1 or 2 to
-     * approve this execution.
+     * An execution COULD be requested and require `approve` to be called with one or more keys of purpose
+     * KeyPurposes.MANAGEMENT or KeyPurposes.ACTION to approve this execution.
      * Execute COULD be used as the only accessor for `addKey` and `removeKey`.
      *
      * Triggers Event: ExecutionRequested

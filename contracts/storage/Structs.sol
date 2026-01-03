@@ -8,8 +8,10 @@ contract Structs {
      *  Specification: Keys are cryptographic public keys, or contract addresses associated with this identity.
      *  The structure should be as follows:
      *  key: A public key owned by this identity
-     *  purposes: uint256[] Array of the key purposes, like 1 = MANAGEMENT, 2 = EXECUTION
-     *  keyType: The type of key used, which would be a uint256 for different key types. e.g. 1 = ECDSA, 2 = RSA, etc.
+     *  purposes: uint256[] Array of the key purposes, like KeyPurposes.MANAGEMENT = MANAGEMENT,
+     *  KeyPurposes.ACTION = ACTION
+     *  keyType: The type of key used, which would be a uint256 for different key types. e.g. KeyTypes.ECDSA = ECDSA,
+     *  KeyTypes.RSA = RSA, etc.
      *  key: bytes32 The public key. // Its the Keccak256 hash of the key
      */
     struct Key {
@@ -43,11 +45,12 @@ contract Structs {
      *  Specification: Claims are information an issuer has about the identity holder.
      *  The structure should be as follows:
      *  claim: A claim published for the Identity.
-     *  topic: A uint256 number which represents the topic of the claim. (e.g. 1 biometric, 2 residence (ToBeDefined:
-     *  number schemes, sub topics based on number ranges??))
+     *  topic: A uint256 number which represents the topic of the claim. (e.g. biometric,
+     *  residence (ToBeDefined: number schemes, sub topics based on number ranges??))
      *  scheme : The scheme with which this claim SHOULD be verified or how it should be processed. Its a uint256 for
-     *  different schemes. E.g. could 3 mean contract verification, where the data will be call data, and the issuer a
-     *  contract address to call (ToBeDefined). Those can also mean different key types e.g. 1 = ECDSA, 2 = RSA, etc.
+     *  different schemes. E.g. could mean contract verification, where the data will be call data, and the issuer a
+     *  contract address to call (ToBeDefined). Those can also mean different key types e.g. KeyTypes.ECDSA = ECDSA,
+     *  KeyTypes.RSA = RSA, etc.
      *  (ToBeDefined)
      *  issuer: The issuers identity contract address, or the address used to sign the above signature. If an
      *  identity contract, it should hold the key with which the above message was signed, if the key is not present

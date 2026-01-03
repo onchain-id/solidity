@@ -65,7 +65,7 @@ interface IClaimIssuer is IIdentity {
      * - Target identity contract must accept the claim addition
      *
      * @param _topic The topic/type of the claim
-     * @param _scheme The signature scheme used (typically 1 for ECDSA)
+     * @param _scheme The signature scheme used (typically KeyTypes.ECDSA for ECDSA)
      * @param _signature The cryptographic signature of the claim data
      * @param _data The actual claim data being attested
      * @param _uri Optional URI pointing to additional claim information

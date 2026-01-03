@@ -1,20 +1,35 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
-
 import { IClaimIssuer } from "./interface/IClaimIssuer.sol";
 import { Identity, IIdentity } from "./Identity.sol";
 import { Errors } from "./libraries/Errors.sol";
 import { KeyPurposes } from "./libraries/KeyPurposes.sol";
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
     mapping(bytes => bool) public revokedClaims;
 
+    /**
+     * @notice Constructor for direct deployments (non-proxy)
+     * @param initialManagementKey The initial management key for the ClaimIssuer
+     */
     // solhint-disable-next-line no-empty-blocks
     constructor(
         address initialManagementKey
     ) Identity(initialManagementKey, false) {}
+
+    /**
+     * @notice External initializer for proxy deployments
+     * @dev This function should be called when deploying ClaimIssuer through a proxy
+     * @param initialManagementKey The initial management key for the ClaimIssuer
+     */
+    function initialize(
+        address initialManagementKey
+    ) external override initializer {
+        __ClaimIssuer_init(initialManagementKey);
+    }
 
     /**
      *  @dev See {IClaimIssuer-revokeClaimBySignature}.
@@ -99,8 +114,16 @@ contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
             abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash)
         );
 
-        // Recover address of data signer
-        address recovered = getRecoveredAddress(sig, prefixedHash);
+        // Recover address of data signer using OpenZeppelin's ECDSA
+        (address recovered, ECDSA.RecoverError error, ) = ECDSA.tryRecover(
+            prefixedHash,
+            sig
+        );
+
+        // If recovery failed, return false
+        if (error != ECDSA.RecoverError.NoError) {
+            return false;
+        }
 
         // Take hash of recovered address
         bytes32 hashedAddr = keccak256(abi.encode(recovered));
@@ -121,7 +144,30 @@ contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
         return revokedClaims[_sig];
     }
 
+    /**
+     * @notice Initializer function for proxy deployments
+     * @dev This function should be called when deploying ClaimIssuer through a proxy
+     * @param initialManagementKey The initial management key for the ClaimIssuer
+     */
+    // solhint-disable-next-line func-name-mixedcase
+    function __ClaimIssuer_init(address initialManagementKey) internal {
+        // Initialize UUPS upgradeability
+        __UUPSUpgradeable_init();
+
+        // Initialize Identity functionality
+        __Identity_init(initialManagementKey);
+    }
+
+    /**
+     * @dev Internal function to authorize the upgrade of the contract.
+     * This function is required by UUPSUpgradeable and restricts upgrades to management keys only.
+     *
+     * @param newImplementation The address of the new implementation contract
+     */
     function _authorizeUpgrade(
         address newImplementation
-    ) internal override onlyManager {}
+    ) internal override(UUPSUpgradeable) onlyManager {
+        // Only management keys can authorize upgrades
+        // This prevents unauthorized upgrades and potential security issues
+    }
 }
