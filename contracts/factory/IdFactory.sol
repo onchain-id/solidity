@@ -235,7 +235,6 @@ contract IdFactory is IIdFactory, Ownable {
         if (wallet == address(0)) {
             revert Errors.ZeroAddress();
         }
-
         if (block.timestamp > expiry) {
             revert Errors.SignatureExpired(expiry);
         }
@@ -256,7 +255,6 @@ contract IdFactory is IIdFactory, Ownable {
             key,
             KeyPurposes.MANAGEMENT
         );
-
         if (!hasManagement) {
             revert Errors.MissingManagementKey();
         }
@@ -355,6 +353,30 @@ contract IdFactory is IIdFactory, Ownable {
         return _tokenFactories[_factory];
     }
 
+    /**
+     *  @dev Recovers the wallet signer from a structHash using the eth_sign prefix.
+     *  @param structHash hashed payload binding wallet, identity, expiry, contract and chain id.
+     *  @param signature signature provided by the wallet.
+     *  @return signer recovered address or address(0) on recover error.
+     */
+    function _recoverWalletSigner(
+        bytes32 structHash,
+        bytes calldata signature
+    ) internal pure returns (address) {
+        bytes32 digest = keccak256(
+            abi.encodePacked("\x19Ethereum Signed Message:\n32", structHash)
+        );
+
+        (address signer, ECDSA.RecoverError error, ) = ECDSA.tryRecover(
+            digest,
+            signature
+        );
+        if (error != ECDSA.RecoverError.NoError) {
+            return address(0);
+        }
+        return signer;
+    }
+
     // deploy function with create2 opcode call
     // returns the address of the contract created
     function _deploy(
@@ -388,29 +410,5 @@ contract IdFactory is IIdFactory, Ownable {
         );
         bytes memory bytecode = abi.encodePacked(_code, _constructData);
         return _deploy(_salt, bytecode);
-    }
-
-    /**
-     *  @dev Recovers the wallet signer from a structHash using the eth_sign prefix.
-     *  @param structHash hashed payload binding wallet, identity, expiry, contract and chain id.
-     *  @param signature signature provided by the wallet.
-     *  @return signer recovered address or address(0) on recover error.
-     */
-    function _recoverWalletSigner(
-        bytes32 structHash,
-        bytes calldata signature
-    ) internal pure returns (address) {
-        bytes32 digest = keccak256(
-            abi.encodePacked("\x19Ethereum Signed Message:\n32", structHash)
-        );
-
-        (address signer, ECDSA.RecoverError error, ) = ECDSA.tryRecover(
-            digest,
-            signature
-        );
-        if (error != ECDSA.RecoverError.NoError) {
-            return address(0);
-        }
-        return signer;
     }
 }
