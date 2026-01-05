@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { MessageHashUtils } from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import { IdentityProxy } from "../proxy/IdentityProxy.sol";
 import { IIdFactory } from "./IIdFactory.sol";
@@ -13,7 +14,7 @@ import { KeyPurposes } from "../libraries/KeyPurposes.sol";
 import { KeyTypes } from "../libraries/KeyTypes.sol";
 
 contract IdFactory is IIdFactory, Ownable {
-    using ECDSA for bytes32;
+    uint256 private constant _MAX_WALLETS_PER_IDENTITY = 101;
 
     // address of the _implementationAuthority contract making the link to the implementation contract
     address public immutable implementationAuthority;
@@ -190,7 +191,7 @@ contract IdFactory is IIdFactory, Ownable {
         );
         address identity = _userIdentity[msg.sender];
         require(
-            _wallets[identity].length < 101,
+            _wallets[identity].length < _MAX_WALLETS_PER_IDENTITY,
             Errors.MaxWalletsPerIdentityExceeded()
         );
         _userIdentity[_newWallet] = identity;
@@ -232,32 +233,28 @@ contract IdFactory is IIdFactory, Ownable {
         bytes calldata signature,
         uint256 expiry
     ) external override {
-        if (wallet == address(0)) {
-            revert Errors.ZeroAddress();
-        }
-        if (block.timestamp > expiry) {
-            revert Errors.SignatureExpired(expiry);
-        }
+        require(wallet != address(0), Errors.ZeroAddress());
+        require(block.timestamp <= expiry, Errors.ExpiredSignature(signature));
 
         address identity = msg.sender;
         bytes32 structHash = keccak256(
             abi.encode(wallet, identity, expiry, address(this), block.chainid)
         );
 
-        address signer = _recoverWalletSigner(structHash, signature);
-        if (signer != wallet) {
-            revert Errors.InvalidSignature();
-        }
+        bytes32 digest = MessageHashUtils.toEthSignedMessageHash(structHash);
+        (address signer, ECDSA.RecoverError error, ) = ECDSA.tryRecover(
+            digest,
+            signature
+        );
+        require(error == ECDSA.RecoverError.NoError, Errors.InvalidSignature());
+        require(signer == wallet, Errors.InvalidSignature());
 
         // require the wallet is a MANAGEMENT key on the identity
         bytes32 key = keccak256(abi.encode(wallet));
-        bool hasManagement = IIdentity(identity).keyHasPurpose(
-            key,
-            KeyPurposes.MANAGEMENT
+        require(
+            IIdentity(identity).keyHasPurpose(key, KeyPurposes.MANAGEMENT),
+            Errors.KeyDoesNotHavePurpose(key, KeyPurposes.MANAGEMENT)
         );
-        if (!hasManagement) {
-            revert Errors.MissingManagementKey();
-        }
 
         // Check if wallet is already linked
         require(
@@ -271,7 +268,7 @@ contract IdFactory is IIdFactory, Ownable {
 
         // Check max wallets per identity
         require(
-            _wallets[identity].length < 101,
+            _wallets[identity].length < _MAX_WALLETS_PER_IDENTITY,
             Errors.MaxWalletsPerIdentityExceeded()
         );
 
@@ -284,12 +281,11 @@ contract IdFactory is IIdFactory, Ownable {
      *  @dev See {IdFactory-unregisterWalletFromIdentity}.
      */
     function unregisterWalletFromIdentity(address wallet) external override {
-        if (wallet == address(0)) {
-            revert Errors.ZeroAddress();
-        }
-        if (_userIdentity[wallet] != msg.sender) {
-            revert Errors.WalletNotLinked();
-        }
+        require(wallet != address(0), Errors.ZeroAddress());
+        require(
+            _userIdentity[wallet] == msg.sender,
+            Errors.WalletNotLinkedToIdentity(wallet)
+        );
 
         address identity = _userIdentity[wallet];
         delete _userIdentity[wallet];
@@ -351,30 +347,6 @@ contract IdFactory is IIdFactory, Ownable {
         address _factory
     ) public view override returns (bool) {
         return _tokenFactories[_factory];
-    }
-
-    /**
-     *  @dev Recovers the wallet signer from a structHash using the eth_sign prefix.
-     *  @param structHash hashed payload binding wallet, identity, expiry, contract and chain id.
-     *  @param signature signature provided by the wallet.
-     *  @return signer recovered address or address(0) on recover error.
-     */
-    function _recoverWalletSigner(
-        bytes32 structHash,
-        bytes calldata signature
-    ) internal pure returns (address) {
-        bytes32 digest = keccak256(
-            abi.encodePacked("\x19Ethereum Signed Message:\n32", structHash)
-        );
-
-        (address signer, ECDSA.RecoverError error, ) = ECDSA.tryRecover(
-            digest,
-            signature
-        );
-        if (error != ECDSA.RecoverError.NoError) {
-            return address(0);
-        }
-        return signer;
     }
 
     // deploy function with create2 opcode call
