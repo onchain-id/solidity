@@ -17,15 +17,6 @@ library Errors {
     /// @notice Reverts when the recovered signer does not match the wallet being registered
     error InvalidSignature();
 
-    /// @notice Reverts when the provided signature has expired
-    error SignatureExpired(uint256 expiry);
-
-    /// @notice Reverts when the wallet does not hold a management key on the identity
-    error MissingManagementKey();
-
-    /// @notice Reverts when the wallet is not linked to msg.sender during removal
-    error WalletNotLinked();
-
     /// @notice Reverts if the function is called on the sender address
     error CannotBeCalledOnSenderAddress();
 
@@ -43,9 +34,6 @@ library Errors {
 
     /// @notice Reverts if the only linked wallet tries to unlink
     error OnlyLinkedWalletCanUnlink();
-
-    /// @notice Reverts if the account is not authorized to call the function
-    error OwnableUnauthorizedAccount(address account); // TODO: OZ
 
     /// @notice Reverts if the salt is taken
     error SaltTaken(string salt);
@@ -96,26 +84,6 @@ library Errors {
     /// @notice The initialization failed.
     error InitializationFailed();
 
-    /* ----- Verifier ----- */
-
-    /// @notice The claim topic already exists.
-    error ClaimTopicAlreadyExists(uint256 claimTopic);
-
-    /// @notice The maximum number of claim topics is exceeded.
-    error MaxClaimTopicsExceeded();
-
-    /// @notice The maximum number of trusted issuers is exceeded.
-    error MaxTrustedIssuersExceeded();
-
-    /// @notice The trusted issuer already exists.
-    error TrustedIssuerAlreadyExists(address trustedIssuer);
-
-    /// @notice The trusted claim topics cannot be empty.
-    error TrustedClaimTopicsCannotBeEmpty();
-
-    /// @notice The trusted issuer does not exist.
-    error NotATrustedIssuer(address trustedIssuer);
-
     /* ----- ClaimIssuer ----- */
 
     /// @notice The claim already exists.
@@ -158,23 +126,6 @@ library Errors {
 
     /// @notice The claim is invalid.
     error InvalidClaim();
-
-    /* ----- IdentityUtilities ----- */
-
-    /// @notice 0 is not a valid topic.
-    error EmptyTopic();
-
-    /// @notice 0 is not a valid Format.
-    error EmptyFormat();
-
-    /// @notice Name cannot be left empty.
-    error EmptyName();
-
-    /// @notice Use update function for existing topics.
-    error TopicAlreadyExists(uint256 topic);
-
-    /// @notice Topic is not registered yet.
-    error TopicNotFound(uint256 topic);
 
     /* ----- ClaimIssuerFactory ----- */
 
