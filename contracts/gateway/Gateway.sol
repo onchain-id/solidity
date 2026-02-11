@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
-import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
-import {IdFactory} from "../factory/IdFactory.sol";
-import {Errors} from "../libraries/Errors.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { MessageHashUtils } from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { IdFactory } from "../factory/IdFactory.sol";
+import { Errors } from "../libraries/Errors.sol";
 
 contract Gateway is Ownable {
     using ECDSA for bytes32;
@@ -25,7 +25,10 @@ contract Gateway is Ownable {
      *  @dev Constructor for the ONCHAINID Factory Gateway.
      *  @param idFactoryAddress the address of the factory to operate (the Gateway must be owner of the Factory).
      */
-    constructor(address idFactoryAddress, address[] memory signersToApprove) Ownable(msg.sender) {
+    constructor(
+        address idFactoryAddress,
+        address[] memory signersToApprove
+    ) Ownable(msg.sender) {
         require(idFactoryAddress != address(0), Errors.ZeroAddress());
         require(signersToApprove.length <= 10, Errors.TooManySigners());
 
@@ -57,7 +60,10 @@ contract Gateway is Ownable {
      */
     function revokeSigner(address signer) external onlyOwner {
         require(signer != address(0), Errors.ZeroAddress());
-        require(approvedSigners[signer], Errors.SignerAlreadyNotApproved(signer));
+        require(
+            approvedSigners[signer],
+            Errors.SignerAlreadyNotApproved(signer)
+        );
 
         delete approvedSigners[signer];
 
@@ -79,13 +85,25 @@ contract Gateway is Ownable {
         bytes calldata signature
     ) external returns (address) {
         require(identityOwner != address(0), Errors.ZeroAddress());
-        require(signatureExpiry == 0 || block.timestamp <= signatureExpiry, Errors.ExpiredSignature(signature));
+        require(
+            signatureExpiry == 0 || block.timestamp <= signatureExpiry,
+            Errors.ExpiredSignature(signature)
+        );
 
-        address signer = keccak256(abi.encode("Authorize ONCHAINID deployment", identityOwner, salt, signatureExpiry))
-            .toEthSignedMessageHash().recover(signature);
+        address signer = keccak256(
+            abi.encode(
+                "Authorize ONCHAINID deployment",
+                identityOwner,
+                salt,
+                signatureExpiry
+            )
+        ).toEthSignedMessageHash().recover(signature);
 
         require(approvedSigners[signer], Errors.UnapprovedSigner(signer));
-        require(!revokedSignatures[signature], Errors.RevokedSignature(signature));
+        require(
+            !revokedSignatures[signature],
+            Errors.RevokedSignature(signature)
+        );
 
         return idFactory.createIdentity(identityOwner, salt);
     }
@@ -109,26 +127,49 @@ contract Gateway is Ownable {
         bytes calldata signature
     ) external returns (address) {
         require(identityOwner != address(0), Errors.ZeroAddress());
-        require(signatureExpiry == 0 || block.timestamp <= signatureExpiry, Errors.ExpiredSignature(signature));
+        require(
+            signatureExpiry == 0 || block.timestamp <= signatureExpiry,
+            Errors.ExpiredSignature(signature)
+        );
 
         address signer = keccak256(
-                abi.encode("Authorize ONCHAINID deployment", identityOwner, salt, managementKeys, signatureExpiry)
-            ).toEthSignedMessageHash().recover(signature);
+            abi.encode(
+                "Authorize ONCHAINID deployment",
+                identityOwner,
+                salt,
+                managementKeys,
+                signatureExpiry
+            )
+        ).toEthSignedMessageHash().recover(signature);
 
         require(approvedSigners[signer], Errors.UnapprovedSigner(signer));
-        require(!revokedSignatures[signature], Errors.RevokedSignature(signature));
+        require(
+            !revokedSignatures[signature],
+            Errors.RevokedSignature(signature)
+        );
 
-        return idFactory.createIdentityWithManagementKeys(identityOwner, salt, managementKeys);
+        return
+            idFactory.createIdentityWithManagementKeys(
+                identityOwner,
+                salt,
+                managementKeys
+            );
     }
 
     /**
      *  @dev Deploy an ONCHAINID using a factory using the identityOwner address as salt.
      *  @param identityOwner the address to set as a management key.
      */
-    function deployIdentityForWallet(address identityOwner) external returns (address) {
+    function deployIdentityForWallet(
+        address identityOwner
+    ) external returns (address) {
         require(identityOwner != address(0), Errors.ZeroAddress());
 
-        return idFactory.createIdentity(identityOwner, Strings.toHexString(identityOwner));
+        return
+            idFactory.createIdentity(
+                identityOwner,
+                Strings.toHexString(identityOwner)
+            );
     }
 
     /**
@@ -136,7 +177,10 @@ contract Gateway is Ownable {
      *  @param signature the signature to revoke.
      */
     function revokeSignature(bytes calldata signature) external onlyOwner {
-        require(!revokedSignatures[signature], Errors.SignatureAlreadyRevoked(signature));
+        require(
+            !revokedSignatures[signature],
+            Errors.SignatureAlreadyRevoked(signature)
+        );
 
         revokedSignatures[signature] = true;
 
@@ -148,7 +192,10 @@ contract Gateway is Ownable {
      *  @param signature the signature to approve.
      */
     function approveSignature(bytes calldata signature) external onlyOwner {
-        require(revokedSignatures[signature], Errors.SignatureNotRevoked(signature));
+        require(
+            revokedSignatures[signature],
+            Errors.SignatureNotRevoked(signature)
+        );
 
         delete revokedSignatures[signature];
 
@@ -168,7 +215,7 @@ contract Gateway is Ownable {
      *  @param data the data to call on the factory.
      */
     function callFactory(bytes memory data) external onlyOwner {
-        (bool success,) = address(idFactory).call(data);
+        (bool success, ) = address(idFactory).call(data);
         require(success, Errors.CallToFactoryFailed());
     }
 }

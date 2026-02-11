@@ -34,7 +34,12 @@ interface IIdentityUtilities {
      * @param encodedFieldNames ABI-encoded string[] representing the names of the fields
      * @param encodedFieldTypes ABI-encoded string[] representing the types of the fields
      */
-    event TopicAdded(uint256 indexed topicId, string name, bytes encodedFieldNames, bytes encodedFieldTypes);
+    event TopicAdded(
+        uint256 indexed topicId,
+        string name,
+        bytes encodedFieldNames,
+        bytes encodedFieldTypes
+    );
 
     /**
      * @notice Emitted when an existing topic is updated
@@ -43,7 +48,12 @@ interface IIdentityUtilities {
      * @param encodedFieldNames Updated ABI-encoded string[] of field names
      * @param encodedFieldTypes Updated ABI-encoded string[] of field types
      */
-    event TopicUpdated(uint256 indexed topicId, string name, bytes encodedFieldNames, bytes encodedFieldTypes);
+    event TopicUpdated(
+        uint256 indexed topicId,
+        string name,
+        bytes encodedFieldNames,
+        bytes encodedFieldTypes
+    );
 
     /**
      * @notice Emitted when a topic is removed from the registry
@@ -90,7 +100,9 @@ interface IIdentityUtilities {
      * @param topicId The ID of the topic to retrieve
      * @return topic The full TopicInfo struct containing the name, encoded field names, and types
      */
-    function getTopic(uint256 topicId) external view returns (TopicInfo memory topic);
+    function getTopic(
+        uint256 topicId
+    ) external view returns (TopicInfo memory topic);
 
     /**
      * @notice Returns the decoded schema of a topic
@@ -98,12 +110,19 @@ interface IIdentityUtilities {
      * @return fieldNames Decoded string array of field names
      * @return fieldTypes Decoded string array of field types
      */
-    function getSchema(uint256 topicId) external view returns (string[] memory fieldNames, string[] memory fieldTypes);
+    function getSchema(
+        uint256 topicId
+    )
+        external
+        view
+        returns (string[] memory fieldNames, string[] memory fieldTypes);
 
     /**
      * @notice Returns an array of TopicInfo structs for the given topic IDs
      * @param topicIds Array of topic IDs to get TopicInfo structs for
      * @return TopicInfo[] Array of TopicInfo structs corresponding to the input topic IDs
      */
-    function getTopicInfos(uint256[] calldata topicIds) external view returns (TopicInfo[] memory);
+    function getTopicInfos(
+        uint256[] calldata topicIds
+    ) external view returns (TopicInfo[] memory);
 }

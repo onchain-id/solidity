@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {IClaimIssuer} from "./interface/IClaimIssuer.sol";
-import {Identity, IIdentity} from "./Identity.sol";
-import {Errors} from "./libraries/Errors.sol";
-import {KeyPurposes} from "./libraries/KeyPurposes.sol";
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { IClaimIssuer } from "./interface/IClaimIssuer.sol";
+import { Identity, IIdentity } from "./Identity.sol";
+import { Errors } from "./libraries/Errors.sol";
+import { KeyPurposes } from "./libraries/KeyPurposes.sol";
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
     mapping(bytes => bool) public revokedClaims;
@@ -16,21 +16,27 @@ contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
      * @param initialManagementKey The initial management key for the ClaimIssuer
      */
     // solhint-disable-next-line no-empty-blocks
-    constructor(address initialManagementKey) Identity(initialManagementKey, false) {}
+    constructor(
+        address initialManagementKey
+    ) Identity(initialManagementKey, false) {}
 
     /**
      * @notice External initializer for proxy deployments
      * @dev This function should be called when deploying ClaimIssuer through a proxy
      * @param initialManagementKey The initial management key for the ClaimIssuer
      */
-    function initialize(address initialManagementKey) external override initializer {
+    function initialize(
+        address initialManagementKey
+    ) external override initializer {
         __ClaimIssuer_init(initialManagementKey);
     }
 
     /**
      *  @dev See {IClaimIssuer-revokeClaimBySignature}.
      */
-    function revokeClaimBySignature(bytes calldata signature) external override delegatedOnly onlyManager {
+    function revokeClaimBySignature(
+        bytes calldata signature
+    ) external override delegatedOnly onlyManager {
         require(!revokedClaims[signature], Errors.ClaimAlreadyRevoked());
 
         revokedClaims[signature] = true;
@@ -41,20 +47,18 @@ contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
     /**
      *  @dev See {IClaimIssuer-revokeClaim}.
      */
-    function revokeClaim(bytes32 _claimId, address _identity)
-        external
-        override
-        delegatedOnly
-        onlyManager
-        returns (bool)
-    {
+    function revokeClaim(
+        bytes32 _claimId,
+        address _identity
+    ) external override delegatedOnly onlyManager returns (bool) {
         uint256 foundClaimTopic;
         uint256 scheme;
         address issuer;
         bytes memory sig;
         bytes memory data;
 
-        (foundClaimTopic, scheme, issuer, sig, data,) = Identity(_identity).getClaim(_claimId);
+        (foundClaimTopic, scheme, issuer, sig, data, ) = Identity(_identity)
+            .getClaim(_claimId);
 
         require(!revokedClaims[sig], Errors.ClaimAlreadyRevoked());
 
@@ -74,14 +78,22 @@ contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
         string calldata _uri,
         IIdentity _identity
     ) external delegatedOnly onlyManager {
-        require(isClaimValid(_identity, _topic, _signature, _data), Errors.InvalidClaim());
-
-        bytes memory addClaimData = abi.encodeWithSelector(
-            _identity.addClaim.selector, _topic, _scheme, address(this), _signature, _data, _uri
+        require(
+            isClaimValid(_identity, _topic, _signature, _data),
+            Errors.InvalidClaim()
         );
 
-        try _identity.execute(address(_identity), 0, addClaimData) {}
-        catch {
+        bytes memory addClaimData = abi.encodeWithSelector(
+            _identity.addClaim.selector,
+            _topic,
+            _scheme,
+            address(this),
+            _signature,
+            _data,
+            _uri
+        );
+
+        try _identity.execute(address(_identity), 0, addClaimData) {} catch {
             revert Errors.CallFailed();
         }
         emit ClaimAddedTo(address(_identity), _topic, _signature, _data);
@@ -90,18 +102,23 @@ contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
     /**
      *  @dev See {IClaimIssuer-isClaimValid}.
      */
-    function isClaimValid(IIdentity _identity, uint256 claimTopic, bytes memory sig, bytes memory data)
-        public
-        view
-        override(Identity, IClaimIssuer)
-        returns (bool claimValid)
-    {
+    function isClaimValid(
+        IIdentity _identity,
+        uint256 claimTopic,
+        bytes memory sig,
+        bytes memory data
+    ) public view override(Identity, IClaimIssuer) returns (bool claimValid) {
         bytes32 dataHash = keccak256(abi.encode(_identity, claimTopic, data));
         // Use abi.encodePacked to concatenate the message prefix and the message to sign.
-        bytes32 prefixedHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash));
+        bytes32 prefixedHash = keccak256(
+            abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash)
+        );
 
         // Recover address of data signer using OpenZeppelin's ECDSA
-        (address recovered, ECDSA.RecoverError error,) = ECDSA.tryRecover(prefixedHash, sig);
+        (address recovered, ECDSA.RecoverError error, ) = ECDSA.tryRecover(
+            prefixedHash,
+            sig
+        );
 
         // If recovery failed, return false
         if (error != ECDSA.RecoverError.NoError) {
@@ -113,13 +130,17 @@ contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
 
         // Does the trusted identifier have they key which signed the user's claim?
         //  && (isClaimRevoked(_claimId) == false)
-        return keyHasPurpose(hashedAddr, KeyPurposes.CLAIM_SIGNER) && !isClaimRevoked(sig);
+        return
+            keyHasPurpose(hashedAddr, KeyPurposes.CLAIM_SIGNER) &&
+            !isClaimRevoked(sig);
     }
 
     /**
      *  @dev See {IClaimIssuer-isClaimRevoked}.
      */
-    function isClaimRevoked(bytes memory _sig) public view override returns (bool) {
+    function isClaimRevoked(
+        bytes memory _sig
+    ) public view override returns (bool) {
         return revokedClaims[_sig];
     }
 
@@ -143,7 +164,9 @@ contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
      *
      * @param newImplementation The address of the new implementation contract
      */
-    function _authorizeUpgrade(address newImplementation) internal override(UUPSUpgradeable) onlyManager {
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal override(UUPSUpgradeable) onlyManager {
         // Only management keys can authorize upgrades
         // This prevents unauthorized upgrades and potential security issues
     }

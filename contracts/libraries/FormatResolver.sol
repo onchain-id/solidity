@@ -23,12 +23,16 @@ library FormatResolver {
     }
 
     /// @notice Decode a `string` from raw bytes
-    function decodeString(bytes memory data) internal pure returns (string memory) {
+    function decodeString(
+        bytes memory data
+    ) internal pure returns (string memory) {
         return abi.decode(data, (string));
     }
 
     /// @notice Decode `{uint256;uint256;uint256}` struct from raw bytes
-    function decodeTripleUint(bytes memory data) internal pure returns (uint256 a, uint256 b, uint256 c) {
+    function decodeTripleUint(
+        bytes memory data
+    ) internal pure returns (uint256 a, uint256 b, uint256 c) {
         return abi.decode(data, (uint256, uint256, uint256));
     }
 
@@ -40,7 +44,9 @@ library FormatResolver {
     }
 
     /// @notice Decode a `string[]` from raw bytes
-    function decodeStringArray(bytes memory data) internal pure returns (string[] memory) {
+    function decodeStringArray(
+        bytes memory data
+    ) internal pure returns (string[] memory) {
         return abi.decode(data, (string[]));
     }
 

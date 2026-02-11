@@ -84,7 +84,9 @@ interface IERC735 {
      *
      * Claim IDs are generated using `keccak256(abi.encode(address issuer_address, uint256 topic))`.
      */
-    function getClaim(bytes32 _claimId)
+    function getClaim(
+        bytes32 _claimId
+    )
         external
         view
         returns (
@@ -99,5 +101,7 @@ interface IERC735 {
     /**
      * @dev Returns an array of claim IDs by topic.
      */
-    function getClaimIdsByTopic(uint256 _topic) external view returns (bytes32[] memory claimIds);
+    function getClaimIdsByTopic(
+        uint256 _topic
+    ) external view returns (bytes32[] memory claimIds);
 }
