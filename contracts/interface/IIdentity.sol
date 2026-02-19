@@ -20,4 +20,10 @@ interface IIdentity is IERC734, IERC735 {
         bytes calldata sig,
         bytes calldata data
     ) external view returns (bool);
+
+    /**
+     * @dev Returns the identity type set at initialization.
+     * @return The identity type (1=Asset, 2=Individual, 3=Corporate, 4=IoT, 5=ClaimIssuer)
+     */
+    function getIdentityType() external view returns (uint256);
 }

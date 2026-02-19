@@ -12,6 +12,7 @@ describe("Proxy", () => {
       IdentityProxy.connect(deployerWallet).deploy(
         ethers.ZeroAddress,
         identityOwnerWallet.address,
+        2,
       ),
     ).to.be.revertedWithCustomError(IdentityProxy, "ZeroAddress");
   });
@@ -30,6 +31,7 @@ describe("Proxy", () => {
       IdentityProxy.connect(deployerWallet).deploy(
         authority.target,
         identityOwnerWallet.address,
+        2,
       ),
     ).to.be.revertedWithCustomError(IdentityProxy, "InitializationFailed");
   });
@@ -51,6 +53,7 @@ describe("Proxy", () => {
       IdentityProxy.connect(deployerWallet).deploy(
         implementationAuthority.target,
         ethers.ZeroAddress,
+        2,
       ),
     ).to.be.revertedWithCustomError(IdentityProxy, "ZeroAddress");
   });

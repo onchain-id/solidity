@@ -22,11 +22,13 @@ contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
 
     /**
      * @notice External initializer for proxy deployments
-     * @dev This function should be called when deploying ClaimIssuer through a proxy
+     * @dev This function should be called when deploying ClaimIssuer through a proxy.
+     * The _identityType parameter is ignored — ClaimIssuer always sets type 5.
      * @param initialManagementKey The initial management key for the ClaimIssuer
      */
     function initialize(
-        address initialManagementKey
+        address initialManagementKey,
+        uint256
     ) external override initializer {
         __ClaimIssuer_init(initialManagementKey);
     }
@@ -153,6 +155,9 @@ contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
     function __ClaimIssuer_init(address initialManagementKey) internal {
         // Initialize UUPS upgradeability
         __UUPSUpgradeable_init();
+
+        // Set identity type to 5 (ClaimIssuer)
+        _getClaimStorage().identityType = 5;
 
         // Initialize Identity functionality
         __Identity_init(initialManagementKey);

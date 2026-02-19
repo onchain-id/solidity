@@ -237,6 +237,7 @@ describe("ClaimIssuer - Reference (with revoke)", () => {
         await claimIssuerImplementation.getAddress(),
         claimIssuerImplementation.interface.encodeFunctionData("initialize", [
           deployerWallet.address,
+          5,
         ]),
       );
 
@@ -270,6 +271,7 @@ describe("ClaimIssuer - Reference (with revoke)", () => {
         await claimIssuerImplementation.getAddress(),
         claimIssuerImplementation.interface.encodeFunctionData("initialize", [
           deployerWallet.address,
+          5,
         ]),
       );
 

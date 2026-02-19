@@ -10,12 +10,14 @@ contract IdentityProxy {
      *  @dev constructor of the proxy Identity contract
      *  @param _implementationAuthority the implementation Authority contract address
      *  @param initialManagementKey the management key at deployment
+     *  @param _identityType the type of the identity (1=Asset, 2=Individual, 3=Corporate, 4=IoT, 5=ClaimIssuer)
      *  the proxy is going to use the logic deployed on the implementation contract
      *  deployed at an address listed in the ImplementationAuthority contract
      */
     constructor(
         address _implementationAuthority,
-        address initialManagementKey
+        address initialManagementKey,
+        uint256 _identityType
     ) {
         require(_implementationAuthority != address(0), Errors.ZeroAddress());
         require(initialManagementKey != address(0), Errors.ZeroAddress());
@@ -33,7 +35,11 @@ contract IdentityProxy {
 
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, ) = logic.delegatecall(
-            abi.encodeWithSignature("initialize(address)", initialManagementKey)
+            abi.encodeWithSignature(
+                "initialize(address,uint256)",
+                initialManagementKey,
+                _identityType
+            )
         );
         require(success, Errors.InitializationFailed());
     }

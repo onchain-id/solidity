@@ -33,25 +33,25 @@ describe('IdFactory', () => {
     it('should revert for being not authorized to deploy token', async () => {
       const { identityFactory, aliceWallet } = await loadFixture(deployFactoryFixture);
 
-      await expect(identityFactory.connect(aliceWallet).createTokenIdentity(aliceWallet.address, aliceWallet.address, 'TST')).to.be.revertedWithCustomError(identityFactory, 'OwnableUnauthorizedAccount');
+      await expect(identityFactory.connect(aliceWallet).createTokenIdentity(aliceWallet.address, aliceWallet.address, 'TST', [])).to.be.revertedWithCustomError(identityFactory, 'OwnableUnauthorizedAccount');
     });
 
     it('should revert for token address being zero address', async () => {
       const { identityFactory, deployerWallet, aliceWallet } = await loadFixture(deployFactoryFixture);
 
-      await expect(identityFactory.connect(deployerWallet).createTokenIdentity(ethers.ZeroAddress, aliceWallet.address, 'TST')).to.be.revertedWithCustomError(identityFactory, 'ZeroAddress');
+      await expect(identityFactory.connect(deployerWallet).createTokenIdentity(ethers.ZeroAddress, aliceWallet.address, 'TST', [])).to.be.revertedWithCustomError(identityFactory, 'ZeroAddress');
     });
 
     it('should revert for owner being zero address', async () => {
       const { identityFactory, deployerWallet, aliceWallet } = await loadFixture(deployFactoryFixture);
 
-      await expect(identityFactory.connect(deployerWallet).createTokenIdentity(aliceWallet.address, ethers.ZeroAddress, 'TST')).to.be.revertedWithCustomError(identityFactory, 'ZeroAddress');
+      await expect(identityFactory.connect(deployerWallet).createTokenIdentity(aliceWallet.address, ethers.ZeroAddress, 'TST', [])).to.be.revertedWithCustomError(identityFactory, 'ZeroAddress');
     });
 
     it('should revert for salt being empty', async () => {
       const { identityFactory, deployerWallet, aliceWallet } = await loadFixture(deployFactoryFixture);
 
-      await expect(identityFactory.connect(deployerWallet).createTokenIdentity(aliceWallet.address, aliceWallet.address, '')).to.be.revertedWithCustomError(identityFactory, 'EmptyString');
+      await expect(identityFactory.connect(deployerWallet).createTokenIdentity(aliceWallet.address, aliceWallet.address, '', [])).to.be.revertedWithCustomError(identityFactory, 'EmptyString');
     });
 
     it('should create one identity and then revert for salt/address being already used', async () => {
@@ -59,7 +59,7 @@ describe('IdFactory', () => {
 
       expect(await identityFactory.isSaltTaken('Tokensalt1')).to.be.false;
 
-      const tx = await identityFactory.connect(deployerWallet).createTokenIdentity(aliceWallet.address, bobWallet.address, 'salt1');
+      const tx = await identityFactory.connect(deployerWallet).createTokenIdentity(aliceWallet.address, bobWallet.address, 'salt1', []);
       const tokenIdentityAddress = await identityFactory.getIdentity(aliceWallet.address);
       await expect(tx).to.emit(identityFactory, 'TokenLinked').withArgs(aliceWallet.address, tokenIdentityAddress);
       await expect(tx).to.emit(identityFactory, 'Deployed').withArgs(tokenIdentityAddress);
@@ -68,8 +68,8 @@ describe('IdFactory', () => {
       expect(await identityFactory.isSaltTaken('Tokensalt2')).to.be.false;
       expect(await identityFactory.getToken(tokenIdentityAddress)).to.deep.equal(aliceWallet.address);
 
-      await expect(identityFactory.connect(deployerWallet).createTokenIdentity(aliceWallet.address, aliceWallet.address, 'salt1')).to.be.revertedWithCustomError(identityFactory, 'SaltTaken');
-      await expect(identityFactory.connect(deployerWallet).createTokenIdentity(aliceWallet.address, aliceWallet.address, 'salt2')).to.be.revertedWithCustomError(identityFactory, 'TokenAlreadyLinked');
+      await expect(identityFactory.connect(deployerWallet).createTokenIdentity(aliceWallet.address, aliceWallet.address, 'salt1', [])).to.be.revertedWithCustomError(identityFactory, 'SaltTaken');
+      await expect(identityFactory.connect(deployerWallet).createTokenIdentity(aliceWallet.address, aliceWallet.address, 'salt2', [])).to.be.revertedWithCustomError(identityFactory, 'TokenAlreadyLinked');
     });
   });
 });

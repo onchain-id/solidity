@@ -125,8 +125,9 @@ contract ClaimIssuerFactory is Ownable {
                 abi.encode(
                     _implementation,
                     abi.encodeWithSelector(
-                        bytes4(keccak256("initialize(address)")),
-                        managementKey
+                        bytes4(keccak256("initialize(address,uint256)")),
+                        managementKey,
+                        5
                     )
                 )
             ),

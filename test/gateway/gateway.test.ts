@@ -42,6 +42,8 @@ describe("Gateway", () => {
           gateway.deployIdentityWithSalt(
             ethers.ZeroAddress,
             "saltToUse",
+            2,
+            [],
             BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds,
             ethers.randomBytes(65),
           ),
@@ -62,6 +64,8 @@ describe("Gateway", () => {
           gateway.deployIdentityWithSalt(
             aliceWallet.address,
             "saltToUse",
+            2,
+            [],
             BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds,
             ethers.randomBytes(65),
           ),
@@ -80,11 +84,13 @@ describe("Gateway", () => {
 
         const digest = ethers.keccak256(
           ethers.AbiCoder.defaultAbiCoder().encode(
-            ["string", "address", "string", "uint256"],
+            ["string", "address", "string", "uint256", "address[]", "uint256"],
             [
               "Authorize ONCHAINID deployment",
               aliceWallet.address,
               "saltToUse",
+              2,
+              [],
               BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds,
             ],
           ),
@@ -95,6 +101,8 @@ describe("Gateway", () => {
           gateway.deployIdentityWithSalt(
             aliceWallet.address,
             "saltToUse",
+            2,
+            [],
             BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds,
             signature,
           ),
@@ -114,11 +122,13 @@ describe("Gateway", () => {
 
         const digest = ethers.keccak256(
           ethers.AbiCoder.defaultAbiCoder().encode(
-            ["string", "address", "string", "uint256"],
+            ["string", "address", "string", "uint256", "address[]", "uint256"],
             [
               "Authorize ONCHAINID deployment",
               aliceWallet.address,
               "saltToUse",
+              2,
+              [],
               BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds,
             ],
           ),
@@ -130,6 +140,8 @@ describe("Gateway", () => {
         const tx = await gateway.deployIdentityWithSalt(
           aliceWallet.address,
           "saltToUse",
+          2,
+          [],
           BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds,
           signature,
         );
@@ -175,11 +187,13 @@ describe("Gateway", () => {
 
         const digest = ethers.keccak256(
           ethers.AbiCoder.defaultAbiCoder().encode(
-            ["string", "address", "string", "uint256"],
+            ["string", "address", "string", "uint256", "address[]", "uint256"],
             [
               "Authorize ONCHAINID deployment",
               aliceWallet.address,
               "saltToUse",
+              2,
+              [],
               0,
             ],
           ),
@@ -191,6 +205,8 @@ describe("Gateway", () => {
         const tx = await gateway.deployIdentityWithSalt(
           aliceWallet.address,
           "saltToUse",
+          2,
+          [],
           0,
           signature,
         );
@@ -236,11 +252,13 @@ describe("Gateway", () => {
 
         const digest = ethers.keccak256(
           ethers.AbiCoder.defaultAbiCoder().encode(
-            ["string", "address", "string", "uint256"],
+            ["string", "address", "string", "uint256", "address[]", "uint256"],
             [
               "Authorize ONCHAINID deployment",
               aliceWallet.address,
               "saltToUse",
+              2,
+              [],
               BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds,
             ],
           ),
@@ -255,6 +273,8 @@ describe("Gateway", () => {
           gateway.deployIdentityWithSalt(
             aliceWallet.address,
             "saltToUse",
+            2,
+            [],
             BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds,
             signature,
           ),
@@ -274,11 +294,13 @@ describe("Gateway", () => {
 
         const digest = ethers.keccak256(
           ethers.AbiCoder.defaultAbiCoder().encode(
-            ["string", "address", "string", "uint256"],
+            ["string", "address", "string", "uint256", "address[]", "uint256"],
             [
               "Authorize ONCHAINID deployment",
               aliceWallet.address,
               "saltToUse",
+              2,
+              [],
               BigInt(Math.floor(Date.now() / 1000)) - 2n * 24n * 60n * 60n,
             ],
           ),
@@ -293,6 +315,8 @@ describe("Gateway", () => {
           gateway.deployIdentityWithSalt(
             aliceWallet.address,
             "saltToUse",
+            2,
+            [],
             BigInt(Math.floor(Date.now() / 1000)) - 2n * 24n * 60n * 60n,
             signature,
           ),
@@ -316,6 +340,8 @@ describe("Gateway", () => {
             ethers.ZeroAddress,
             "saltToUse",
             [],
+            2,
+            [],
             BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds,
             ethers.randomBytes(65),
           ),
@@ -337,6 +363,8 @@ describe("Gateway", () => {
             aliceWallet.address,
             "saltToUse",
             [],
+            2,
+            [],
             BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds,
             ethers.randomBytes(65),
           ),
@@ -355,7 +383,7 @@ describe("Gateway", () => {
 
         const digest = ethers.keccak256(
           ethers.AbiCoder.defaultAbiCoder().encode(
-            ["string", "address", "string", "bytes32[]", "uint256"],
+            ["string", "address", "string", "bytes32[]", "uint256", "address[]", "uint256"],
             [
               "Authorize ONCHAINID deployment",
               aliceWallet.address,
@@ -368,6 +396,8 @@ describe("Gateway", () => {
                   ),
                 ),
               ],
+              2,
+              [],
               BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds,
             ],
           ),
@@ -386,6 +416,8 @@ describe("Gateway", () => {
                 ),
               ),
             ],
+            2,
+            [],
             BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds,
             signature,
           ),
@@ -405,7 +437,7 @@ describe("Gateway", () => {
 
         const digest = ethers.keccak256(
           ethers.AbiCoder.defaultAbiCoder().encode(
-            ["string", "address", "string", "bytes32[]", "uint256"],
+            ["string", "address", "string", "bytes32[]", "uint256", "address[]", "uint256"],
             [
               "Authorize ONCHAINID deployment",
               aliceWallet.address,
@@ -418,6 +450,8 @@ describe("Gateway", () => {
                   ),
                 ),
               ],
+              2,
+              [],
               BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds,
             ],
           ),
@@ -437,6 +471,8 @@ describe("Gateway", () => {
               ),
             ),
           ],
+          2,
+          [],
           BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds,
           signature,
         );
@@ -493,7 +529,7 @@ describe("Gateway", () => {
 
         const digest = ethers.keccak256(
           ethers.AbiCoder.defaultAbiCoder().encode(
-            ["string", "address", "string", "bytes32[]", "uint256"],
+            ["string", "address", "string", "bytes32[]", "uint256", "address[]", "uint256"],
             [
               "Authorize ONCHAINID deployment",
               aliceWallet.address,
@@ -506,6 +542,8 @@ describe("Gateway", () => {
                   ),
                 ),
               ],
+              2,
+              [],
               0,
             ],
           ),
@@ -525,6 +563,8 @@ describe("Gateway", () => {
               ),
             ),
           ],
+          2,
+          [],
           0,
           signature,
         );
@@ -581,7 +621,7 @@ describe("Gateway", () => {
 
         const digest = ethers.keccak256(
           ethers.AbiCoder.defaultAbiCoder().encode(
-            ["string", "address", "string", "bytes32[]", "uint256"],
+            ["string", "address", "string", "bytes32[]", "uint256", "address[]", "uint256"],
             [
               "Authorize ONCHAINID deployment",
               aliceWallet.address,
@@ -594,6 +634,8 @@ describe("Gateway", () => {
                   ),
                 ),
               ],
+              2,
+              [],
               BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds,
             ],
           ),
@@ -616,6 +658,8 @@ describe("Gateway", () => {
                 ),
               ),
             ],
+            2,
+            [],
             BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds,
             signature,
           ),
@@ -635,7 +679,7 @@ describe("Gateway", () => {
 
         const digest = ethers.keccak256(
           ethers.AbiCoder.defaultAbiCoder().encode(
-            ["string", "address", "string", "bytes32[]", "uint256"],
+            ["string", "address", "string", "bytes32[]", "uint256", "address[]", "uint256"],
             [
               "Authorize ONCHAINID deployment",
               aliceWallet.address,
@@ -648,6 +692,8 @@ describe("Gateway", () => {
                   ),
                 ),
               ],
+              2,
+              [],
               BigInt(Math.floor(Date.now() / 1000)) - 2n * 24n * 60n * 60n,
             ],
           ),
@@ -670,6 +716,8 @@ describe("Gateway", () => {
                 ),
               ),
             ],
+            2,
+            [],
             BigInt(Math.floor(Date.now() / 1000)) - 2n * 24n * 60n * 60n,
             signature,
           ),
@@ -689,7 +737,7 @@ describe("Gateway", () => {
         ]);
         await identityFactory.transferOwnership(await gateway.getAddress());
         await expect(
-          gateway.deployIdentityForWallet(ethers.ZeroAddress),
+          gateway.deployIdentityForWallet(ethers.ZeroAddress, 2, []),
         ).to.revertedWithCustomError(gateway, "ZeroAddress");
       });
     });
@@ -706,7 +754,7 @@ describe("Gateway", () => {
 
         const tx = await gateway
           .connect(bobWallet)
-          .deployIdentityForWallet(aliceWallet.address);
+          .deployIdentityForWallet(aliceWallet.address, 2, []);
 
         await expect(tx)
           .to.emit(identityFactory, "WalletLinked")
@@ -750,7 +798,7 @@ describe("Gateway", () => {
         await identityFactory.transferOwnership(await gateway.getAddress());
         const tx = await gateway
           .connect(aliceWallet)
-          .deployIdentityForWallet(aliceWallet.address);
+          .deployIdentityForWallet(aliceWallet.address, 2, []);
 
         await expect(tx)
           .to.emit(identityFactory, "WalletLinked")
@@ -795,12 +843,12 @@ describe("Gateway", () => {
 
         await gateway
           .connect(aliceWallet)
-          .deployIdentityForWallet(aliceWallet.address);
+          .deployIdentityForWallet(aliceWallet.address, 2, []);
 
         await expect(
           gateway
             .connect(aliceWallet)
-            .deployIdentityForWallet(aliceWallet.address),
+            .deployIdentityForWallet(aliceWallet.address, 2, []),
         ).to.be.revertedWithCustomError(identityFactory, "SaltTaken");
       });
     });
@@ -871,11 +919,13 @@ describe("Gateway", () => {
 
         const digest = ethers.keccak256(
           ethers.AbiCoder.defaultAbiCoder().encode(
-            ["string", "address", "string", "uint256"],
+            ["string", "address", "string", "uint256", "address[]", "uint256"],
             [
               "Authorize ONCHAINID deployment",
               aliceWallet.address,
               "saltToUse",
+              2,
+              [],
               BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds,
             ],
           ),
@@ -907,11 +957,13 @@ describe("Gateway", () => {
 
         const digest = ethers.keccak256(
           ethers.AbiCoder.defaultAbiCoder().encode(
-            ["string", "address", "string", "uint256"],
+            ["string", "address", "string", "uint256", "address[]", "uint256"],
             [
               "Authorize ONCHAINID deployment",
               aliceWallet.address,
               "saltToUse",
+              2,
+              [],
               BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds,
             ],
           ),
@@ -947,11 +999,13 @@ describe("Gateway", () => {
 
         const digest = ethers.keccak256(
           ethers.AbiCoder.defaultAbiCoder().encode(
-            ["string", "address", "string", "uint256"],
+            ["string", "address", "string", "uint256", "address[]", "uint256"],
             [
               "Authorize ONCHAINID deployment",
               aliceWallet.address,
               "saltToUse",
+              2,
+              [],
               BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds,
             ],
           ),
@@ -983,11 +1037,13 @@ describe("Gateway", () => {
 
         const digest = ethers.keccak256(
           ethers.AbiCoder.defaultAbiCoder().encode(
-            ["string", "address", "string", "uint256"],
+            ["string", "address", "string", "uint256", "address[]", "uint256"],
             [
               "Authorize ONCHAINID deployment",
               aliceWallet.address,
               "saltToUse",
+              2,
+              [],
               BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds,
             ],
           ),
@@ -1019,11 +1075,13 @@ describe("Gateway", () => {
 
         const digest = ethers.keccak256(
           ethers.AbiCoder.defaultAbiCoder().encode(
-            ["string", "address", "string", "uint256"],
+            ["string", "address", "string", "uint256", "address[]", "uint256"],
             [
               "Authorize ONCHAINID deployment",
               aliceWallet.address,
               "saltToUse",
+              2,
+              [],
               BigInt(Math.floor(Date.now() / 1000)) + oneYearInSeconds,
             ],
           ),

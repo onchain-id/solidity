@@ -56,6 +56,8 @@ contract Identity is
         mapping(uint256 => mapping(bytes32 => uint256)) claimIndexInTopic;
         /// @dev Mapping of claimId -> true if claim exists (used for validation/fallback)
         mapping(bytes32 => bool) claimExists;
+        /// @dev Identity type: 1=Asset, 2=Individual, 3=Corporate, 4=IoT, 5=ClaimIssuer
+        uint256 identityType;
     }
 
     /**
@@ -110,13 +112,16 @@ contract Identity is
 
     /**
      * @notice When using this contract as an implementation for a proxy, call this initializer with a delegatecall.
-     * @dev This function initializes the contract and sets up the initial management key.
+     * @dev This function initializes the contract and sets up the initial management key and identity type.
      * @param initialManagementKey The ethereum address to be set as the management key of the ONCHAINID.
+     * @param _identityType The type of the identity.
      */
     function initialize(
-        address initialManagementKey
+        address initialManagementKey,
+        uint256 _identityType
     ) external virtual initializer {
         require(initialManagementKey != address(0), Errors.ZeroAddress());
+        _getClaimStorage().identityType = _identityType;
         __Identity_init(initialManagementKey);
     }
 
@@ -139,6 +144,14 @@ contract Identity is
      */
     function version() external pure virtual returns (string memory) {
         return "3.0.0";
+    }
+
+    /**
+     * @dev Returns the identity type set at initialization.
+     * @return The identity type (1=Asset, 2=Individual, 3=Corporate, 4=IoT, 5=ClaimIssuer)
+     */
+    function getIdentityType() external view returns (uint256) {
+        return _getClaimStorage().identityType;
     }
 
     /**

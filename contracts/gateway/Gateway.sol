@@ -75,12 +75,15 @@ contract Gateway is Ownable {
      *  an approved public key. This method allow to deploy an ONCHAINID using a custom salt.
      *  @param identityOwner the address to set as a management key.
      *  @param salt to use for the deployment.
+     *  @param identityType the type of the identity (1=Asset, 2=Individual, 3=Corporate, 4=IoT, 5=ClaimIssuer).
      *  @param signatureExpiry the block timestamp where the signature will expire.
      *  @param signature the approval containing the salt and the identityOwner address.
      */
     function deployIdentityWithSalt(
         address identityOwner,
         string memory salt,
+        uint256 identityType,
+        address[] calldata claimIssuers,
         uint256 signatureExpiry,
         bytes calldata signature
     ) external returns (address) {
@@ -95,6 +98,8 @@ contract Gateway is Ownable {
                 "Authorize ONCHAINID deployment",
                 identityOwner,
                 salt,
+                identityType,
+                claimIssuers,
                 signatureExpiry
             )
         ).toEthSignedMessageHash().recover(signature);
@@ -105,7 +110,12 @@ contract Gateway is Ownable {
             Errors.RevokedSignature(signature)
         );
 
-        return idFactory.createIdentity(identityOwner, salt);
+        return idFactory.createIdentity(
+            identityOwner,
+            salt,
+            identityType,
+            claimIssuers
+        );
     }
 
     /**
@@ -116,6 +126,7 @@ contract Gateway is Ownable {
      *  @param identityOwner the address to set as a management key.
      *  @param salt to use for the deployment.
      *  @param managementKeys the list of management keys to add to the ONCHAINID.
+     *  @param identityType the type of the identity (1=Asset, 2=Individual, 3=Corporate, 4=IoT, 5=ClaimIssuer).
      *  @param signatureExpiry the block timestamp where the signature will expire.
      *  @param signature the approval containing the salt and the identityOwner address.
      */
@@ -123,6 +134,8 @@ contract Gateway is Ownable {
         address identityOwner,
         string memory salt,
         bytes32[] calldata managementKeys,
+        uint256 identityType,
+        address[] calldata claimIssuers,
         uint256 signatureExpiry,
         bytes calldata signature
     ) external returns (address) {
@@ -138,6 +151,8 @@ contract Gateway is Ownable {
                 identityOwner,
                 salt,
                 managementKeys,
+                identityType,
+                claimIssuers,
                 signatureExpiry
             )
         ).toEthSignedMessageHash().recover(signature);
@@ -152,23 +167,30 @@ contract Gateway is Ownable {
             idFactory.createIdentityWithManagementKeys(
                 identityOwner,
                 salt,
-                managementKeys
+                managementKeys,
+                identityType,
+                claimIssuers
             );
     }
 
     /**
      *  @dev Deploy an ONCHAINID using a factory using the identityOwner address as salt.
      *  @param identityOwner the address to set as a management key.
+     *  @param identityType the type of the identity (1=Asset, 2=Individual, 3=Corporate, 4=IoT, 5=ClaimIssuer).
      */
     function deployIdentityForWallet(
-        address identityOwner
+        address identityOwner,
+        uint256 identityType,
+        address[] calldata claimIssuers
     ) external returns (address) {
         require(identityOwner != address(0), Errors.ZeroAddress());
 
         return
             idFactory.createIdentity(
                 identityOwner,
-                Strings.toHexString(identityOwner)
+                Strings.toHexString(identityOwner),
+                identityType,
+                claimIssuers
             );
     }
 

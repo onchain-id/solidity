@@ -13,7 +13,10 @@ export enum KeyTypes {
 }
 
 // Helper function to deploy Identity with proxy
-export async function deployIdentityWithProxy(initialManagementKey: string) {
+export async function deployIdentityWithProxy(
+  initialManagementKey: string,
+  identityType: number = 2,
+) {
   const Identity = await ethers.getContractFactory("Identity");
   const identityImplementation = await Identity.deploy(
     initialManagementKey,
@@ -34,6 +37,7 @@ export async function deployIdentityWithProxy(initialManagementKey: string) {
   const identityProxy = await IdentityProxy.deploy(
     await identityImplementationAuthority.getAddress(),
     initialManagementKey,
+    identityType,
   );
 
   // Return the proxy contract with Identity interface
@@ -52,9 +56,10 @@ export async function deployClaimIssuerWithProxy(initialManagementKey: string) {
   const ERC1967Proxy = await ethers.getContractFactory("ERC1967Proxy");
   const claimIssuerProxy = await ERC1967Proxy.deploy(
     await claimIssuerImplementation.getAddress(),
-    claimIssuerImplementation.interface.encodeFunctionData("initialize", [
-      initialManagementKey,
-    ]),
+    claimIssuerImplementation.interface.encodeFunctionData(
+      "initialize",
+      [initialManagementKey, 5],
+    ),
   );
 
   // Return the proxy contract with ClaimIssuer interface
@@ -141,7 +146,7 @@ export async function deployIdentityFixture() {
 
   await identityFactory
     .connect(deployerWallet)
-    .createIdentity(aliceWallet.address, "alice");
+    .createIdentity(aliceWallet.address, "alice", 2, []);
   const aliceIdentity = await ethers.getContractAt(
     "Identity",
     await identityFactory.getIdentity(aliceWallet.address),
@@ -210,7 +215,7 @@ export async function deployIdentityFixture() {
 
   await identityFactory
     .connect(deployerWallet)
-    .createIdentity(bobWallet.address, "bob");
+    .createIdentity(bobWallet.address, "bob", 2, []);
   const bobIdentity = await ethers.getContractAt(
     "Identity",
     await identityFactory.getIdentity(bobWallet.address),
@@ -219,7 +224,7 @@ export async function deployIdentityFixture() {
   const tokenAddress = "0xdEE019486810C7C620f6098EEcacA0244b0fa3fB";
   await identityFactory
     .connect(deployerWallet)
-    .createTokenIdentity(tokenAddress, tokenOwnerWallet.address, "tokenOwner");
+    .createTokenIdentity(tokenAddress, tokenOwnerWallet.address, "tokenOwner", []);
 
   return {
     identityFactory,
@@ -334,7 +339,7 @@ export async function deployIdentityWithProxyFixture() {
   const tokenAddress = "0xdEE019486810C7C620f6098EEcacA0244b0fa3fB";
   await identityFactory
     .connect(deployerWallet)
-    .createTokenIdentity(tokenAddress, tokenOwnerWallet.address, "tokenOwner");
+    .createTokenIdentity(tokenAddress, tokenOwnerWallet.address, "tokenOwner", []);
 
   return {
     identityFactory,

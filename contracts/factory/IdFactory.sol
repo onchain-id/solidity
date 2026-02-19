@@ -66,7 +66,9 @@ contract IdFactory is IIdFactory, Ownable {
      */
     function createIdentity(
         address _wallet,
-        string memory _salt
+        string memory _salt,
+        uint256 _identityType,
+        address[] memory _claimIssuers
     ) external override onlyOwner returns (address) {
         require(_wallet != address(0), Errors.ZeroAddress());
         require(
@@ -79,7 +81,28 @@ contract IdFactory is IIdFactory, Ownable {
             _userIdentity[_wallet] == address(0),
             Errors.WalletAlreadyLinkedToIdentity(_wallet)
         );
-        address identity = _deployIdentity(oidSalt, _wallet);
+
+        address identity;
+        if (_claimIssuers.length > 0) {
+            identity = _deployIdentity(
+                oidSalt,
+                address(this),
+                _identityType
+            );
+            _addClaimIssuersKeys(identity, _claimIssuers);
+            IERC734(identity).addKey(
+                keccak256(abi.encode(_wallet)),
+                KeyPurposes.MANAGEMENT,
+                KeyTypes.ECDSA
+            );
+            IERC734(identity).removeKey(
+                keccak256(abi.encode(address(this))),
+                KeyPurposes.MANAGEMENT
+            );
+        } else {
+            identity = _deployIdentity(oidSalt, _wallet, _identityType);
+        }
+
         _saltTaken[oidSalt] = true;
         _userIdentity[_wallet] = identity;
         _wallets[identity].push(_wallet);
@@ -93,7 +116,9 @@ contract IdFactory is IIdFactory, Ownable {
     function createIdentityWithManagementKeys(
         address _wallet,
         string memory _salt,
-        bytes32[] memory _managementKeys
+        bytes32[] memory _managementKeys,
+        uint256 _identityType,
+        address[] memory _claimIssuers
     ) external override onlyOwner returns (address) {
         require(_wallet != address(0), Errors.ZeroAddress());
         require(
@@ -108,7 +133,11 @@ contract IdFactory is IIdFactory, Ownable {
         );
         require(_managementKeys.length > 0, Errors.EmptyListOfKeys());
 
-        address identity = _deployIdentity(oidSalt, address(this));
+        address identity = _deployIdentity(
+            oidSalt,
+            address(this),
+            _identityType
+        );
 
         for (uint256 i = 0; i < _managementKeys.length; i++) {
             require(
@@ -121,6 +150,8 @@ contract IdFactory is IIdFactory, Ownable {
                 KeyTypes.ECDSA
             );
         }
+
+        _addClaimIssuersKeys(identity, _claimIssuers);
 
         IERC734(identity).removeKey(
             keccak256(abi.encode(address(this))),
@@ -141,7 +172,8 @@ contract IdFactory is IIdFactory, Ownable {
     function createTokenIdentity(
         address _token,
         address _tokenOwner,
-        string memory _salt
+        string memory _salt,
+        address[] memory _claimIssuers
     ) external override returns (address) {
         require(
             isTokenFactory(msg.sender) || msg.sender == owner(),
@@ -159,7 +191,28 @@ contract IdFactory is IIdFactory, Ownable {
             _tokenIdentity[_token] == address(0),
             Errors.TokenAlreadyLinked(_token)
         );
-        address identity = _deployIdentity(tokenIdSalt, _tokenOwner);
+
+        address identity;
+        if (_claimIssuers.length > 0) {
+            identity = _deployIdentity(
+                tokenIdSalt,
+                address(this),
+                1
+            );
+            _addClaimIssuersKeys(identity, _claimIssuers);
+            IERC734(identity).addKey(
+                keccak256(abi.encode(_tokenOwner)),
+                KeyPurposes.MANAGEMENT,
+                KeyTypes.ECDSA
+            );
+            IERC734(identity).removeKey(
+                keccak256(abi.encode(address(this))),
+                KeyPurposes.MANAGEMENT
+            );
+        } else {
+            identity = _deployIdentity(tokenIdSalt, _tokenOwner, 1);
+        }
+
         _saltTaken[tokenIdSalt] = true;
         _tokenIdentity[_token] = identity;
         _tokenAddress[identity] = _token;
@@ -269,6 +322,20 @@ contract IdFactory is IIdFactory, Ownable {
         return _tokenFactories[_factory];
     }
 
+    // adds CLAIM_SIGNER keys for each trusted claim issuer
+    function _addClaimIssuersKeys(
+        address _identity,
+        address[] memory _claimIssuers
+    ) private {
+        for (uint256 i = 0; i < _claimIssuers.length; i++) {
+            IERC734(_identity).addKey(
+                keccak256(abi.encode(_claimIssuers[i])),
+                KeyPurposes.CLAIM_SIGNER,
+                KeyTypes.ECDSA
+            );
+        }
+    }
+
     // deploy function with create2 opcode call
     // returns the address of the contract created
     function _deploy(
@@ -293,12 +360,14 @@ contract IdFactory is IIdFactory, Ownable {
     // function used to deploy an identity using CREATE2
     function _deployIdentity(
         string memory _salt,
-        address _wallet
+        address _wallet,
+        uint256 _identityType
     ) private returns (address) {
         bytes memory _code = type(IdentityProxy).creationCode;
         bytes memory _constructData = abi.encode(
             implementationAuthority,
-            _wallet
+            _wallet,
+            _identityType
         );
         bytes memory bytecode = abi.encodePacked(_code, _constructData);
         return _deploy(_salt, bytecode);
