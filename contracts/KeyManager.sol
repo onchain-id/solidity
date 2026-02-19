@@ -563,13 +563,17 @@ contract KeyManager is IERC734 {
             return true;
         }
 
-        // For identity contract calls, check if it's a CLAIM_SIGNER key
+        // For identity contract calls, check if it's a CLAIM_SIGNER or CLAIM_ADDER key
         if (
             _to == address(this) &&
-            keyHasPurpose(
+            (keyHasPurpose(
                 keccak256(abi.encode(msg.sender)),
                 KeyPurposes.CLAIM_SIGNER
-            )
+            ) ||
+                keyHasPurpose(
+                    keccak256(abi.encode(msg.sender)),
+                    KeyPurposes.CLAIM_ADDER
+                ))
         ) {
             return true;
         }

@@ -133,7 +133,8 @@ contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
         // Does the trusted identifier have they key which signed the user's claim?
         //  && (isClaimRevoked(_claimId) == false)
         return
-            keyHasPurpose(hashedAddr, KeyPurposes.CLAIM_SIGNER) &&
+            (keyHasPurpose(hashedAddr, KeyPurposes.CLAIM_SIGNER) ||
+                keyHasPurpose(hashedAddr, KeyPurposes.CLAIM_ADDER)) &&
             !isClaimRevoked(sig);
     }
 

@@ -89,7 +89,7 @@ contract IdFactory is IIdFactory, Ownable {
                 address(this),
                 _identityType
             );
-            _addClaimIssuersKeys(identity, _claimIssuers);
+            _addClaimAdderKeys(identity, _claimIssuers);
             IERC734(identity).addKey(
                 keccak256(abi.encode(_wallet)),
                 KeyPurposes.MANAGEMENT,
@@ -151,7 +151,7 @@ contract IdFactory is IIdFactory, Ownable {
             );
         }
 
-        _addClaimIssuersKeys(identity, _claimIssuers);
+        _addClaimAdderKeys(identity, _claimIssuers);
 
         IERC734(identity).removeKey(
             keccak256(abi.encode(address(this))),
@@ -199,7 +199,7 @@ contract IdFactory is IIdFactory, Ownable {
                 address(this),
                 1
             );
-            _addClaimIssuersKeys(identity, _claimIssuers);
+            _addClaimAdderKeys(identity, _claimIssuers);
             IERC734(identity).addKey(
                 keccak256(abi.encode(_tokenOwner)),
                 KeyPurposes.MANAGEMENT,
@@ -322,15 +322,15 @@ contract IdFactory is IIdFactory, Ownable {
         return _tokenFactories[_factory];
     }
 
-    // adds CLAIM_SIGNER keys for each trusted claim issuer
-    function _addClaimIssuersKeys(
+    // adds CLAIM_ADDER keys for each trusted claim issuer
+    function _addClaimAdderKeys(
         address _identity,
         address[] memory _claimIssuers
     ) private {
         for (uint256 i = 0; i < _claimIssuers.length; i++) {
             IERC734(_identity).addKey(
                 keccak256(abi.encode(_claimIssuers[i])),
-                KeyPurposes.CLAIM_SIGNER,
+                KeyPurposes.CLAIM_ADDER,
                 KeyTypes.ECDSA
             );
         }

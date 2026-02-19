@@ -335,7 +335,7 @@ describe("IdFactory", () => {
   });
 
   describe("createIdentity with claimIssuers", () => {
-    it("should assign CLAIM_SIGNER keys to trusted claim issuers at deployment", async () => {
+    it("should assign CLAIM_ADDER keys to trusted claim issuers at deployment", async () => {
       const {
         identityFactory,
         deployerWallet,
@@ -357,7 +357,7 @@ describe("IdFactory", () => {
         await identityFactory.getIdentity(davidWallet.address),
       );
 
-      // Claim issuer should have CLAIM_SIGNER key
+      // Claim issuer should have CLAIM_ADDER key
       expect(
         await identity.keyHasPurpose(
           ethers.keccak256(
@@ -366,7 +366,7 @@ describe("IdFactory", () => {
               [claimIssuerAddress],
             ),
           ),
-          KeyPurposes.CLAIM_SIGNER,
+          KeyPurposes.CLAIM_ADDER,
         ),
       ).to.be.true;
 
@@ -463,7 +463,7 @@ describe("IdFactory", () => {
       );
 
       // Trusted issuer calls addClaimTo on ClaimIssuer, which calls execute on the identity
-      // But more importantly, the claim issuer has CLAIM_SIGNER key,
+      // The claim issuer has CLAIM_ADDER key on the identity,
       // so it can call addClaim directly via auto-approved execution
       const addClaimData = identity.interface.encodeFunctionData("addClaim", [
         claimTopic,
@@ -474,7 +474,7 @@ describe("IdFactory", () => {
         "https://example.com",
       ]);
 
-      // The ClaimIssuer calls execute on the identity - since it has CLAIM_SIGNER key,
+      // The ClaimIssuer calls execute on the identity - since it has CLAIM_ADDER key,
       // and the target is the identity itself, it should be auto-approved
       const tx = await claimIssuer
         .connect(claimIssuerWallet)
@@ -492,7 +492,7 @@ describe("IdFactory", () => {
   });
 
   describe("createTokenIdentity with claimIssuers", () => {
-    it("should assign CLAIM_SIGNER keys to trusted claim issuers for token identity", async () => {
+    it("should assign CLAIM_ADDER keys to trusted claim issuers for token identity", async () => {
       const {
         identityFactory,
         deployerWallet,
@@ -514,7 +514,7 @@ describe("IdFactory", () => {
         await identityFactory.getIdentity(tokenAddr),
       );
 
-      // Claim issuer should have CLAIM_SIGNER key
+      // Claim issuer should have CLAIM_ADDER key
       expect(
         await tokenIdentity.keyHasPurpose(
           ethers.keccak256(
@@ -523,7 +523,7 @@ describe("IdFactory", () => {
               [claimIssuerAddress],
             ),
           ),
-          KeyPurposes.CLAIM_SIGNER,
+          KeyPurposes.CLAIM_ADDER,
         ),
       ).to.be.true;
 
@@ -533,7 +533,7 @@ describe("IdFactory", () => {
   });
 
   describe("createIdentityWithManagementKeys with claimIssuers", () => {
-    it("should assign CLAIM_SIGNER keys alongside custom management keys", async () => {
+    it("should assign CLAIM_ADDER keys alongside custom management keys", async () => {
       const {
         identityFactory,
         deployerWallet,
@@ -566,7 +566,7 @@ describe("IdFactory", () => {
         await identityFactory.getIdentity(davidWallet.address),
       );
 
-      // Claim issuer should have CLAIM_SIGNER key
+      // Claim issuer should have CLAIM_ADDER key
       expect(
         await identity.keyHasPurpose(
           ethers.keccak256(
@@ -575,7 +575,7 @@ describe("IdFactory", () => {
               [claimIssuerAddress],
             ),
           ),
-          KeyPurposes.CLAIM_SIGNER,
+          KeyPurposes.CLAIM_ADDER,
         ),
       ).to.be.true;
 

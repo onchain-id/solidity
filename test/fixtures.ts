@@ -5,6 +5,7 @@ export enum KeyPurposes {
   ACTION = 2,
   CLAIM_SIGNER = 3,
   ENCRYPTION = 4,
+  CLAIM_ADDER = 5,
 }
 
 export enum KeyTypes {

@@ -79,8 +79,26 @@ contract Identity is
 
     // ========= Modifiers =========
 
-    /// @notice requires claim key to call this function, or internal call
+    /// @notice requires claim key (CLAIM_SIGNER or CLAIM_ADDER) to call this function, or internal call
     modifier onlyClaimKey() {
+        require(
+            msg.sender == address(this) ||
+                keyHasPurpose(
+                    keccak256(abi.encode(msg.sender)),
+                    KeyPurposes.CLAIM_SIGNER
+                ) ||
+                keyHasPurpose(
+                    keccak256(abi.encode(msg.sender)),
+                    KeyPurposes.CLAIM_ADDER
+                ),
+            Errors.SenderDoesNotHaveClaimSignerKey()
+        );
+        _;
+    }
+
+    /// @notice requires CLAIM_SIGNER key to call this function, or internal call
+    /// @dev CLAIM_ADDER keys are excluded — they can add but not remove claims
+    modifier onlyClaimSignerKey() {
         require(
             msg.sender == address(this) ||
                 keyHasPurpose(
@@ -257,7 +275,7 @@ contract Identity is
         public
         override(IERC735)
         delegatedOnly
-        onlyClaimKey
+        onlyClaimSignerKey
         returns (bool success)
     {
         ClaimStorage storage cs = _getClaimStorage();
@@ -375,8 +393,10 @@ contract Identity is
         // Step 4: Hash the recovered address for key lookup
         bytes32 hashedAddr = keccak256(abi.encode(recovered));
 
-        // Step 5: Check if the recovered address has CLAIM_SIGNER purpose
-        return keyHasPurpose(hashedAddr, KeyPurposes.CLAIM_SIGNER);
+        // Step 5: Check if the recovered address has CLAIM_SIGNER or CLAIM_ADDER purpose
+        return
+            keyHasPurpose(hashedAddr, KeyPurposes.CLAIM_SIGNER) ||
+            keyHasPurpose(hashedAddr, KeyPurposes.CLAIM_ADDER);
     }
 
     /**

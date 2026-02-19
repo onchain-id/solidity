@@ -2,7 +2,11 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-import { deployIdentityFixture } from "../fixtures";
+import {
+  deployIdentityFixture,
+  KeyPurposes,
+  KeyTypes,
+} from "../fixtures";
 
 describe("Identity", () => {
   describe("Claims", () => {
@@ -958,6 +962,206 @@ describe("Identity", () => {
         expect(
           await aliceIdentity.getClaimIdsByTopic(aliceClaim666.topic),
         ).to.deep.equal([aliceClaim666.id]);
+      });
+    });
+
+    describe("CLAIM_ADDER key purpose", () => {
+      it("should allow CLAIM_ADDER key to add a claim", async () => {
+        const {
+          aliceIdentity,
+          aliceWallet,
+          claimIssuer,
+          claimIssuerWallet,
+        } = await loadFixture(deployIdentityFixture);
+
+        const claimIssuerAddress = await claimIssuer.getAddress();
+
+        // Give the claim issuer a CLAIM_ADDER key on alice's identity
+        await aliceIdentity
+          .connect(aliceWallet)
+          .addKey(
+            ethers.keccak256(
+              ethers.AbiCoder.defaultAbiCoder().encode(
+                ["address"],
+                [claimIssuerAddress],
+              ),
+            ),
+            KeyPurposes.CLAIM_ADDER,
+            KeyTypes.ECDSA,
+          );
+
+        // Prepare a valid claim
+        const claim = {
+          identity: await aliceIdentity.getAddress(),
+          issuer: claimIssuerAddress,
+          topic: 42,
+          scheme: 1,
+          data: "0x0042",
+          signature: "",
+          uri: "https://example.com",
+        };
+        claim.signature = await claimIssuerWallet.signMessage(
+          ethers.getBytes(
+            ethers.keccak256(
+              ethers.AbiCoder.defaultAbiCoder().encode(
+                ["address", "uint256", "bytes"],
+                [claim.identity, claim.topic, claim.data],
+              ),
+            ),
+          ),
+        );
+
+        // ClaimIssuer calls addClaimTo, which calls execute on alice's identity
+        // Since the issuer has CLAIM_ADDER key, it auto-approves
+        const tx = await claimIssuer
+          .connect(claimIssuerWallet)
+          .addClaimTo(
+            claim.topic,
+            claim.scheme,
+            claim.signature,
+            claim.data,
+            claim.uri,
+            claim.identity,
+          );
+
+        await expect(tx).to.emit(aliceIdentity, "ClaimAdded");
+      });
+
+      it("should prevent CLAIM_ADDER key from removing a claim", async () => {
+        const {
+          aliceIdentity,
+          aliceWallet,
+          claimIssuer,
+          claimIssuerWallet,
+        } = await loadFixture(deployIdentityFixture);
+
+        const claimIssuerAddress = await claimIssuer.getAddress();
+
+        // Give the claim issuer a CLAIM_ADDER key on alice's identity
+        await aliceIdentity
+          .connect(aliceWallet)
+          .addKey(
+            ethers.keccak256(
+              ethers.AbiCoder.defaultAbiCoder().encode(
+                ["address"],
+                [claimIssuerAddress],
+              ),
+            ),
+            KeyPurposes.CLAIM_ADDER,
+            KeyTypes.ECDSA,
+          );
+
+        // First add a claim via the issuer
+        const claim = {
+          identity: await aliceIdentity.getAddress(),
+          issuer: claimIssuerAddress,
+          topic: 42,
+          scheme: 1,
+          data: "0x0042",
+          signature: "",
+          uri: "https://example.com",
+        };
+        claim.signature = await claimIssuerWallet.signMessage(
+          ethers.getBytes(
+            ethers.keccak256(
+              ethers.AbiCoder.defaultAbiCoder().encode(
+                ["address", "uint256", "bytes"],
+                [claim.identity, claim.topic, claim.data],
+              ),
+            ),
+          ),
+        );
+
+        await claimIssuer
+          .connect(claimIssuerWallet)
+          .addClaimTo(
+            claim.topic,
+            claim.scheme,
+            claim.signature,
+            claim.data,
+            claim.uri,
+            claim.identity,
+          );
+
+        // Now try to remove the claim via execute — the CLAIM_ADDER key
+        // should NOT be able to call removeClaim (only CLAIM_SIGNER can)
+        const claimId = ethers.keccak256(
+          ethers.AbiCoder.defaultAbiCoder().encode(
+            ["address", "uint256"],
+            [claimIssuerAddress, claim.topic],
+          ),
+        );
+
+        const removeClaimData = aliceIdentity.interface.encodeFunctionData(
+          "removeClaim",
+          [claimId],
+        );
+
+        // The execute call will be auto-approved (CLAIM_ADDER can execute on self),
+        // but the removeClaim function itself will revert because it requires CLAIM_SIGNER
+        const tx = await claimIssuer
+          .connect(claimIssuerWallet)
+          .execute(await aliceIdentity.getAddress(), 0, removeClaimData);
+
+        // The execution should fail (ExecutionFailed event, not Executed)
+        await expect(tx).to.emit(claimIssuer, "ExecutionFailed");
+      });
+
+      it("should allow CLAIM_SIGNER key to still add and remove claims", async () => {
+        const {
+          aliceIdentity,
+          aliceWallet,
+          carolWallet,
+          claimIssuer,
+          claimIssuerWallet,
+        } = await loadFixture(deployIdentityFixture);
+
+        // Carol already has CLAIM_SIGNER key from the fixture
+        // Add a self-attested claim so carol (CLAIM_SIGNER) can remove it
+        const claim = {
+          identity: await aliceIdentity.getAddress(),
+          issuer: await aliceIdentity.getAddress(),
+          topic: 99,
+          scheme: 1,
+          data: "0x0099",
+          signature: "",
+          uri: "https://example.com",
+        };
+        claim.signature = await aliceWallet.signMessage(
+          ethers.getBytes(
+            ethers.keccak256(
+              ethers.AbiCoder.defaultAbiCoder().encode(
+                ["address", "uint256", "bytes"],
+                [claim.identity, claim.topic, claim.data],
+              ),
+            ),
+          ),
+        );
+
+        // Carol (CLAIM_SIGNER) adds the claim
+        const addTx = await aliceIdentity
+          .connect(carolWallet)
+          .addClaim(
+            claim.topic,
+            claim.scheme,
+            claim.issuer,
+            claim.signature,
+            claim.data,
+            claim.uri,
+          );
+        await expect(addTx).to.emit(aliceIdentity, "ClaimAdded");
+
+        // Carol (CLAIM_SIGNER) removes the claim
+        const claimId = ethers.keccak256(
+          ethers.AbiCoder.defaultAbiCoder().encode(
+            ["address", "uint256"],
+            [claim.issuer, claim.topic],
+          ),
+        );
+        const removeTx = await aliceIdentity
+          .connect(carolWallet)
+          .removeClaim(claimId);
+        await expect(removeTx).to.emit(aliceIdentity, "ClaimRemoved");
       });
     });
   });
