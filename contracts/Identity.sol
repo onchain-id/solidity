@@ -11,7 +11,6 @@ import { IERC734 } from "./interface/IERC734.sol";
 import { IERC735 } from "./interface/IERC735.sol";
 import { Errors } from "./libraries/Errors.sol";
 import { KeyPurposes } from "./libraries/KeyPurposes.sol";
-import { KeyTypes } from "./libraries/KeyTypes.sol";
 import { Structs } from "./storage/Structs.sol";
 import { KeyManager } from "./KeyManager.sol";
 
@@ -157,19 +156,19 @@ contract Identity is
     }
 
     /**
-     * @dev Returns the current version of the contract.
-     * @return The version string
-     */
-    function version() external pure virtual returns (string memory) {
-        return "3.0.0";
-    }
-
-    /**
      * @dev Returns the identity type set at initialization.
      * @return The identity type as defined in IdentityTypes library
      */
     function getIdentityType() external view returns (uint256) {
         return _getClaimStorage().identityType;
+    }
+
+    /**
+     * @dev Returns the current version of the contract.
+     * @return The version string
+     */
+    function version() external pure virtual returns (string memory) {
+        return "3.0.0";
     }
 
     /**

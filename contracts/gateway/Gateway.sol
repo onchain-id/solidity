@@ -110,12 +110,13 @@ contract Gateway is Ownable {
             Errors.RevokedSignature(signature)
         );
 
-        return idFactory.createIdentity(
-            identityOwner,
-            salt,
-            identityType,
-            claimIssuers
-        );
+        return
+            idFactory.createIdentity(
+                identityOwner,
+                salt,
+                identityType,
+                claimIssuers
+            );
     }
 
     /**

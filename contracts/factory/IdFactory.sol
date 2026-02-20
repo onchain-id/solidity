@@ -182,10 +182,18 @@ contract IdFactory is IIdFactory, Ownable {
 
         address identity;
         if (_claimAdders.length > 0) {
-            identity = _deployIdentity(tokenIdSalt, address(this), IdentityTypes.ASSET);
+            identity = _deployIdentity(
+                tokenIdSalt,
+                address(this),
+                IdentityTypes.ASSET
+            );
             _setupIdentityKeys(identity, _tokenOwner, _claimAdders);
         } else {
-            identity = _deployIdentity(tokenIdSalt, _tokenOwner, IdentityTypes.ASSET);
+            identity = _deployIdentity(
+                tokenIdSalt,
+                _tokenOwner,
+                IdentityTypes.ASSET
+            );
         }
 
         _saltTaken[tokenIdSalt] = true;
