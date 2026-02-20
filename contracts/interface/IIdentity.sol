@@ -23,7 +23,7 @@ interface IIdentity is IERC734, IERC735 {
 
     /**
      * @dev Returns the identity type set at initialization.
-     * @return The identity type (1=Asset, 2=Individual, 3=Corporate, 4=IoT, 5=ClaimIssuer)
+     * @return The identity type (see IdentityTypes library)
      */
     function getIdentityType() external view returns (uint256);
 }

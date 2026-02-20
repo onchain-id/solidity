@@ -30,7 +30,8 @@ interface IIdFactory {
      *  @dev function used to create a new Identity proxy from the factory
      *  @param _wallet the wallet address of the primary owner of this ONCHAINID contract
      *  @param _salt the salt used by create2 to issue the contract
-     *  @param _identityType the type of the identity (1=Asset, 2=Individual, 3=Corporate, 4=IoT, 5=ClaimIssuer)
+     *  @param _identityType the type of the identity (see IdentityTypes library)
+     *  @param _claimAdders the list of addresses to add as CLAIM_ADDER keys on the identity
      *  requires a new salt for each deployment
      *  _wallet cannot be linked to another ONCHAINID
      *  only Owner can call => Owner is supposed to be a smart contract, managing the accessibility
@@ -41,7 +42,7 @@ interface IIdFactory {
         address _wallet,
         string memory _salt,
         uint256 _identityType,
-        address[] memory _claimIssuers
+        address[] memory _claimAdders
     ) external returns (address);
 
     /**
@@ -50,7 +51,8 @@ interface IIdFactory {
      *  @param _wallet the wallet address of the primary owner of this ONCHAINID contract
      *  @param _salt the salt used by create2 to issue the contract
      *  @param _managementKeys A list of keys hash (keccak256(abiEncoded())) to add as MANAGEMENT keys.
-     *  @param _identityType the type of the identity (1=Asset, 2=Individual, 3=Corporate, 4=IoT, 5=ClaimIssuer)
+     *  @param _identityType the type of the identity (see IdentityTypes library)
+     *  @param _claimAdders the list of addresses to add as CLAIM_ADDER keys on the identity
      *  requires a new salt for each deployment
      *  _wallet cannot be linked to another ONCHAINID
      *  only Owner can call => Owner is supposed to be a smart contract, managing the accessibility
@@ -62,7 +64,7 @@ interface IIdFactory {
         string memory _salt,
         bytes32[] memory _managementKeys,
         uint256 _identityType,
-        address[] memory _claimIssuers
+        address[] memory _claimAdders
     ) external returns (address);
 
     /**
@@ -70,6 +72,7 @@ interface IIdFactory {
      *  @param _token the address of the token contract
      *  @param _tokenOwner the owner address of the token
      *  @param _salt the salt used by create2 to issue the contract
+     *  @param _claimAdders the list of addresses to add as CLAIM_ADDER keys on the identity
      *  requires a new salt for each deployment
      *  _token cannot be linked to another ONCHAINID
      *  only Token factory or owner can call (owner should only use its privilege
@@ -79,7 +82,7 @@ interface IIdFactory {
         address _token,
         address _tokenOwner,
         string memory _salt,
-        address[] memory _claimIssuers
+        address[] memory _claimAdders
     ) external returns (address);
 
     /**

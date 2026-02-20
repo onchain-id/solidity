@@ -10,7 +10,7 @@ contract IdentityProxy {
      *  @dev constructor of the proxy Identity contract
      *  @param _implementationAuthority the implementation Authority contract address
      *  @param initialManagementKey the management key at deployment
-     *  @param _identityType the type of the identity (1=Asset, 2=Individual, 3=Corporate, 4=IoT, 5=ClaimIssuer)
+     *  @param _identityType the type of the identity (see IdentityTypes library)
      *  the proxy is going to use the logic deployed on the implementation contract
      *  deployed at an address listed in the ImplementationAuthority contract
      */

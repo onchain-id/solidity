@@ -75,7 +75,8 @@ contract Gateway is Ownable {
      *  an approved public key. This method allow to deploy an ONCHAINID using a custom salt.
      *  @param identityOwner the address to set as a management key.
      *  @param salt to use for the deployment.
-     *  @param identityType the type of the identity (1=Asset, 2=Individual, 3=Corporate, 4=IoT, 5=ClaimIssuer).
+     *  @param identityType the type of the identity (see IdentityTypes library).
+     *  @param claimAdders the list of addresses to add as CLAIM_ADDER keys on the identity.
      *  @param signatureExpiry the block timestamp where the signature will expire.
      *  @param signature the approval containing the salt and the identityOwner address.
      */
@@ -83,7 +84,7 @@ contract Gateway is Ownable {
         address identityOwner,
         string memory salt,
         uint256 identityType,
-        address[] calldata claimIssuers,
+        address[] calldata claimAdders,
         uint256 signatureExpiry,
         bytes calldata signature
     ) external returns (address) {
@@ -99,7 +100,7 @@ contract Gateway is Ownable {
                 identityOwner,
                 salt,
                 identityType,
-                claimIssuers,
+                claimAdders,
                 signatureExpiry
             )
         ).toEthSignedMessageHash().recover(signature);
@@ -115,7 +116,7 @@ contract Gateway is Ownable {
                 identityOwner,
                 salt,
                 identityType,
-                claimIssuers
+                claimAdders
             );
     }
 
@@ -127,7 +128,8 @@ contract Gateway is Ownable {
      *  @param identityOwner the address to set as a management key.
      *  @param salt to use for the deployment.
      *  @param managementKeys the list of management keys to add to the ONCHAINID.
-     *  @param identityType the type of the identity (1=Asset, 2=Individual, 3=Corporate, 4=IoT, 5=ClaimIssuer).
+     *  @param identityType the type of the identity (see IdentityTypes library).
+     *  @param claimAdders the list of addresses to add as CLAIM_ADDER keys on the identity.
      *  @param signatureExpiry the block timestamp where the signature will expire.
      *  @param signature the approval containing the salt and the identityOwner address.
      */
@@ -136,7 +138,7 @@ contract Gateway is Ownable {
         string memory salt,
         bytes32[] calldata managementKeys,
         uint256 identityType,
-        address[] calldata claimIssuers,
+        address[] calldata claimAdders,
         uint256 signatureExpiry,
         bytes calldata signature
     ) external returns (address) {
@@ -153,7 +155,7 @@ contract Gateway is Ownable {
                 salt,
                 managementKeys,
                 identityType,
-                claimIssuers,
+                claimAdders,
                 signatureExpiry
             )
         ).toEthSignedMessageHash().recover(signature);
@@ -170,19 +172,20 @@ contract Gateway is Ownable {
                 salt,
                 managementKeys,
                 identityType,
-                claimIssuers
+                claimAdders
             );
     }
 
     /**
      *  @dev Deploy an ONCHAINID using a factory using the identityOwner address as salt.
      *  @param identityOwner the address to set as a management key.
-     *  @param identityType the type of the identity (1=Asset, 2=Individual, 3=Corporate, 4=IoT, 5=ClaimIssuer).
+     *  @param identityType the type of the identity (see IdentityTypes library).
+     *  @param claimAdders the list of addresses to add as CLAIM_ADDER keys on the identity.
      */
     function deployIdentityForWallet(
         address identityOwner,
         uint256 identityType,
-        address[] calldata claimIssuers
+        address[] calldata claimAdders
     ) external returns (address) {
         require(identityOwner != address(0), Errors.ZeroAddress());
 
@@ -191,7 +194,7 @@ contract Gateway is Ownable {
                 identityOwner,
                 Strings.toHexString(identityOwner),
                 identityType,
-                claimIssuers
+                claimAdders
             );
     }
 

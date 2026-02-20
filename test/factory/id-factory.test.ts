@@ -339,7 +339,7 @@ describe("IdFactory", () => {
     });
   });
 
-  describe("createIdentity with claimIssuers", () => {
+  describe("createIdentity with claimAdders", () => {
     it("should assign CLAIM_ADDER keys to trusted claim issuers at deployment", async () => {
       const {
         identityFactory,
@@ -402,7 +402,7 @@ describe("IdFactory", () => {
       ).to.be.false;
     });
 
-    it("should deploy normally with empty claimIssuers array", async () => {
+    it("should deploy normally with empty claimAdders array", async () => {
       const { identityFactory, deployerWallet, davidWallet } =
         await loadFixture(deployIdentityFixture);
 
@@ -496,7 +496,7 @@ describe("IdFactory", () => {
     });
   });
 
-  describe("createTokenIdentity with claimIssuers", () => {
+  describe("createTokenIdentity with claimAdders", () => {
     it("should assign CLAIM_ADDER keys to trusted claim issuers for token identity", async () => {
       const {
         identityFactory,
@@ -539,7 +539,7 @@ describe("IdFactory", () => {
     });
   });
 
-  describe("createIdentityWithManagementKeys with claimIssuers", () => {
+  describe("createIdentityWithManagementKeys with claimAdders", () => {
     it("should assign CLAIM_ADDER keys alongside custom management keys", async () => {
       const {
         identityFactory,

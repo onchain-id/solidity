@@ -323,7 +323,7 @@ contract IdFactory is IIdFactory, Ownable {
         );
     }
 
-    // adds CLAIM_ADDER keys for each trusted claim issuer
+    // adds CLAIM_ADDER keys for each trusted claim adder
     function _addClaimAdderKeys(
         address _identity,
         address[] memory _claimAdders
