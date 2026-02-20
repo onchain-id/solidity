@@ -2,7 +2,12 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
-import { deployIdentityFixture, KeyPurposes, KeyTypes } from "../fixtures";
+import {
+  deployIdentityFixture,
+  IdentityTypes,
+  KeyPurposes,
+  KeyTypes,
+} from "../fixtures";
 
 describe("IdFactory", () => {
   it("should revert because authority is Zero address", async () => {
@@ -527,8 +532,10 @@ describe("IdFactory", () => {
         ),
       ).to.be.true;
 
-      // Token identity type should be 1 (Asset)
-      expect(await tokenIdentity.getIdentityType()).to.equal(1);
+      // Token identity type should be Asset
+      expect(await tokenIdentity.getIdentityType()).to.equal(
+        IdentityTypes.ASSET,
+      );
     });
   });
 

@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import { IClaimIssuer } from "./interface/IClaimIssuer.sol";
 import { Identity, IIdentity } from "./Identity.sol";
 import { Errors } from "./libraries/Errors.sol";
+import { IdentityTypes } from "./libraries/IdentityTypes.sol";
 import { KeyPurposes } from "./libraries/KeyPurposes.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -157,8 +158,8 @@ contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
         // Initialize UUPS upgradeability
         __UUPSUpgradeable_init();
 
-        // Set identity type to 5 (ClaimIssuer)
-        _getClaimStorage().identityType = 5;
+        // Set identity type to ClaimIssuer
+        _getClaimStorage().identityType = IdentityTypes.CLAIM_ISSUER;
 
         // Initialize Identity functionality
         __Identity_init(initialManagementKey);

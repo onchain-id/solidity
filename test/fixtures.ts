@@ -13,6 +13,14 @@ export enum KeyTypes {
   RSA = 2,
 }
 
+export enum IdentityTypes {
+  ASSET = 1,
+  INDIVIDUAL = 2,
+  CORPORATE = 3,
+  IOT = 4,
+  CLAIM_ISSUER = 5,
+}
+
 // Helper function to deploy Identity with proxy
 export async function deployIdentityWithProxy(
   initialManagementKey: string,
@@ -59,7 +67,7 @@ export async function deployClaimIssuerWithProxy(initialManagementKey: string) {
     await claimIssuerImplementation.getAddress(),
     claimIssuerImplementation.interface.encodeFunctionData(
       "initialize",
-      [initialManagementKey, 5],
+      [initialManagementKey, IdentityTypes.CLAIM_ISSUER],
     ),
   );
 

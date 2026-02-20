@@ -7,6 +7,7 @@ import { IdentityProxy } from "../proxy/IdentityProxy.sol";
 import { IIdFactory } from "./IIdFactory.sol";
 import { IERC734 } from "../interface/IERC734.sol";
 import { Errors } from "../libraries/Errors.sol";
+import { IdentityTypes } from "../libraries/IdentityTypes.sol";
 import { KeyPurposes } from "../libraries/KeyPurposes.sol";
 import { KeyTypes } from "../libraries/KeyTypes.sol";
 
@@ -68,7 +69,7 @@ contract IdFactory is IIdFactory, Ownable {
         address _wallet,
         string memory _salt,
         uint256 _identityType,
-        address[] memory _claimIssuers
+        address[] memory _claimAdders
     ) external override onlyOwner returns (address) {
         require(_wallet != address(0), Errors.ZeroAddress());
         require(
@@ -83,22 +84,9 @@ contract IdFactory is IIdFactory, Ownable {
         );
 
         address identity;
-        if (_claimIssuers.length > 0) {
-            identity = _deployIdentity(
-                oidSalt,
-                address(this),
-                _identityType
-            );
-            _addClaimAdderKeys(identity, _claimIssuers);
-            IERC734(identity).addKey(
-                keccak256(abi.encode(_wallet)),
-                KeyPurposes.MANAGEMENT,
-                KeyTypes.ECDSA
-            );
-            IERC734(identity).removeKey(
-                keccak256(abi.encode(address(this))),
-                KeyPurposes.MANAGEMENT
-            );
+        if (_claimAdders.length > 0) {
+            identity = _deployIdentity(oidSalt, address(this), _identityType);
+            _setupIdentityKeys(identity, _wallet, _claimAdders);
         } else {
             identity = _deployIdentity(oidSalt, _wallet, _identityType);
         }
@@ -118,7 +106,7 @@ contract IdFactory is IIdFactory, Ownable {
         string memory _salt,
         bytes32[] memory _managementKeys,
         uint256 _identityType,
-        address[] memory _claimIssuers
+        address[] memory _claimAdders
     ) external override onlyOwner returns (address) {
         require(_wallet != address(0), Errors.ZeroAddress());
         require(
@@ -151,7 +139,7 @@ contract IdFactory is IIdFactory, Ownable {
             );
         }
 
-        _addClaimAdderKeys(identity, _claimIssuers);
+        _addClaimAdderKeys(identity, _claimAdders);
 
         IERC734(identity).removeKey(
             keccak256(abi.encode(address(this))),
@@ -173,7 +161,7 @@ contract IdFactory is IIdFactory, Ownable {
         address _token,
         address _tokenOwner,
         string memory _salt,
-        address[] memory _claimIssuers
+        address[] memory _claimAdders
     ) external override returns (address) {
         require(
             isTokenFactory(msg.sender) || msg.sender == owner(),
@@ -193,24 +181,11 @@ contract IdFactory is IIdFactory, Ownable {
         );
 
         address identity;
-        if (_claimIssuers.length > 0) {
-            identity = _deployIdentity(
-                tokenIdSalt,
-                address(this),
-                1
-            );
-            _addClaimAdderKeys(identity, _claimIssuers);
-            IERC734(identity).addKey(
-                keccak256(abi.encode(_tokenOwner)),
-                KeyPurposes.MANAGEMENT,
-                KeyTypes.ECDSA
-            );
-            IERC734(identity).removeKey(
-                keccak256(abi.encode(address(this))),
-                KeyPurposes.MANAGEMENT
-            );
+        if (_claimAdders.length > 0) {
+            identity = _deployIdentity(tokenIdSalt, address(this), IdentityTypes.ASSET);
+            _setupIdentityKeys(identity, _tokenOwner, _claimAdders);
         } else {
-            identity = _deployIdentity(tokenIdSalt, _tokenOwner, 1);
+            identity = _deployIdentity(tokenIdSalt, _tokenOwner, IdentityTypes.ASSET);
         }
 
         _saltTaken[tokenIdSalt] = true;
@@ -322,14 +297,32 @@ contract IdFactory is IIdFactory, Ownable {
         return _tokenFactories[_factory];
     }
 
+    // bootstraps an identity: adds claim adder keys, transfers ownership, removes factory key
+    function _setupIdentityKeys(
+        address _identity,
+        address _owner,
+        address[] memory _claimAdders
+    ) private {
+        _addClaimAdderKeys(_identity, _claimAdders);
+        IERC734(_identity).addKey(
+            keccak256(abi.encode(_owner)),
+            KeyPurposes.MANAGEMENT,
+            KeyTypes.ECDSA
+        );
+        IERC734(_identity).removeKey(
+            keccak256(abi.encode(address(this))),
+            KeyPurposes.MANAGEMENT
+        );
+    }
+
     // adds CLAIM_ADDER keys for each trusted claim issuer
     function _addClaimAdderKeys(
         address _identity,
-        address[] memory _claimIssuers
+        address[] memory _claimAdders
     ) private {
-        for (uint256 i = 0; i < _claimIssuers.length; i++) {
+        for (uint256 i = 0; i < _claimAdders.length; i++) {
             IERC734(_identity).addKey(
-                keccak256(abi.encode(_claimIssuers[i])),
+                keccak256(abi.encode(_claimAdders[i])),
                 KeyPurposes.CLAIM_ADDER,
                 KeyTypes.ECDSA
             );

@@ -56,7 +56,7 @@ contract Identity is
         mapping(uint256 => mapping(bytes32 => uint256)) claimIndexInTopic;
         /// @dev Mapping of claimId -> true if claim exists (used for validation/fallback)
         mapping(bytes32 => bool) claimExists;
-        /// @dev Identity type: 1=Asset, 2=Individual, 3=Corporate, 4=IoT, 5=ClaimIssuer
+        /// @dev Identity type as defined in IdentityTypes library
         uint256 identityType;
     }
 
@@ -166,7 +166,7 @@ contract Identity is
 
     /**
      * @dev Returns the identity type set at initialization.
-     * @return The identity type (1=Asset, 2=Individual, 3=Corporate, 4=IoT, 5=ClaimIssuer)
+     * @return The identity type as defined in IdentityTypes library
      */
     function getIdentityType() external view returns (uint256) {
         return _getClaimStorage().identityType;

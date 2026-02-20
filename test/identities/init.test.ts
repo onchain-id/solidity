@@ -5,6 +5,7 @@ import { ethers } from "hardhat";
 import {
   deployIdentityFixture,
   deployIdentityWithProxy,
+  IdentityTypes,
 } from "../fixtures";
 
 describe("Identity", () => {
@@ -14,7 +15,9 @@ describe("Identity", () => {
     );
 
     await expect(
-      aliceIdentity.connect(aliceWallet).initialize(aliceWallet.address, 2),
+      aliceIdentity
+        .connect(aliceWallet)
+        .initialize(aliceWallet.address, IdentityTypes.INDIVIDUAL),
     ).to.be.revertedWith("Initializable: contract is already initialized");
   });
 
@@ -49,15 +52,23 @@ describe("Identity", () => {
     it("should return the identity type set during initialization", async () => {
       const { aliceIdentity } = await loadFixture(deployIdentityFixture);
 
-      // Alice's identity was created via factory with type 2 (Individual)
-      expect(await aliceIdentity.getIdentityType()).to.equal(2);
+      // Alice's identity was created via factory with type Individual
+      expect(await aliceIdentity.getIdentityType()).to.equal(
+        IdentityTypes.INDIVIDUAL,
+      );
     });
 
     it("should return the correct type for each identity type", async () => {
       const [deployer] = await ethers.getSigners();
 
       // Deploy identities with each valid type
-      for (const identityType of [1, 2, 3, 4, 5]) {
+      for (const identityType of [
+        IdentityTypes.ASSET,
+        IdentityTypes.INDIVIDUAL,
+        IdentityTypes.CORPORATE,
+        IdentityTypes.IOT,
+        IdentityTypes.CLAIM_ISSUER,
+      ]) {
         const identity = await deployIdentityWithProxy(
           deployer.address,
           identityType,
@@ -66,7 +77,7 @@ describe("Identity", () => {
       }
     });
 
-    it("should return type 1 (Asset) for token identities", async () => {
+    it("should return type Asset for token identities", async () => {
       const { identityFactory, tokenAddress } = await loadFixture(
         deployIdentityFixture,
       );
@@ -78,7 +89,9 @@ describe("Identity", () => {
         tokenIdentityAddress,
       );
 
-      expect(await tokenIdentity.getIdentityType()).to.equal(1);
+      expect(await tokenIdentity.getIdentityType()).to.equal(
+        IdentityTypes.ASSET,
+      );
     });
 
   });
