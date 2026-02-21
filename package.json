@@ -3,11 +3,8 @@
   "version": "2.2.2-beta3",
   "description": "EVM solidity smart contracts for Blockchain OnchainID identities.",
   "files": [
-    "artifacts",
     "contracts",
-    "index.js",
-    "index.d.ts",
-    "typechain-types"
+    "out"
   ],
   "scripts": {
     "prepare": "husky && forge soldeer install",
