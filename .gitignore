@@ -1,12 +1,17 @@
-# Logs
-logs
-*.log
-
-# Coverage
-coverage
+# Foundry
+dependencies/
+out/
+cache/
+coverage/
+coverage.json
+gas-report.txt
 
 # Dependencies
 node_modules
+
+# Logs
+logs
+*.log
 
 # Build
 build/
@@ -18,8 +23,6 @@ build/
 .idea
 .vscode
 
-# Artifacts
-artifacts
-coverage.json
-cache
-typechain-types
+# Environment variables
+.env
+.env.local

@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 import "./Structs.sol";
 
 contract Storage is Structs {
+
     // nonce used by the execute/approve function
     uint256 internal _executionNonce;
 
@@ -52,4 +53,5 @@ contract Storage is Structs {
      * variables without shifting down storage in the inheritance chain.
      */
     uint256[45] private __gap; // solhint-disable-line ordering
+
 }

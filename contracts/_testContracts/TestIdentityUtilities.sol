@@ -5,7 +5,8 @@ import { IdentityUtilities } from "../IdentityUtilities.sol";
 import { IIdentity } from "../interface/IIdentity.sol";
 
 contract TestIdentityUtilities is IdentityUtilities {
-    function testIsClaimValid(
+
+    function checkIsClaimValid(
         address identity,
         uint256 topicId,
         address issuer,
@@ -14,4 +15,5 @@ contract TestIdentityUtilities is IdentityUtilities {
     ) external view returns (bool) {
         return _isClaimValid(identity, topicId, issuer, signature, data);
     }
+
 }
