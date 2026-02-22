@@ -6,9 +6,7 @@ import { Errors } from "./libraries/Errors.sol";
 import { KeyPurposes } from "./libraries/KeyPurposes.sol";
 import { KeyTypes } from "./libraries/KeyTypes.sol";
 import { Structs } from "./storage/Structs.sol";
-
-// Import events from IERC734
-import { IERC734 } from "./interface/IERC734.sol";
+import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 /**
  * @title KeyManager
@@ -27,6 +25,9 @@ import { IERC734 } from "./interface/IERC734.sol";
  */
 contract KeyManager is IERC734 {
 
+    using EnumerableSet for EnumerableSet.UintSet;
+    using EnumerableSet for EnumerableSet.Bytes32Set;
+
     /**
      * @dev Storage struct for key management and execution data
      * @custom:storage-location erc7201:onchainid.keymanager.storage
@@ -36,20 +37,18 @@ contract KeyManager is IERC734 {
         uint256 executionNonce;
         /// @dev Mapping of key hash to Key struct as defined by IERC734
         mapping(bytes32 => Structs.Key) keys;
-        /// @dev Mapping of purpose to array of key hashes for efficient purpose-based lookups
-        mapping(uint256 => bytes32[]) keysByPurpose;
+        /// @dev Mapping of purpose to set of key hashes (EnumerableSet for O(1) add/remove/contains)
+        mapping(uint256 => EnumerableSet.Bytes32Set) keysByPurpose;
         /// @dev Mapping of execution ID to Execution struct for tracking execution requests
         mapping(uint256 => Structs.Execution) executions;
         /// @dev Flag indicating if the contract has been initialized
         bool initialized;
         /// @dev Flag indicating if the contract can be interacted with (prevents direct calls to implementation)
         bool canInteract;
-        /// @dev O(1) index mapping: key -> purpose -> index in key.purposes array
-        /// @dev Value 0 means not found, value 1+ means found at index (value-1)
-        mapping(bytes32 => mapping(uint256 => uint256)) purposeIndexInKey;
-        /// @dev O(1) index mapping: purpose -> key -> index in keysByPurpose array
-        /// @dev Value 0 means not found, value 1+ means found at index (value-1)
-        mapping(uint256 => mapping(bytes32 => uint256)) keyIndexInPurpose;
+        /// @dev Mapping of key hash to set of purposes (EnumerableSet for O(1) add/remove/contains)
+        mapping(bytes32 => EnumerableSet.UintSet) keyPurposes;
+        /// @dev Mapping of function selector to set of pending execution IDs
+        mapping(bytes4 => EnumerableSet.UintSet) pendingExecutionsBySelector;
     }
 
     /**
@@ -117,6 +116,11 @@ contract KeyManager is IERC734 {
             _approve(_executionId, true);
         }
 
+        // Only index if execution is still pending (not auto-executed)
+        if (!ks.executions[_executionId].executed) {
+            ks.pendingExecutionsBySelector[_extractSelector(_data)].add(_executionId);
+        }
+
         return _executionId;
     }
 
@@ -143,7 +147,7 @@ contract KeyManager is IERC734 {
         returns (uint256[] memory purposes, uint256 keyType, bytes32 key)
     {
         KeyStorage storage ks = _getKeyStorage();
-        return (ks.keys[_key].purposes, ks.keys[_key].keyType, ks.keys[_key].key);
+        return (ks.keyPurposes[_key].values(), ks.keys[_key].keyType, ks.keys[_key].key);
     }
 
     /**
@@ -153,7 +157,7 @@ contract KeyManager is IERC734 {
      * @return _purposes Returns the purposes of the specified key
      */
     function getKeyPurposes(bytes32 _key) external view virtual returns (uint256[] memory _purposes) {
-        return (_getKeyStorage().keys[_key].purposes);
+        return _getKeyStorage().keyPurposes[_key].values();
     }
 
     /**
@@ -163,7 +167,7 @@ contract KeyManager is IERC734 {
      * @return keys Returns an array of public key bytes32 hold by this identity and having the specified purpose
      */
     function getKeysByPurpose(uint256 _purpose) external view virtual returns (bytes32[] memory keys) {
-        return _getKeyStorage().keysByPurpose[_purpose];
+        return _getKeyStorage().keysByPurpose[_purpose].values();
     }
 
     /**
@@ -173,6 +177,21 @@ contract KeyManager is IERC734 {
      */
     function getExecutionData(uint256 _executionId) external view virtual returns (Structs.Execution memory execution) {
         return _getKeyStorage().executions[_executionId];
+    }
+
+    /**
+     * @notice Returns all pending (non-executed) execution IDs for a given function selector.
+     * @dev Use bytes4(0) to query executions with empty or sub-4-byte calldata (e.g., plain ETH transfers).
+     * @param _selector The 4-byte function selector to filter by
+     * @return executionIds Array of pending execution IDs matching the selector
+     */
+    function getPendingExecutionsBySelector(bytes4 _selector)
+        external
+        view
+        virtual
+        returns (uint256[] memory executionIds)
+    {
+        return _getKeyStorage().pendingExecutionsBySelector[_selector].values();
     }
 
     /**
@@ -200,7 +219,7 @@ contract KeyManager is IERC734 {
         KeyStorage storage ks = _getKeyStorage();
 
         // 1. Early validation: Reject if key already has this purpose (O(1) lookup)
-        require(ks.purposeIndexInKey[_key][_purpose] == 0, Errors.KeyAlreadyHasPurpose(_key, _purpose));
+        require(!ks.keyPurposes[_key].contains(_purpose), Errors.KeyAlreadyHasPurpose(_key, _purpose));
 
         Structs.Key storage k = ks.keys[_key];
 
@@ -210,13 +229,9 @@ contract KeyManager is IERC734 {
             k.keyType = _type;
         }
 
-        // 3. Add purpose to key.purposes array and update index mapping
-        k.purposes.push(_purpose);
-        ks.purposeIndexInKey[_key][_purpose] = k.purposes.length; // Store 1-based index
-
-        // 4. Add key to _keysByPurpose array and update index mapping
-        ks.keysByPurpose[_purpose].push(_key);
-        ks.keyIndexInPurpose[_purpose][_key] = ks.keysByPurpose[_purpose].length; // Store 1-based index
+        // 3. Add purpose to key's purpose set and key to purpose's key set
+        ks.keyPurposes[_key].add(_purpose);
+        ks.keysByPurpose[_purpose].add(_key);
 
         emit KeyAdded(_key, _purpose, _type);
         return true;
@@ -226,13 +241,8 @@ contract KeyManager is IERC734 {
      * @dev See {IERC734-removeKey}.
      * @notice Removes a purpose from a key.
      *
-     * This function uses O(1) index mappings and efficient swap-and-pop technique
-     * to maintain array consistency without gaps, ensuring optimal gas usage.
-     *
-     * The swap-and-pop technique:
-     * 1. Moves the last element to the position of the element being removed
-     * 2. Updates the index mappings for the swapped element
-     * 3. Removes the last element (which is now the target element)
+     * Uses EnumerableSet for O(1) add/remove/contains operations.
+     * If the key has no remaining purposes after removal, the key struct is deleted.
      *
      * Access control: Only MANAGEMENT keys or the identity itself can remove keys.
      *
@@ -243,31 +253,22 @@ contract KeyManager is IERC734 {
      */
     function removeKey(bytes32 _key, uint256 _purpose) public virtual delegatedOnly onlyManager returns (bool success) {
         KeyStorage storage ks = _getKeyStorage();
-
-        // Fetch the key data for efficient access
         Structs.Key storage k = ks.keys[_key];
 
         // 1. Validate key exists
         require(k.key == _key, Errors.KeyNotRegistered(_key));
 
         // 2. Validate key has the specified purpose (O(1) lookup)
-        uint256 purposeIdxPlusOne = ks.purposeIndexInKey[_key][_purpose];
-        require(purposeIdxPlusOne > 0, Errors.KeyDoesNotHavePurpose(_key, _purpose));
-        uint256 purposeIdx = purposeIdxPlusOne - 1; // Convert to 0-based index
+        require(ks.keyPurposes[_key].contains(_purpose), Errors.KeyDoesNotHavePurpose(_key, _purpose));
 
-        // Remove purpose from key struct
-        _removePurposeFromKey(_key, _purpose, purposeIdx);
+        // 3. Remove purpose from key's set and key from purpose's set
+        ks.keyPurposes[_key].remove(_purpose);
+        ks.keysByPurpose[_purpose].remove(_key);
 
-        // Remove key from purpose index
-        uint256 keyIdxPlusOne = ks.keyIndexInPurpose[_purpose][_key];
-        uint256 keyIdx = keyIdxPlusOne - 1; // Convert to 0-based index
-        _removeKeyFromPurposeIndex(_key, _purpose, keyIdx);
-
-        // Emit event and cleanup
         emit KeyRemoved(_key, _purpose, k.keyType);
 
         // If key has no more purposes, delete the entire key struct to save gas
-        if (k.purposes.length == 0) {
+        if (ks.keyPurposes[_key].length() == 0) {
             delete ks.keys[_key];
         }
 
@@ -325,7 +326,7 @@ contract KeyManager is IERC734 {
 
         // O(1) lookup: Check if key has the specific purpose OR MANAGEMENT purpose
         // MANAGEMENT keys have universal permissions in the ERC-734 standard
-        return ks.purposeIndexInKey[_key][_purpose] > 0 || ks.purposeIndexInKey[_key][KeyPurposes.MANAGEMENT] > 0;
+        return ks.keyPurposes[_key].contains(_purpose) || ks.keyPurposes[_key].contains(KeyPurposes.MANAGEMENT);
     }
 
     /**
@@ -347,6 +348,9 @@ contract KeyManager is IERC734 {
             if (success) {
                 ks.executions[_id].executed = true;
 
+                // Remove from pending selector index
+                ks.pendingExecutionsBySelector[_extractSelector(ks.executions[_id].data)].remove(_id);
+
                 emit Executed(_id, ks.executions[_id].to, ks.executions[_id].value, ks.executions[_id].data);
 
                 return true;
@@ -362,78 +366,17 @@ contract KeyManager is IERC734 {
     }
 
     /**
-     * @dev Internal helper to remove a purpose from a key using swap-and-pop technique
-     * @param _key The key to remove the purpose from
-     * @param _purpose The purpose to remove
-     * @param _purposeIdx The index of the purpose in the key.purposes array
-     */
-    function _removePurposeFromKey(bytes32 _key, uint256 _purpose, uint256 _purposeIdx) internal virtual {
-        KeyStorage storage ks = _getKeyStorage();
-        Structs.Key storage k = ks.keys[_key];
-
-        // Get the last purpose in the array
-        uint256 lastPurpose = k.purposes[k.purposes.length - 1];
-
-        // Move the last purpose to the position of the one being removed
-        k.purposes[_purposeIdx] = lastPurpose;
-
-        // Update the index mapping for the moved purpose
-        if (lastPurpose != _purpose) {
-            ks.purposeIndexInKey[_key][lastPurpose] = _purposeIdx + 1; // Store 1-based index
-        }
-
-        // Remove the last element
-        k.purposes.pop();
-
-        // Clear the index mapping for the removed purpose
-        delete ks.purposeIndexInKey[_key][_purpose];
-    }
-
-    /**
-     * @dev Internal helper to remove a key from a purpose index using swap-and-pop technique
-     * @param _key The key to remove
-     * @param _purpose The purpose to remove the key from
-     * @param _keyIdx The index of the key in the keysByPurpose array
-     */
-    function _removeKeyFromPurposeIndex(bytes32 _key, uint256 _purpose, uint256 _keyIdx) internal virtual {
-        KeyStorage storage ks = _getKeyStorage();
-
-        // Get the last key in the purpose array
-        bytes32 lastKey = ks.keysByPurpose[_purpose][ks.keysByPurpose[_purpose].length - 1];
-
-        // Move the last key to the position of the one being removed
-        ks.keysByPurpose[_purpose][_keyIdx] = lastKey;
-
-        // Update the index mapping for the moved key
-        if (lastKey != _key) {
-            ks.keyIndexInPurpose[_purpose][lastKey] = _keyIdx + 1; // Store 1-based index
-        }
-
-        // Remove the last element
-        ks.keysByPurpose[_purpose].pop();
-
-        // Clear the index mapping for the removed key
-        delete ks.keyIndexInPurpose[_purpose][_key];
-    }
-
-    /**
      * @dev Internal helper to setup initial management key
      * @param initialManagementKey The ethereum address to be set as the management key
      */
     function _setupInitialManagementKey(address initialManagementKey) internal {
         KeyStorage storage ks = _getKeyStorage();
 
-        // Set up the initial management key
         bytes32 _key = keccak256(abi.encode(initialManagementKey));
         ks.keys[_key].key = _key;
-        ks.keys[_key].purposes = [KeyPurposes.MANAGEMENT]; // MANAGEMENT purpose
-        ks.keys[_key].keyType = KeyTypes.ECDSA; // ECDSA key type
-        ks.keysByPurpose[KeyPurposes.MANAGEMENT].push(_key);
-
-        // Initialize index mappings for O(1) lookups
-        // Store 1-based indices (0 means not found, 1+ means found at index-1)
-        ks.purposeIndexInKey[_key][KeyPurposes.MANAGEMENT] = 1; // First purpose at index 0 + 1
-        ks.keyIndexInPurpose[KeyPurposes.MANAGEMENT][_key] = 1; // First key at index 0 + 1
+        ks.keys[_key].keyType = KeyTypes.ECDSA;
+        ks.keyPurposes[_key].add(KeyPurposes.MANAGEMENT);
+        ks.keysByPurpose[KeyPurposes.MANAGEMENT].add(_key);
 
         emit KeyAdded(_key, KeyPurposes.MANAGEMENT, KeyTypes.ECDSA);
     }
@@ -507,6 +450,21 @@ contract KeyManager is IERC734 {
      */
     function _canInteract() internal view returns (bool) {
         return _getKeyStorage().canInteract;
+    }
+
+    /**
+     * @dev Extracts the function selector (first 4 bytes) from calldata.
+     * Returns bytes4(0) if data is shorter than 4 bytes.
+     * @param _data The calldata to extract the selector from
+     * @return selector The 4-byte function selector
+     */
+    function _extractSelector(bytes memory _data) internal pure returns (bytes4 selector) {
+        if (_data.length >= 4) {
+            // solhint-disable-next-line no-inline-assembly
+            assembly {
+                selector := mload(add(_data, 32))
+            }
+        }
     }
 
     /**

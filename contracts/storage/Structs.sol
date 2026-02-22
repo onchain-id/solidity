@@ -16,7 +16,6 @@ contract Structs {
      *  key: bytes32 The public key. // Its the Keccak256 hash of the key
      */
     struct Key {
-        uint256[] purposes;
         uint256 keyType;
         bytes32 key;
     }
