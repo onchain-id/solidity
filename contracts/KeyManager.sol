@@ -586,14 +586,7 @@ contract KeyManager is IERC734 {
             ) &&
             _data.length >= 4
         ) {
-            bytes4 selector;
-            // solhint-disable-next-line no-inline-assembly
-            assembly {
-                selector := mload(add(_data, 32))
-            }
-            if (selector == IERC735.addClaim.selector) {
-                return true;
-            }
+            return bytes4(_data) == IERC735.addClaim.selector;
         }
 
         // ACTION keys can auto-approve external calls
