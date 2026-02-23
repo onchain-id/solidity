@@ -49,6 +49,14 @@ contract ProxyTest is OnchainIDSetup {
         onchainidSetup.implementationAuthority.updateImplementation(address(0));
     }
 
+    function test_implementationAuthority_shouldReturnCorrectAddress() public {
+        Identity impl = new Identity(deployer, false);
+        ImplementationAuthority authority = new ImplementationAuthority(address(impl));
+        IdentityProxy proxy = new IdentityProxy(address(authority), deployer);
+
+        assertEq(proxy.implementationAuthority(), address(authority), "Should return the correct authority address");
+    }
+
     function test_updateImplementationAddress() public {
         // Deploy identity with its own proxy and authority
         Identity impl = new Identity(deployer, false);

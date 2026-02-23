@@ -159,4 +159,39 @@ contract KeysTest is OnchainIDSetup {
         assertEq(keyType, KeyTypes.ECDSA);
     }
 
+    // ============ Remove key - swap-and-pop edge cases ============
+
+    /// @notice Remove the only key for a given purpose (no swap needed in keysByPurpose)
+    function test_RemoveOnlyKeyForPurpose() public {
+        // carol has CLAIM_SIGNER only on aliceIdentity (added in setUp)
+        bytes32 carolKeyHash = ClaimSignerHelper.addressToKey(carol);
+
+        // Remove carol's CLAIM_SIGNER purpose
+        // This tests the `lastKey == _key` path in _removeKeyFromPurposeIndex (no swap needed)
+        vm.prank(alice);
+        aliceIdentity.removeKey(carolKeyHash, KeyPurposes.CLAIM_SIGNER);
+
+        // Verify carol no longer has CLAIM_SIGNER purpose
+        assertFalse(aliceIdentity.keyHasPurpose(carolKeyHash, KeyPurposes.CLAIM_SIGNER));
+    }
+
+    /// @notice Remove a key's only purpose (no swap needed in purposes array)
+    function test_RemoveKeyWithSinglePurpose() public {
+        // david has ACTION only on aliceIdentity (added in setUp)
+        bytes32 davidKeyHash = ClaimSignerHelper.addressToKey(david);
+
+        // david has exactly one purpose (ACTION)
+        uint256[] memory purposes = aliceIdentity.getKeyPurposes(davidKeyHash);
+        assertEq(purposes.length, 1, "David should have exactly 1 purpose");
+
+        // Remove ACTION purpose — exercises `lastPurpose == _purpose` in _removePurposeFromKey
+        vm.prank(alice);
+        aliceIdentity.removeKey(davidKeyHash, KeyPurposes.ACTION);
+
+        // Key should be fully deleted
+        (, uint256 keyType2, bytes32 key2) = aliceIdentity.getKey(davidKeyHash);
+        assertEq(key2, bytes32(0), "Key should be deleted");
+        assertEq(keyType2, 0, "Key type should be 0");
+    }
+
 }

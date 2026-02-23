@@ -108,6 +108,22 @@ contract TokenOidTest is Test {
         setup.idFactory.createTokenIdentity(alice, alice, "");
     }
 
+    /// @notice Token factory should be able to create token identity
+    function test_createTokenIdentity_viaTokenFactory_shouldCreate() public {
+        // Register alice as a token factory
+        vm.prank(deployer);
+        setup.idFactory.addTokenFactory(alice);
+
+        // alice (as token factory) creates a token identity
+        address token = makeAddr("tokenAddr");
+        vm.prank(alice);
+        address identity = setup.idFactory.createTokenIdentity(token, bob, "factorySalt");
+
+        assertTrue(identity != address(0), "Identity should be deployed");
+        assertEq(setup.idFactory.getIdentity(token), identity, "Token should map to identity");
+        assertEq(setup.idFactory.getToken(identity), token, "Identity should map to token");
+    }
+
     function test_createTokenIdentity_shouldCreateAndRevertDuplicate() public {
         assertFalse(setup.idFactory.isSaltTaken("Tokensalt1"));
 

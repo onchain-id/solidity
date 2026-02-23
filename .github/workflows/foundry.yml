@@ -1,0 +1,47 @@
+name: Foundry
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+env:
+  HUSKY: 0
+  ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+
+jobs:
+  check:
+    strategy:
+      fail-fast: true
+
+    name: Foundry project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Show Forge version
+        run: forge --version
+
+      - name: Install dependencies
+        run: forge soldeer install
+
+      - name: Run fmt
+        run: forge fmt --check
+
+      - name: Run build
+        run: forge build --sizes
+
+      - name: Run tests
+        run: forge test -vvv
+
+      - name: Run coverage
+        run: ./.github/scripts/coverage.sh

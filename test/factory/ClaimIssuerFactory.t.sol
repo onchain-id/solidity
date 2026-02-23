@@ -96,6 +96,20 @@ contract ClaimIssuerFactoryTest is Test {
         factory.updateImplementation(alice);
     }
 
+    function test_revertUpdateImplementationZeroAddress() public {
+        vm.prank(deployer);
+        vm.expectRevert(Errors.ZeroAddress.selector);
+        factory.updateImplementation(address(0));
+    }
+
+    function test_shouldDeployClaimIssuerOnBehalf() public {
+        vm.prank(deployer);
+        address deployed = factory.deployClaimIssuerOnBehalf(alice);
+
+        assertTrue(deployed != address(0), "Should deploy ClaimIssuer");
+        assertEq(factory.claimIssuer(alice), deployed, "Should map alice to deployed ClaimIssuer");
+    }
+
     function test_shouldUpdateImplementation() public {
         vm.prank(deployer);
         factory.updateImplementation(alice);

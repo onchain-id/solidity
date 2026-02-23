@@ -66,7 +66,7 @@ contract KeyManager is IERC734 {
      * @notice Prevent any direct calls to the implementation contract (marked by _canInteract = false).
      */
     modifier delegatedOnly() {
-        require(_getKeyStorage().canInteract, Errors.InteractingWithLibraryContractForbidden());
+        _checkDelegated();
         _;
     }
 
@@ -382,36 +382,6 @@ contract KeyManager is IERC734 {
     }
 
     /**
-     * @dev Internal helper to initialize key storage
-     * @param initialManagementKey The ethereum address to be set as the management key
-     */
-    function _initializeKeyStorage(address initialManagementKey) internal {
-        KeyStorage storage ks = _getKeyStorage();
-        require(!ks.initialized, Errors.InitialKeyAlreadySetup());
-
-        ks.initialized = true;
-        ks.canInteract = true;
-
-        _setupInitialManagementKey(initialManagementKey);
-    }
-
-    /**
-     * @dev Internal helper to set canInteract flag
-     * @param _canInteract The value to set
-     */
-    function _setCanInteract(bool _canInteract) internal {
-        _getKeyStorage().canInteract = _canInteract;
-    }
-
-    /**
-     * @dev Internal helper to check if key storage is initialized
-     * @return True if key storage is initialized
-     */
-    function _isKeyStorageInitialized() internal view returns (bool) {
-        return _getKeyStorage().initialized;
-    }
-
-    /**
      * @dev Internal method to check if an execution can be auto-approved based on key purposes.
      *
      * This function determines whether an execution request can be automatically approved
@@ -445,11 +415,10 @@ contract KeyManager is IERC734 {
     }
 
     /**
-     * @dev Internal helper to check if contract can interact
-     * @return True if contract can interact
+     * @dev Internal helper to enforce delegatedOnly check.
      */
-    function _canInteract() internal view returns (bool) {
-        return _getKeyStorage().canInteract;
+    function _checkDelegated() internal view {
+        require(_getKeyStorage().canInteract, Errors.InteractingWithLibraryContractForbidden());
     }
 
     /**

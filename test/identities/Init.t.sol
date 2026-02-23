@@ -13,6 +13,12 @@ contract InitTest is OnchainIDSetup {
         aliceIdentity.initialize(alice);
     }
 
+    function test_revert_whenInitializingWithZeroAddress() public {
+        Identity libraryImpl = new Identity(deployer, true);
+        vm.expectRevert(Errors.ZeroAddress.selector);
+        libraryImpl.initialize(address(0));
+    }
+
     function test_revert_whenCreatingIdentityWithInvalidInitialKey() public {
         vm.expectRevert(Errors.ZeroAddress.selector);
         new Identity(address(0), false);
@@ -21,6 +27,20 @@ contract InitTest is OnchainIDSetup {
     function test_versionInitializedWhenDeployedAsRegularContract() public {
         Identity identityImplementation = getIdentityImplementation();
         assertEq(identityImplementation.version(), "3.0.0");
+    }
+
+    function test_revert_whenInitializingLibraryWithValidAddress() public {
+        Identity libraryImpl = new Identity(deployer, true);
+        vm.expectRevert(Errors.InitialKeyAlreadySetup.selector);
+        libraryImpl.initialize(deployer);
+    }
+
+    function test_revert_whenCallingLibraryImplementationDirectly() public {
+        Identity libraryImpl = new Identity(deployer, true);
+
+        vm.prank(deployer);
+        vm.expectRevert(Errors.InteractingWithLibraryContractForbidden.selector);
+        libraryImpl.addKey(keccak256(abi.encode(alice)), 1, 1);
     }
 
     function test_supportsERC165InterfaceDetection() public {

@@ -310,7 +310,7 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
     // solhint-disable-next-line func-name-mixedcase
     function __Identity_init(address initialManagementKey) internal {
         KeyStorage storage ks = _getKeyStorage();
-        require(!ks.initialized || _isConstructor(), Errors.InitialKeyAlreadySetup());
+        require(!ks.initialized, Errors.InitialKeyAlreadySetup());
         ks.initialized = true;
         ks.canInteract = true;
 
@@ -381,21 +381,6 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
         assembly {
             s.slot := slot
         }
-    }
-
-    /**
-     * @notice Computes if the context in which the function is called is a constructor or not.
-     *
-     * @return true if the context is a constructor.
-     */
-    function _isConstructor() private view returns (bool) {
-        address self = address(this);
-        uint256 cs;
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            cs := extcodesize(self)
-        }
-        return cs == 0;
     }
 
 }

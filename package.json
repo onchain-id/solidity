@@ -2,22 +2,13 @@
   "name": "@onchain-id/solidity",
   "version": "2.2.2-beta3",
   "description": "EVM solidity smart contracts for Blockchain OnchainID identities.",
+  "license": "ISC",
+  "author": "OnchainID Organization",
+  "type": "module",
   "files": [
     "contracts",
     "out"
   ],
-  "scripts": {
-    "prepare": "husky && forge soldeer install",
-    "build": "forge build",
-    "lint": "forge fmt --check",
-    "lint:fix": "forge fmt",
-    "format": "prettier --write \"**/*.{ts,js,json,md}\"",
-    "format:check": "prettier --check \"**/*.{ts,js,json,md}\"",
-    "test": "forge test --gas-report",
-    "coverage": "forge coverage --no-match-coverage \"(test|dependencies)\" --ir-minimum",
-    "coverage:report": "mkdir -p coverage && forge coverage --no-match-coverage \"(test|dependencies)\" --ir-minimum --report lcov --report-file coverage/lcov.info && genhtml coverage/lcov.info -o coverage/report --branch-coverage && open coverage/report/index.html",
-    "clean": "forge clean"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/onchain-id/solidity.git"
@@ -31,20 +22,29 @@
     "solidity",
     "smart contracts"
   ],
-  "author": "OnchainID Organization",
-  "license": "ISC",
   "bugs": {
     "url": "https://github.com/onchain-id/solidity/issues"
   },
   "homepage": "https://github.com/onchain-id/solidity#readme",
-  "devDependencies": {
-    "@openzeppelin/contracts": "^5.2.0",
-    "@openzeppelin/contracts-upgradeable": "^4.9.6",
-    "husky": "^9.1.7",
-    "prettier": "^3.6.2",
-    "solady": "^0.1.15"
+  "scripts": {
+    "prepare": "husky && forge soldeer install",
+    "build": "forge build",
+    "test": "forge test",
+    "lint": "forge fmt --check",
+    "lint:fix": "forge fmt",
+    "coverage": "forge coverage --no-match-coverage \"(test|script|dependencies|node_modules|FormatResolver)\"",
+    "coverage:report": "mkdir -p coverage && forge coverage --no-match-coverage \"(test|script|dependencies|node_modules|FormatResolver)\" --report lcov --report-file coverage/lcov.info && genhtml coverage/lcov.info -o coverage/report --branch-coverage && open coverage/report/index.html",
+    "docs": "forge doc --serve --open",
+    "clean": "forge clean"
   },
-  "dependencies": {
-    "forge-std": "github:foundry-rs/forge-std#v1.11.0"
+  "devDependencies": {
+    "@ballcat/commitlint-config-gitmoji": "^1.1.0",
+    "@commitlint/cli": "^19.8.1",
+    "husky": "^9.1.7"
+  },
+  "commitlint": {
+    "extends": [
+      "@ballcat/commitlint-config-gitmoji"
+    ]
   }
 }
