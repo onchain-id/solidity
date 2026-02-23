@@ -1107,6 +1107,89 @@ describe("Identity", () => {
         await expect(tx).to.emit(claimIssuer, "ExecutionFailed");
       });
 
+      it("should prevent CLAIM_ADDER wallet from removing a claim via direct execute on identity", async () => {
+        const {
+          aliceIdentity,
+          aliceWallet,
+          claimIssuer,
+          claimIssuerWallet,
+        } = await loadFixture(deployIdentityFixture);
+
+        // Get an extra wallet to use as CLAIM_ADDER
+        const [, , , , , , , claimAdderWallet] = await ethers.getSigners();
+
+        // Give claimAdderWallet a CLAIM_ADDER key on alice's identity
+        await aliceIdentity
+          .connect(aliceWallet)
+          .addKey(
+            ethers.keccak256(
+              ethers.AbiCoder.defaultAbiCoder().encode(
+                ["address"],
+                [claimAdderWallet.address],
+              ),
+            ),
+            KeyPurposes.CLAIM_ADDER,
+            KeyTypes.ECDSA,
+          );
+
+        // First add a claim so there's something to remove
+        const claim = {
+          identity: await aliceIdentity.getAddress(),
+          issuer: await claimIssuer.getAddress(),
+          topic: 42,
+          scheme: 1,
+          data: "0x0042",
+          signature: "",
+          uri: "https://example.com",
+        };
+        claim.signature = await claimIssuerWallet.signMessage(
+          ethers.getBytes(
+            ethers.keccak256(
+              ethers.AbiCoder.defaultAbiCoder().encode(
+                ["address", "uint256", "bytes"],
+                [claim.identity, claim.topic, claim.data],
+              ),
+            ),
+          ),
+        );
+
+        await aliceIdentity
+          .connect(aliceWallet)
+          .addClaim(
+            claim.topic,
+            claim.scheme,
+            claim.issuer,
+            claim.signature,
+            claim.data,
+            claim.uri,
+          );
+
+        const claimId = ethers.keccak256(
+          ethers.AbiCoder.defaultAbiCoder().encode(
+            ["address", "uint256"],
+            [claim.issuer, claim.topic],
+          ),
+        );
+
+        // CLAIM_ADDER wallet tries to remove claim via execute on identity directly
+        const removeClaimData = aliceIdentity.interface.encodeFunctionData(
+          "removeClaim",
+          [claimId],
+        );
+
+        const tx = await aliceIdentity
+          .connect(claimAdderWallet)
+          .execute(await aliceIdentity.getAddress(), 0, removeClaimData);
+
+        // Should NOT be auto-approved — no Executed or ExecutionFailed event
+        await expect(tx).to.not.emit(aliceIdentity, "Executed");
+        await expect(tx).to.not.emit(aliceIdentity, "ExecutionFailed");
+
+        // The claim should still exist
+        const found = await aliceIdentity.getClaim(claimId);
+        expect(found.topic).to.equal(claim.topic);
+      });
+
       it("should allow CLAIM_SIGNER key to still add and remove claims", async () => {
         const {
           aliceIdentity,

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import { IERC734 } from "./interface/IERC734.sol";
+import { IERC735 } from "./interface/IERC735.sol";
 import { Errors } from "./libraries/Errors.sol";
 import { KeyPurposes } from "./libraries/KeyPurposes.sol";
 import { KeyTypes } from "./libraries/KeyTypes.sol";
@@ -121,7 +122,7 @@ contract KeyManager is IERC734 {
         emit ExecutionRequested(_executionId, _to, _value, _data);
 
         // Check if execution can be auto-approved
-        if (_canAutoApproveExecution(_to)) {
+        if (_canAutoApproveExecution(_to, _data)) {
             _approve(_executionId, true);
         }
 
@@ -544,14 +545,16 @@ contract KeyManager is IERC734 {
      *
      * Auto-approval conditions:
      * 1. MANAGEMENT keys can auto-approve any execution
-     * 2. CLAIM_SIGNER keys can auto-approve addClaim calls to the identity itself
+     * 2. CLAIM_SIGNER keys can auto-approve calls to the identity itself
      * 3. ACTION keys can auto-approve external calls (not to the identity itself)
+     * Note: CLAIM_ADDER auto-approval is handled by Identity via override
      *
      * @param _to The target address of the execution
      * @return canAutoApprove Whether the execution can be auto-approved
      */
     function _canAutoApproveExecution(
-        address _to
+        address _to,
+        bytes memory _data
     ) internal view virtual returns (bool canAutoApprove) {
         // MANAGEMENT keys can auto-approve any execution
         if (
@@ -563,19 +566,34 @@ contract KeyManager is IERC734 {
             return true;
         }
 
-        // For identity contract calls, check if it's a CLAIM_SIGNER or CLAIM_ADDER key
+        // CLAIM_SIGNER keys can auto-approve any self-call (addClaim + removeClaim, etc...)
         if (
             _to == address(this) &&
-            (keyHasPurpose(
+            keyHasPurpose(
                 keccak256(abi.encode(msg.sender)),
                 KeyPurposes.CLAIM_SIGNER
-            ) ||
-                keyHasPurpose(
-                    keccak256(abi.encode(msg.sender)),
-                    KeyPurposes.CLAIM_ADDER
-                ))
+            )
         ) {
             return true;
+        }
+
+        // CLAIM_ADDER keys can only auto-approve addClaim on self
+        if (
+            _to == address(this) &&
+            keyHasPurpose(
+                keccak256(abi.encode(msg.sender)),
+                KeyPurposes.CLAIM_ADDER
+            ) &&
+            _data.length >= 4
+        ) {
+            bytes4 selector;
+            // solhint-disable-next-line no-inline-assembly
+            assembly {
+                selector := mload(add(_data, 32))
+            }
+            if (selector == IERC735.addClaim.selector) {
+                return true;
+            }
         }
 
         // ACTION keys can auto-approve external calls
