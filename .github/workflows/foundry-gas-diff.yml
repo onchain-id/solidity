@@ -1,0 +1,52 @@
+name: Report gas diff
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    paths:
+      - contracts/**
+      - .github/workflows/foundry-gas-diff.yml
+
+env:
+  HUSKY: 0
+  ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+
+jobs:
+  compare_gas_reports:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Install dependencies
+        run: forge soldeer install
+
+      - name: Run tests
+        run: forge test --gas-report > gasreport.ansi
+        env:
+          FOUNDRY_FUZZ_SEED: 0x${{ github.event.pull_request.base.sha || github.sha }}
+
+      - name: Compare gas reports
+        uses: Rubilmax/foundry-gas-diff@v3
+        with:
+          summaryQuantile: 0.9
+          sortCriteria: avg,max
+          sortOrders: desc,asc
+          ignore: test/**/*
+        id: gas_diff
+
+      - name: Add gas diff to sticky comment
+        if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          # delete the comment in case changes no longer impact gas costs
+          delete: ${{ !steps.gas_diff.outputs.markdown }}
+          message: ${{ steps.gas_diff.outputs.markdown }}
