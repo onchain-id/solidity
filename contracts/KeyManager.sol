@@ -473,7 +473,6 @@ contract KeyManager is IERC734 {
 
     /**
      * @dev Internal helper to enforce delegatedOnly check.
-     * @return True if contract can interact
      */
     function _checkDelegated() internal view {
         require(_getKeyStorage().canInteract, Errors.InteractingWithLibraryContractForbidden());
