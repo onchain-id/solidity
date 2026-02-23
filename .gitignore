@@ -3,6 +3,7 @@ cache/
 out/
 coverage/
 coverage.json
+lcov.info
 typechain-types/
 artifacts/
 

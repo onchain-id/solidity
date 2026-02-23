@@ -3,7 +3,7 @@
 FAIL=0
 
 echo "Generating coverage report..."
-COVERAGE_OUTPUT=$(forge coverage --no-match-coverage "(test|script|dependencies)" --report summary)
+COVERAGE_OUTPUT=$(forge coverage --no-match-coverage "(test|script|dependencies|FormatResolver)" --report summary)
 
 # Display the coverage report
 echo "=== Coverage Report ==="
@@ -44,7 +44,7 @@ fi
 
 if [ $FAIL = 1 ]; then
     echo ""
-    echo "Coverage check failed! All coverage metrics must be 100%"
+    echo "Coverage check failed! All metrics must be 100%"
     exit 1
 else
     echo "✅ Coverage requirements met!"

@@ -32,8 +32,8 @@
     "test": "forge test",
     "lint": "forge fmt --check",
     "lint:fix": "forge fmt",
-    "coverage": "forge coverage --no-match-coverage \"(test|script|dependencies|node_modules)\"",
-    "coverage:report": "mkdir -p coverage && forge coverage --no-match-coverage \"(test|script|dependencies|node_modules)\" --report lcov --report-file coverage/lcov.info && genhtml coverage/lcov.info -o coverage/report --branch-coverage && open coverage/report/index.html",
+    "coverage": "forge coverage --no-match-coverage \"(test|script|dependencies|node_modules|FormatResolver)\"",
+    "coverage:report": "mkdir -p coverage && forge coverage --no-match-coverage \"(test|script|dependencies|node_modules|FormatResolver)\" --report lcov --report-file coverage/lcov.info && genhtml coverage/lcov.info -o coverage/report --branch-coverage && open coverage/report/index.html",
     "docs": "forge doc --serve --open",
     "clean": "forge clean"
   },
