@@ -50,6 +50,9 @@ library Errors {
     /// @notice Reverts if the wallet is not linked to an identity
     error WalletNotLinkedToIdentity(address wallet);
 
+    /// @notice Reverts if the nonce does not match the expected wallet nonce
+    error InvalidNonce(uint256 nonce);
+
     /* ----- Gateway ----- */
 
     /// @notice The maximum number of signers was reached at deployment.

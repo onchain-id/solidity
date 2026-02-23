@@ -37,6 +37,9 @@ contract IdFactory is IIdFactory, Ownable {
     // token linked to an ONCHAINID
     mapping(address => address) private _tokenAddress;
 
+    // nonce per wallet for signature replay protection
+    mapping(address => uint256) private _walletNonces;
+
     // setting
     constructor(address implementationAuthorityAddress) Ownable(msg.sender) {
         require(
@@ -226,19 +229,28 @@ contract IdFactory is IIdFactory, Ownable {
     }
 
     /**
-     *  @dev See {IdFactory-registerWalletToIdentity}.
+     *  @dev See {IIdFactory-linkWalletWithSignature}.
      */
-    function registerWalletToIdentity(
+    function linkWalletWithSignature(
         address wallet,
         bytes calldata signature,
+        uint256 nonce,
         uint256 expiry
     ) external override {
         require(wallet != address(0), Errors.ZeroAddress());
         require(block.timestamp <= expiry, Errors.ExpiredSignature(signature));
+        require(nonce == _walletNonces[wallet], Errors.InvalidNonce(nonce));
 
         address identity = msg.sender;
         bytes32 structHash = keccak256(
-            abi.encode(wallet, identity, expiry, address(this), block.chainid)
+            abi.encode(
+                wallet,
+                identity,
+                nonce,
+                expiry,
+                address(this),
+                block.chainid
+            )
         );
 
         bytes32 digest = MessageHashUtils.toEthSignedMessageHash(structHash);
@@ -274,15 +286,16 @@ contract IdFactory is IIdFactory, Ownable {
             Errors.MaxWalletsPerIdentityExceeded()
         );
 
+        _walletNonces[wallet]++;
         _userIdentity[wallet] = identity;
         _wallets[identity].push(wallet);
         emit WalletLinked(wallet, identity);
     }
 
     /**
-     *  @dev See {IdFactory-unregisterWalletFromIdentity}.
+     *  @dev See {IIdFactory-unlinkWalletWithSignature}.
      */
-    function unregisterWalletFromIdentity(address wallet) external override {
+    function unlinkWalletWithSignature(address wallet) external override {
         require(wallet != address(0), Errors.ZeroAddress());
         require(
             _userIdentity[wallet] == msg.sender,
@@ -349,6 +362,15 @@ contract IdFactory is IIdFactory, Ownable {
         address _factory
     ) public view override returns (bool) {
         return _tokenFactories[_factory];
+    }
+
+    /**
+     *  @dev See {IIdFactory-walletNonce}.
+     */
+    function walletNonce(
+        address wallet
+    ) external view override returns (uint256) {
+        return _walletNonces[wallet];
     }
 
     // deploy function with create2 opcode call
