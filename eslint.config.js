@@ -12,6 +12,7 @@ export default [
       "artifacts/**",
       "cache/**",
       "coverage/**",
+      "dependencies/**",
       "**/coverage/**",
       "**/node_modules/**",
       "**/coverage/lcov-report/**",

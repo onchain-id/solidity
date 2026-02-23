@@ -242,26 +242,7 @@ contract IdFactory is IIdFactory, Ownable {
         require(nonce == _walletNonces[wallet], Errors.InvalidNonce(nonce));
 
         address identity = msg.sender;
-        bytes32 structHash = keccak256(
-            abi.encode(
-                wallet,
-                identity,
-                nonce,
-                expiry,
-                address(this),
-                block.chainid
-            )
-        );
-
-        bytes32 digest = MessageHashUtils.toEthSignedMessageHash(structHash);
-        (address signer, ECDSA.RecoverError error, ) = ECDSA.tryRecover(
-            digest,
-            signature
-        );
-        require(
-            error == ECDSA.RecoverError.NoError && signer == wallet,
-            Errors.InvalidSignature()
-        );
+        _verifyWalletSignature(wallet, identity, nonce, expiry, signature);
 
         // require the wallet is a MANAGEMENT key on the identity
         bytes32 key = keccak256(abi.encode(wallet));
@@ -356,21 +337,21 @@ contract IdFactory is IIdFactory, Ownable {
     }
 
     /**
-     *  @dev See {IdFactory-isTokenFactory}.
-     */
-    function isTokenFactory(
-        address _factory
-    ) public view override returns (bool) {
-        return _tokenFactories[_factory];
-    }
-
-    /**
      *  @dev See {IIdFactory-walletNonce}.
      */
     function walletNonce(
         address wallet
     ) external view override returns (uint256) {
         return _walletNonces[wallet];
+    }
+
+    /**
+     *  @dev See {IdFactory-isTokenFactory}.
+     */
+    function isTokenFactory(
+        address _factory
+    ) public view override returns (bool) {
+        return _tokenFactories[_factory];
     }
 
     // deploy function with create2 opcode call
@@ -406,5 +387,34 @@ contract IdFactory is IIdFactory, Ownable {
         );
         bytes memory bytecode = abi.encodePacked(_code, _constructData);
         return _deploy(_salt, bytecode);
+    }
+
+    function _verifyWalletSignature(
+        address wallet,
+        address identity,
+        uint256 nonce,
+        uint256 expiry,
+        bytes calldata signature
+    ) private view {
+        bytes32 structHash = keccak256(
+            abi.encode(
+                wallet,
+                identity,
+                nonce,
+                expiry,
+                address(this),
+                block.chainid
+            )
+        );
+
+        bytes32 digest = MessageHashUtils.toEthSignedMessageHash(structHash);
+        (address signer, ECDSA.RecoverError error, ) = ECDSA.tryRecover(
+            digest,
+            signature
+        );
+        require(
+            error == ECDSA.RecoverError.NoError && signer == wallet,
+            Errors.InvalidSignature()
+        );
     }
 }
