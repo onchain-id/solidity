@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
+import { ClaimSignerHelper } from "../helpers/ClaimSignerHelper.sol";
 import { OnchainIDSetup } from "../helpers/OnchainIDSetup.sol";
+import { KeyPurposes } from "contracts/libraries/KeyPurposes.sol";
+import { KeyTypes } from "contracts/libraries/KeyTypes.sol";
 
 contract VersionUpgradeTest is OnchainIDSetup {
 
@@ -20,9 +23,16 @@ contract VersionUpgradeTest is OnchainIDSetup {
         bytes memory claimData = bytes("test data");
         string memory claimUri = "https://example.com";
 
-        // Add self-issued claim
+        // Add CLAIM_SIGNER key for alice on her identity
         vm.prank(alice);
-        aliceIdentity.addClaim(claimTopic, 1, address(aliceIdentity), hex"", claimData, claimUri);
+        aliceIdentity.addKey(ClaimSignerHelper.addressToKey(alice), KeyPurposes.CLAIM_SIGNER, KeyTypes.ECDSA);
+
+        // Sign claim properly
+        bytes memory signature = ClaimSignerHelper.signClaim(alicePk, address(aliceIdentity), claimTopic, claimData);
+
+        // Add self-issued claim with valid signature
+        vm.prank(alice);
+        aliceIdentity.addClaim(claimTopic, 1, address(aliceIdentity), signature, claimData, claimUri);
 
         // Verify claim
         bytes32 claimId = keccak256(abi.encode(address(aliceIdentity), claimTopic));

@@ -378,6 +378,20 @@ contract KeyManager is IERC734 {
     }
 
     /**
+     * @dev Internal helper to initialize key storage
+     * @param initialManagementKey The ethereum address to be set as the management key
+     */
+    function _initializeKeyStorage(address initialManagementKey) internal {
+        KeyStorage storage ks = _getKeyStorage();
+        require(!ks.initialized, Errors.InitialKeyAlreadySetup());
+
+        ks.initialized = true;
+        ks.canInteract = true;
+
+        _setupInitialManagementKey(initialManagementKey);
+    }
+
+    /**
      * @dev Internal method to check if an execution can be auto-approved based on key purposes.
      *
      * This function determines whether an execution request can be automatically approved

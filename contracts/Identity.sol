@@ -8,7 +8,6 @@ import { IERC735 } from "./interface/IERC735.sol";
 import { IIdentity } from "./interface/IIdentity.sol";
 import { Errors } from "./libraries/Errors.sol";
 import { KeyPurposes } from "./libraries/KeyPurposes.sol";
-import { KeyTypes } from "./libraries/KeyTypes.sol";
 import { Structs } from "./storage/Structs.sol";
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { MulticallUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/MulticallUpgradeable.sol";
@@ -162,28 +161,25 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
         string memory _uri
     ) public delegatedOnly onlyClaimKey returns (bytes32 claimRequestId) {
         // 1. Validate claim if issuer is not self
-        if (_issuer != address(this)) {
-            _validateExternalClaim(_issuer, _topic, _signature, _data);
-        }
+        require(
+            IClaimIssuer(_issuer).isClaimValid(IIdentity(address(this)), _topic, _signature, _data),
+            Errors.InvalidClaim()
+        );
 
         ClaimStorage storage cs = _getClaimStorage();
         bytes32 claimId = keccak256(abi.encode(_issuer, _topic));
-        Structs.Claim storage c = cs.claims[claimId];
+        cs.claims[claimId] = Structs.Claim({
+            topic: _topic, scheme: _scheme, issuer: _issuer, signature: _signature, data: _data, uri: _uri
+        });
 
         // 2. New claim or update existing
-        bool isNew = !cs.claimsByTopic[_topic].contains(claimId);
-        c.topic = _topic;
-        c.scheme = _scheme;
-        c.signature = _signature;
-        c.data = _data;
-        c.uri = _uri;
-
-        if (isNew) {
+        if (!cs.claimsByTopic[_topic].contains(claimId)) {
             cs.claimsByTopic[_topic].add(claimId);
-            c.issuer = _issuer;
+            emit ClaimAdded(claimId, _topic, _scheme, _issuer, _signature, _data, _uri);
+        } else {
+            emit ClaimChanged(claimId, _topic, _scheme, _issuer, _signature, _data, _uri);
         }
 
-        _emitClaimEvent(claimId, _topic, _scheme, _issuer, _signature, _data, _uri, isNew);
         return claimId;
     }
 
@@ -251,15 +247,8 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
             string memory uri
         )
     {
-        ClaimStorage storage cs = _getClaimStorage();
-        return (
-            cs.claims[_claimId].topic,
-            cs.claims[_claimId].scheme,
-            cs.claims[_claimId].issuer,
-            cs.claims[_claimId].signature,
-            cs.claims[_claimId].data,
-            cs.claims[_claimId].uri
-        );
+        Structs.Claim storage claim = _getClaimStorage().claims[_claimId];
+        return (claim.topic, claim.scheme, claim.issuer, claim.signature, claim.data, claim.uri);
     }
 
     /**
@@ -318,59 +307,6 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
     }
 
     // ========= Internal (non-view/pure) =========
-
-    /**
-     * @dev Internal helper to emit appropriate claim events based on whether the claim is new or updated.
-     *
-     * This function emits either ClaimAdded or ClaimChanged events depending on whether
-     * the claim is being added for the first time or updated.
-     *
-     * @param _claimId The unique identifier of the claim
-     * @param _topic The topic of the claim
-     * @param _scheme The verification scheme for the claim
-     * @param _issuer The address of the claim issuer
-     * @param _signature The cryptographic proof of the claim
-     * @param _data The claim data or hash
-     * @param _uri The location of additional claim data
-     * @param _isNew Whether this is a new claim (true) or an update (false)
-     */
-    function _emitClaimEvent(
-        bytes32 _claimId,
-        uint256 _topic,
-        uint256 _scheme,
-        address _issuer,
-        bytes memory _signature,
-        bytes memory _data,
-        string memory _uri,
-        bool _isNew
-    ) internal {
-        if (_isNew) {
-            emit ClaimAdded(_claimId, _topic, _scheme, _issuer, _signature, _data, _uri);
-        } else {
-            emit ClaimChanged(_claimId, _topic, _scheme, _issuer, _signature, _data, _uri);
-        }
-    }
-
-    /**
-     * @dev Internal helper to validate claim with external issuer.
-     *
-     * This function validates that a claim issued by an external issuer is valid
-     * by calling the issuer's isClaimValid function.
-     *
-     * @param _issuer The address of the claim issuer
-     * @param _topic The topic of the claim
-     * @param _signature The cryptographic proof of the claim
-     * @param _data The claim data or hash
-     */
-    function _validateExternalClaim(address _issuer, uint256 _topic, bytes memory _signature, bytes memory _data)
-        internal
-        view
-    {
-        require(
-            IClaimIssuer(_issuer).isClaimValid(IIdentity(address(this)), _topic, _signature, _data),
-            Errors.InvalidClaim()
-        );
-    }
 
     /**
      * @dev Returns the claim storage struct at the specified ERC-7201 slot
