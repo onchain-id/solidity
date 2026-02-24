@@ -186,38 +186,36 @@ contract PendingExecutionsTest is OnchainIDSetup {
 
     // ========= Stays in index on rejection and failure =========
 
-    function test_rejected_staysInIndex() public {
+    function test_rejected_removedFromIndex() public {
         bytes32 newKey = keccak256(abi.encode(makeAddr("newKey")));
         bytes memory addKeyData = abi.encodeCall(KeyManager.addKey, (newKey, KeyPurposes.ACTION, KeyTypes.ECDSA));
 
         vm.prank(bob);
-        uint256 execId = aliceIdentity.execute(address(aliceIdentity), 0, addKeyData);
+        aliceIdentity.execute(address(aliceIdentity), 0, addKeyData);
 
-        // Alice rejects → execution stays pending
+        // Alice rejects → execution is finalized and removed from pending set
         vm.prank(alice);
         aliceIdentity.approve(0, false);
 
         uint256[] memory ids = aliceIdentity.getPendingExecutionsBySelector(KeyManager.addKey.selector);
-        assertEq(ids.length, 1, "Rejected execution should stay in pending set");
-        assertEq(ids[0], execId);
+        assertEq(ids.length, 0, "Rejected execution should be removed from pending set");
     }
 
-    function test_approvedButCallFails_staysInIndex() public {
+    function test_approvedButCallFails_removedFromIndex() public {
         // Create execution that will fail: try to add a key that already has this purpose
         bytes32 aliceKey = keccak256(abi.encode(alice));
         bytes memory addKeyData = abi.encodeCall(KeyManager.addKey, (aliceKey, KeyPurposes.MANAGEMENT, KeyTypes.ECDSA));
 
         // Use an address with no keys to create pending request
         vm.prank(bob);
-        uint256 execId = aliceIdentity.execute(address(aliceIdentity), 0, addKeyData);
+        aliceIdentity.execute(address(aliceIdentity), 0, addKeyData);
 
-        // Alice approves → call fails (alice already has MANAGEMENT) → stays pending
+        // Alice approves → call fails (alice already has MANAGEMENT) → finalized and removed
         vm.prank(alice);
         aliceIdentity.approve(0, true);
 
         uint256[] memory ids = aliceIdentity.getPendingExecutionsBySelector(KeyManager.addKey.selector);
-        assertEq(ids.length, 1, "Failed execution should stay in pending set");
-        assertEq(ids[0], execId);
+        assertEq(ids.length, 0, "Failed execution should be removed from pending set");
     }
 
     // ========= Removal preserves other entries =========
@@ -259,18 +257,17 @@ contract PendingExecutionsTest is OnchainIDSetup {
 
     // ========= Auto-approved failure case (management key, call fails) =========
 
-    function test_autoApproved_callFails_indexedAsPending() public {
+    function test_autoApproved_callFails_notIndexed() public {
         // alice (MANAGEMENT) executes addKey with duplicate purpose → auto-approved but call fails
         bytes32 aliceKey = keccak256(abi.encode(alice));
         bytes memory addKeyData = abi.encodeCall(KeyManager.addKey, (aliceKey, KeyPurposes.MANAGEMENT, KeyTypes.ECDSA));
 
         vm.prank(alice);
-        uint256 execId = aliceIdentity.execute(address(aliceIdentity), 0, addKeyData);
+        aliceIdentity.execute(address(aliceIdentity), 0, addKeyData);
 
-        // Auto-approved, call failed → executed is still false → should be indexed
+        // Auto-approved, call failed → execution is finalized → not in pending set
         uint256[] memory ids = aliceIdentity.getPendingExecutionsBySelector(KeyManager.addKey.selector);
-        assertEq(ids.length, 1, "Auto-approved but failed execution should be in pending set");
-        assertEq(ids[0], execId);
+        assertEq(ids.length, 0, "Auto-approved but failed execution should not be in pending set");
     }
 
 }

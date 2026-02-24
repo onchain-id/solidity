@@ -346,23 +346,19 @@ contract KeyManager is IERC734 {
             (success,) = ks.executions[_id].to.call{ value: (ks.executions[_id].value) }(ks.executions[_id].data);
 
             if (success) {
-                ks.executions[_id].executed = true;
-
-                // Remove from pending selector index
-                ks.pendingExecutionsBySelector[_extractSelector(ks.executions[_id].data)].remove(_id);
-
                 emit Executed(_id, ks.executions[_id].to, ks.executions[_id].value, ks.executions[_id].data);
-
-                return true;
             } else {
                 emit ExecutionFailed(_id, ks.executions[_id].to, ks.executions[_id].value, ks.executions[_id].data);
-
-                return false;
             }
         } else {
             ks.executions[_id].approved = false;
         }
-        return false;
+
+        // Once approve() is called, the execution is no longer pending.
+        ks.executions[_id].executed = true;
+        ks.pendingExecutionsBySelector[_extractSelector(ks.executions[_id].data)].remove(_id);
+
+        return success;
     }
 
     /**
