@@ -1,4 +1,5 @@
 import { ethers } from "hardhat";
+import { createClaim } from "./utils/claimUtils";
 
 export enum KeyPurposes {
   MANAGEMENT = 1,
@@ -293,31 +294,14 @@ export async function deployIdentityWithProxyFixture() {
       KeyTypes.ECDSA,
     );
 
-  const aliceClaim666 = {
-    id: "",
-    identity: await aliceIdentity.getAddress(),
-    issuer: await claimIssuer.getAddress(),
-    topic: 666,
-    scheme: 1,
-    data: "0x0042",
-    signature: "",
-    uri: "https://example.com",
-  };
-  aliceClaim666.id = ethers.keccak256(
-    ethers.AbiCoder.defaultAbiCoder().encode(
-      ["address", "uint256"],
-      [aliceClaim666.issuer, aliceClaim666.topic],
-    ),
-  );
-  aliceClaim666.signature = await claimIssuerWallet.signMessage(
-    ethers.getBytes(
-      ethers.keccak256(
-        ethers.AbiCoder.defaultAbiCoder().encode(
-          ["address", "uint256", "bytes"],
-          [aliceClaim666.identity, aliceClaim666.topic, aliceClaim666.data],
-        ),
-      ),
-    ),
+  const aliceClaim666 = await createClaim(
+    await aliceIdentity.getAddress(),
+    await claimIssuer.getAddress(),
+    666,
+    1,
+    "0x0042",
+    "https://example.com",
+    claimIssuerWallet
   );
 
   await aliceIdentity

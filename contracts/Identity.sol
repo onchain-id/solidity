@@ -11,7 +11,6 @@ import { IERC734 } from "./interface/IERC734.sol";
 import { IERC735 } from "./interface/IERC735.sol";
 import { Errors } from "./libraries/Errors.sol";
 import { KeyPurposes } from "./libraries/KeyPurposes.sol";
-import { KeyTypes } from "./libraries/KeyTypes.sol";
 import { Structs } from "./storage/Structs.sol";
 import { KeyManager } from "./KeyManager.sol";
 
@@ -186,25 +185,31 @@ contract Identity is
         bytes memory _data,
         string memory _uri
     ) public delegatedOnly onlyClaimKey returns (bytes32 claimRequestId) {
-        // 1. Validate claim if issuer is not self
-        if (_issuer != address(this)) {
-            _validateExternalClaim(_issuer, _topic, _signature, _data);
-        }
+        require(
+            IClaimIssuer(_issuer).isClaimValid(
+                IIdentity(address(this)),
+                _topic,
+                _signature,
+                _data
+            ),
+            Errors.InvalidClaim()
+        );
 
         ClaimStorage storage cs = _getClaimStorage();
         bytes32 claimId = keccak256(abi.encode(_issuer, _topic));
-        Structs.Claim storage c = cs.claims[claimId];
+        cs.claims[claimId] = Structs.Claim({
+            topic: _topic,
+            scheme: _scheme,
+            issuer: _issuer,
+            signature: _signature,
+            data: _data,
+            uri: _uri
+        });
 
         // 2. New claim or update existing
         bool isNew = !cs.claimExists[claimId];
-        c.topic = _topic;
-        c.scheme = _scheme;
-        c.signature = _signature;
-        c.data = _data;
-        c.uri = _uri;
-
         if (isNew) {
-            _setupNewClaim(claimId, _topic, _issuer);
+            _setupNewClaim(cs, claimId, _topic);
         }
 
         _emitClaimEvent(
@@ -260,7 +265,7 @@ contract Identity is
         uint256 claimIdx = claimIdxPlusOne - 1; // Convert to 0-based index
 
         // 3. Remove claim from topic index using efficient swap-and-pop technique
-        _removeClaimFromTopicIndex(_claimId, topic, claimIdx);
+        _removeClaimFromTopicIndex(cs, _claimId, topic, claimIdx);
 
         // 4. Emit event with claim details before deletion
         emit ClaimRemoved(
@@ -313,14 +318,14 @@ contract Identity is
             string memory uri
         )
     {
-        ClaimStorage storage cs = _getClaimStorage();
+        Structs.Claim storage claim = _getClaimStorage().claims[_claimId];
         return (
-            cs.claims[_claimId].topic,
-            cs.claims[_claimId].scheme,
-            cs.claims[_claimId].issuer,
-            cs.claims[_claimId].signature,
-            cs.claims[_claimId].data,
-            cs.claims[_claimId].uri
+            claim.topic,
+            claim.scheme,
+            claim.issuer,
+            claim.signature,
+            claim.data,
+            claim.uri
         );
     }
 
@@ -394,16 +399,17 @@ contract Identity is
      * Maintains array consistency by swapping elements before removal and updates
      * all related index mappings.
      *
+     * @param cs The claim storage struct
      * @param _claimId The claim ID to remove from the topic index
      * @param _topic The topic identifier for the claim
      * @param _claimIdx The 0-based index of the claim in the claimsByTopic array
      */
     function _removeClaimFromTopicIndex(
+        ClaimStorage storage cs,
         bytes32 _claimId,
         uint256 _topic,
         uint256 _claimIdx
     ) internal {
-        ClaimStorage storage cs = _getClaimStorage();
         uint256 lastClaimIdx = cs.claimsByTopic[_topic].length - 1;
 
         // Step 1: Implement swap-and-pop strategy if claim is not the last element
@@ -431,22 +437,20 @@ contract Identity is
      * This function initializes the index mappings for a new claim to enable
      * O(1) lookups and efficient claim management.
      *
+     * @param cs The claim storage struct
      * @param _claimId The unique identifier of the claim
      * @param _topic The topic of the claim
-     * @param _issuer The address of the claim issuer
      */
     function _setupNewClaim(
+        ClaimStorage storage cs,
         bytes32 _claimId,
-        uint256 _topic,
-        address _issuer
+        uint256 _topic
     ) internal {
-        ClaimStorage storage cs = _getClaimStorage();
         cs.claimsByTopic[_topic].push(_claimId);
         cs.claimIndexInTopic[_topic][_claimId] = cs
             .claimsByTopic[_topic]
             .length; // index+1
         cs.claimExists[_claimId] = true;
-        cs.claims[_claimId].issuer = _issuer;
     }
 
     /**
@@ -495,34 +499,6 @@ contract Identity is
                 _uri
             );
         }
-    }
-
-    /**
-     * @dev Internal helper to validate claim with external issuer.
-     *
-     * This function validates that a claim issued by an external issuer is valid
-     * by calling the issuer's isClaimValid function.
-     *
-     * @param _issuer The address of the claim issuer
-     * @param _topic The topic of the claim
-     * @param _signature The cryptographic proof of the claim
-     * @param _data The claim data or hash
-     */
-    function _validateExternalClaim(
-        address _issuer,
-        uint256 _topic,
-        bytes memory _signature,
-        bytes memory _data
-    ) internal view {
-        require(
-            IClaimIssuer(_issuer).isClaimValid(
-                IIdentity(address(this)),
-                _topic,
-                _signature,
-                _data
-            ),
-            Errors.InvalidClaim()
-        );
     }
 
     /**

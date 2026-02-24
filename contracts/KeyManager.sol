@@ -521,22 +521,6 @@ contract KeyManager is IERC734 {
     }
 
     /**
-     * @dev Internal helper to set canInteract flag
-     * @param _canInteract The value to set
-     */
-    function _setCanInteract(bool _canInteract) internal {
-        _getKeyStorage().canInteract = _canInteract;
-    }
-
-    /**
-     * @dev Internal helper to check if key storage is initialized
-     * @return True if key storage is initialized
-     */
-    function _isKeyStorageInitialized() internal view returns (bool) {
-        return _getKeyStorage().initialized;
-    }
-
-    /**
      * @dev Internal method to check if an execution can be auto-approved based on key purposes.
      *
      * This function determines whether an execution request can be automatically approved
@@ -583,13 +567,6 @@ contract KeyManager is IERC734 {
         }
 
         return false;
-    }
-    /**
-     * @dev Internal helper to check if contract can interact
-     * @return True if contract can interact
-     */
-    function _canInteract() internal view returns (bool) {
-        return _getKeyStorage().canInteract;
     }
 
     /**

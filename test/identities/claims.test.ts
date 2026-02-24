@@ -9,7 +9,7 @@ describe("Identity", () => {
     describe("addClaim", () => {
       describe("when the claim is self-attested (issuer is identity address)", () => {
         describe("when the claim is not valid", () => {
-          it("should add the claim anyway", async () => {
+          it("should revert for invalid claim", async () => {
             const { aliceIdentity, aliceWallet } = await loadFixture(
               deployIdentityFixture,
             );
@@ -34,7 +34,7 @@ describe("Identity", () => {
               ),
             );
 
-            const tx = await aliceIdentity
+            await expect(aliceIdentity
               .connect(aliceWallet)
               .addClaim(
                 claim.topic,
@@ -43,30 +43,15 @@ describe("Identity", () => {
                 claim.signature,
                 claim.data,
                 claim.uri,
-              );
-            await expect(tx)
-              .to.emit(aliceIdentity, "ClaimAdded")
-              .withArgs(
-                ethers.keccak256(
-                  ethers.AbiCoder.defaultAbiCoder().encode(
-                    ["address", "uint256"],
-                    [claim.issuer, claim.topic],
-                  ),
+              )).to.be.revertedWithCustomError(aliceIdentity, "InvalidClaim");
+
+              expect(
+                await aliceIdentity.isClaimValid(
+                  claim.identity,
+                  claim.topic,
+                  claim.signature,
+                  claim.data,
                 ),
-                claim.topic,
-                claim.scheme,
-                claim.issuer,
-                claim.signature,
-                claim.data,
-                claim.uri,
-              );
-            expect(
-              await aliceIdentity.isClaimValid(
-                claim.identity,
-                claim.topic,
-                claim.signature,
-                claim.data,
-              ),
             ).to.be.false;
           });
         });

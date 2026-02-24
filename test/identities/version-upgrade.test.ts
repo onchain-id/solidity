@@ -2,6 +2,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { deployIdentityFixture } from "../fixtures";
+import { createClaim } from "../utils/claimUtils";
 
 describe("Identity Version Upgrade", function () {
   describe("Version Management", function () {
@@ -36,28 +37,32 @@ describe("Identity Version Upgrade", function () {
       const claimData = ethers.toUtf8Bytes("test data");
       const claimUri = "https://example.com";
 
-      // Add a claim to show the contract is still functional
-      await identityAsManager.addClaim(
-        claimTopic,
+      // Create a self-issued claim using the utility function
+      const claim = await createClaim(
+        await aliceIdentity.getAddress(),
+        await aliceIdentity.getAddress(), // self-issued
+        BigInt(claimTopic), // Convert string to BigInt for topic
         1, // ECDSA scheme
-        aliceIdentity.target, // self-issued
-        "0x", // empty signature for self-issued
-        claimData,
+        ethers.hexlify(claimData),
         claimUri,
+        aliceWallet
+      );
+
+      // Add the claim to show the contract is still functional
+      await identityAsManager.addClaim(
+        claim.topic,
+        claim.scheme,
+        claim.issuer,
+        claim.signature,
+        claim.data,
+        claim.uri,
       );
 
       // Verify the claim was added
-      const claimId = ethers.keccak256(
-        ethers.AbiCoder.defaultAbiCoder().encode(
-          ["address", "uint256"],
-          [aliceIdentity.target, claimTopic],
-        ),
-      );
-
-      const claim = await aliceIdentity.getClaim(claimId);
-      expect(claim.topic).to.equal(claimTopic);
-      expect(claim.data).to.equal(ethers.hexlify(claimData));
-      expect(claim.uri).to.equal(claimUri);
+      const retrievedClaim = await aliceIdentity.getClaim(claim.id);
+      expect(retrievedClaim.topic).to.equal(claimTopic);
+      expect(retrievedClaim.data).to.equal(ethers.hexlify(claimData));
+      expect(retrievedClaim.uri).to.equal(claimUri);
     });
   });
 });
