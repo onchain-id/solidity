@@ -18,8 +18,8 @@ contract ClaimsTest is OnchainIDSetup {
 
     // ============ addClaim - Self-Attested (issuer = identity) ============
 
-    /// @notice When claim is self-attested but signature is invalid, should still add the claim
-    function test_addClaim_selfAttested_invalidClaim_shouldAddAnyway() public {
+    /// @notice When claim is self-attested but signature is invalid, should revert
+    function test_addClaim_selfAttested_invalidClaim_shouldRevert() public {
         uint256 topic = Constants.CLAIM_TOPIC_42;
         bytes memory data = hex"0042";
         string memory uri = "https://example.com";
@@ -32,21 +32,10 @@ contract ClaimsTest is OnchainIDSetup {
             hex"101010" // wrong signature because this data is not the hex"0042" as data variable above
         );
 
-        bytes32 claimId = ClaimSignerHelper.computeClaimId(address(aliceIdentity), topic);
-
-        // Expect ClaimAdded event
-        vm.expectEmit(true, true, true, true, address(aliceIdentity));
-        emit IERC735.ClaimAdded(
-            claimId, topic, Constants.CLAIM_SCHEME, address(aliceIdentity), wrongSignature, data, uri
-        );
-
-        // Add claim as alice
+        // Should revert because claim validation now applies to all claims
+        vm.expectRevert(Errors.InvalidClaim.selector);
         vm.prank(alice);
         aliceIdentity.addClaim(topic, Constants.CLAIM_SCHEME, address(aliceIdentity), wrongSignature, data, uri);
-
-        // Verify claim is not valid
-        bool isValid = aliceIdentity.isClaimValid(IIdentity(address(aliceIdentity)), topic, wrongSignature, data);
-        assertFalse(isValid, "Claim should not be valid");
     }
 
     /// @notice Self-attested valid claim via execute/approve pattern
