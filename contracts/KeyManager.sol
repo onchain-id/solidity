@@ -439,10 +439,7 @@ contract KeyManager is IERC734 {
      */
     function _extractSelector(bytes memory _data) internal pure returns (bytes4 selector) {
         if (_data.length >= 4) {
-            // solhint-disable-next-line no-inline-assembly
-            assembly {
-                selector := mload(add(_data, 32))
-            }
+            selector = bytes4(_data);
         }
     }
 
