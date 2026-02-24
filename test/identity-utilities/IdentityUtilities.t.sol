@@ -21,10 +21,11 @@ contract IdentityUtilitiesTest is Test {
 
     IdentityUtilities internal utilities;
     address internal admin;
+    uint256 internal adminPk;
     address internal user;
 
     function setUp() public {
-        admin = makeAddr("utilAdmin");
+        (admin, adminPk) = makeAddrAndKey("utilAdmin");
         user = makeAddr("utilUser");
 
         IdentityUtilities impl = new IdentityUtilities();
@@ -943,9 +944,17 @@ contract IdentityUtilitiesTest is Test {
         // Deploy Identity
         Identity identity = IdentityHelper.deployIdentityWithProxy(admin);
 
-        // Add a claim with the identity itself as issuer (self-attested, bypasses validation)
+        // Add CLAIM_SIGNER key for admin on the identity
         vm.prank(admin);
-        identity.addClaim(3004, 1, address(identity), hex"", hex"", "https://example.com/claim");
+        identity.addKey(ClaimSignerHelper.addressToKey(admin), KeyPurposes.CLAIM_SIGNER, KeyTypes.ECDSA);
+
+        // Sign claim properly for self-attested claim
+        bytes memory claimData = hex"";
+        bytes memory signature = ClaimSignerHelper.signClaim(adminPk, address(identity), 3004, claimData);
+
+        // Add a self-attested claim with valid signature
+        vm.prank(admin);
+        identity.addClaim(3004, 1, address(identity), signature, claimData, "https://example.com/claim");
 
         // Query
         uint256[] memory topicIds = new uint256[](1);
