@@ -5,6 +5,31 @@ import { describe, it } from "mocha";
 
 import { deployIdentityFixture, KeyPurposes, KeyTypes } from "../fixtures";
 
+async function signLinkWallet(
+  signer: ethers.Signer,
+  wallet: string,
+  identity: string,
+  expiry: number,
+  factoryAddress: string,
+  chainId: bigint,
+): Promise<string> {
+  const domain = {
+    name: "IdentityFactory",
+    version: "1",
+    chainId: chainId,
+    verifyingContract: factoryAddress,
+  };
+  const types = {
+    LinkWallet: [
+      { name: "wallet", type: "address" },
+      { name: "identity", type: "address" },
+      { name: "expiry", type: "uint256" },
+    ],
+  };
+  const value = { wallet, identity, expiry };
+  return signer.signTypedData(domain, types, value);
+}
+
 describe("IdFactory", () => {
   it("should revert because authority is Zero address", async () => {
     const [deployerWallet] = await ethers.getSigners();
@@ -486,7 +511,7 @@ describe("IdFactory", () => {
     });
   });
 
-  describe("linkWalletWithSignature - unlinkWalletWithSignature", () => {
+  describe("linkWalletWithSignature - unlinkWalletByIdentity", () => {
     describe("linkWalletWithSignature", () => {
       it("should revert when wallet is zero address", async () => {
         const { identityFactory, aliceIdentity, aliceWallet } =
@@ -494,11 +519,10 @@ describe("IdFactory", () => {
 
         const expiry = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now
         const signature = "0x";
-        const nonce = 0;
 
         const data = identityFactory.interface.encodeFunctionData(
           "linkWalletWithSignature",
-          [ethers.ZeroAddress, signature, nonce, expiry],
+          [ethers.ZeroAddress, signature, expiry],
         );
 
         const nonceBefore = await aliceIdentity.getCurrentNonce();
@@ -524,33 +548,23 @@ describe("IdFactory", () => {
           await loadFixture(deployIdentityFixture);
 
         const expiredTime = Math.floor(Date.now() / 1000) - 3600; // 1 hour ago
-        const nonce = 0;
         const network = await ethers.provider.getNetwork();
         const chainId = network.chainId;
         const identityAddress = await aliceIdentity.getAddress();
         const factoryAddress = await identityFactory.getAddress();
 
-        const encodedData = ethers.AbiCoder.defaultAbiCoder().encode(
-          ["address", "address", "uint256", "uint256", "address", "uint256"],
-          [
-            davidWallet.address,
-            identityAddress,
-            nonce,
-            expiredTime,
-            factoryAddress,
-            chainId,
-          ],
-        );
-        const structHash = ethers.keccak256(encodedData);
-
-        // signMessage automatically adds the "\x19Ethereum Signed Message:\n32" prefix
-        const signature = await davidWallet.signMessage(
-          ethers.getBytes(structHash),
+        const signature = await signLinkWallet(
+          davidWallet,
+          davidWallet.address,
+          identityAddress,
+          expiredTime,
+          factoryAddress,
+          chainId,
         );
 
         const data = identityFactory.interface.encodeFunctionData(
           "linkWalletWithSignature",
-          [davidWallet.address, signature, nonce, expiredTime],
+          [davidWallet.address, signature, expiredTime],
         );
 
         const nonceBefore = await aliceIdentity.getCurrentNonce();
@@ -581,33 +595,24 @@ describe("IdFactory", () => {
         } = await loadFixture(deployIdentityFixture);
 
         const expiry = Math.floor(Date.now() / 1000) + 3600;
-        const nonce = 0;
         const network = await ethers.provider.getNetwork();
         const chainId = network.chainId;
         const identityAddress = await aliceIdentity.getAddress();
         const factoryAddress = await identityFactory.getAddress();
 
-        const encodedData = ethers.AbiCoder.defaultAbiCoder().encode(
-          ["address", "address", "uint256", "uint256", "address", "uint256"],
-          [
-            davidWallet.address,
-            identityAddress,
-            nonce,
-            expiry,
-            factoryAddress,
-            chainId,
-          ],
-        );
-        const structHash = ethers.keccak256(encodedData);
         // Sign with wrong wallet (bob instead of david)
-        // signMessage automatically adds the "\x19Ethereum Signed Message:\n32" prefix
-        const signature = await bobWallet.signMessage(
-          ethers.getBytes(structHash),
+        const signature = await signLinkWallet(
+          bobWallet,
+          davidWallet.address,
+          identityAddress,
+          expiry,
+          factoryAddress,
+          chainId,
         );
 
         const data = identityFactory.interface.encodeFunctionData(
           "linkWalletWithSignature",
-          [davidWallet.address, signature, nonce, expiry],
+          [davidWallet.address, signature, expiry],
         );
 
         const nonceBefore = await aliceIdentity.getCurrentNonce();
@@ -637,31 +642,23 @@ describe("IdFactory", () => {
         const wrongSigner = signers[9];
 
         const expiry = Math.floor(Date.now() / 1000) + 3600;
-        const nonce = 0;
         const network = await ethers.provider.getNetwork();
         const chainId = network.chainId;
         const identityAddress = await aliceIdentity.getAddress();
         const factoryAddress = await identityFactory.getAddress();
 
-        const encodedData = ethers.AbiCoder.defaultAbiCoder().encode(
-          ["address", "address", "uint256", "uint256", "address", "uint256"],
-          [
-            targetWallet.address,
-            identityAddress,
-            nonce,
-            expiry,
-            factoryAddress,
-            chainId,
-          ],
-        );
-        const structHash = ethers.keccak256(encodedData);
-        const signature = await wrongSigner.signMessage(
-          ethers.getBytes(structHash),
+        const signature = await signLinkWallet(
+          wrongSigner,
+          targetWallet.address,
+          identityAddress,
+          expiry,
+          factoryAddress,
+          chainId,
         );
 
         const data = identityFactory.interface.encodeFunctionData(
           "linkWalletWithSignature",
-          [targetWallet.address, signature, nonce, expiry],
+          [targetWallet.address, signature, expiry],
         );
 
         const nonceBefore = await aliceIdentity.getCurrentNonce();
@@ -681,10 +678,9 @@ describe("IdFactory", () => {
           await loadFixture(deployIdentityFixture);
 
         const expiry = Math.floor(Date.now() / 1000) + 3600;
-        const nonce = 0;
         const data = identityFactory.interface.encodeFunctionData(
           "linkWalletWithSignature",
-          [davidWallet.address, "0x1234", nonce, expiry],
+          [davidWallet.address, "0x1234", expiry],
         );
 
         const nonceBefore = await aliceIdentity.getCurrentNonce();
@@ -704,33 +700,24 @@ describe("IdFactory", () => {
           await loadFixture(deployIdentityFixture);
 
         const expiry = Math.floor(Date.now() / 1000) + 3600;
-        const nonce = 0;
         const network = await ethers.provider.getNetwork();
         const chainId = network.chainId;
         const identityAddress = await aliceIdentity.getAddress();
         const factoryAddress = await identityFactory.getAddress();
 
-        const encodedData = ethers.AbiCoder.defaultAbiCoder().encode(
-          ["address", "address", "uint256", "uint256", "address", "uint256"],
-          [
-            davidWallet.address,
-            identityAddress,
-            nonce,
-            expiry,
-            factoryAddress,
-            chainId,
-          ],
-        );
-        const structHash = ethers.keccak256(encodedData);
-        // signMessage automatically adds the "\x19Ethereum Signed Message:\n32" prefix
-        const signature = await davidWallet.signMessage(
-          ethers.getBytes(structHash),
+        const signature = await signLinkWallet(
+          davidWallet,
+          davidWallet.address,
+          identityAddress,
+          expiry,
+          factoryAddress,
+          chainId,
         );
 
         // davidWallet has ACTION key, not MANAGEMENT key
         const data = identityFactory.interface.encodeFunctionData(
           "linkWalletWithSignature",
-          [davidWallet.address, signature, nonce, expiry],
+          [davidWallet.address, signature, expiry],
         );
 
         const nonceBefore = await aliceIdentity.getCurrentNonce();
@@ -756,32 +743,23 @@ describe("IdFactory", () => {
           await loadFixture(deployIdentityFixture);
 
         const expiry = Math.floor(Date.now() / 1000) + 3600;
-        const nonce = await identityFactory.walletNonce(aliceWallet.address);
         const network = await ethers.provider.getNetwork();
         const chainId = network.chainId;
         const identityAddress = await aliceIdentity.getAddress();
         const factoryAddress = await identityFactory.getAddress();
 
-        const encodedData = ethers.AbiCoder.defaultAbiCoder().encode(
-          ["address", "address", "uint256", "uint256", "address", "uint256"],
-          [
-            aliceWallet.address,
-            identityAddress,
-            nonce,
-            expiry,
-            factoryAddress,
-            chainId,
-          ],
-        );
-        const structHash = ethers.keccak256(encodedData);
-        // signMessage automatically adds the "\x19Ethereum Signed Message:\n32" prefix
-        const signature = await aliceWallet.signMessage(
-          ethers.getBytes(structHash),
+        const signature = await signLinkWallet(
+          aliceWallet,
+          aliceWallet.address,
+          identityAddress,
+          expiry,
+          factoryAddress,
+          chainId,
         );
 
         const data = identityFactory.interface.encodeFunctionData(
           "linkWalletWithSignature",
-          [aliceWallet.address, signature, nonce, expiry],
+          [aliceWallet.address, signature, expiry],
         );
 
         const nonceBefore = await aliceIdentity.getCurrentNonce();
@@ -836,31 +814,23 @@ describe("IdFactory", () => {
           );
 
         const expiry = Math.floor(Date.now() / 1000) + 3600;
-        const nonce = 0;
         const network = await ethers.provider.getNetwork();
         const chainId = network.chainId;
         const identityAddress = await aliceIdentity.getAddress();
         const factoryAddress = await identityFactory.getAddress();
 
-        const encodedData = ethers.AbiCoder.defaultAbiCoder().encode(
-          ["address", "address", "uint256", "uint256", "address", "uint256"],
-          [
-            tokenWallet.address,
-            identityAddress,
-            nonce,
-            expiry,
-            factoryAddress,
-            chainId,
-          ],
-        );
-        const structHash = ethers.keccak256(encodedData);
-        const signature = await tokenWallet.signMessage(
-          ethers.getBytes(structHash),
+        const signature = await signLinkWallet(
+          tokenWallet,
+          tokenWallet.address,
+          identityAddress,
+          expiry,
+          factoryAddress,
+          chainId,
         );
 
         const data = identityFactory.interface.encodeFunctionData(
           "linkWalletWithSignature",
-          [tokenWallet.address, signature, nonce, expiry],
+          [tokenWallet.address, signature, expiry],
         );
 
         const nonceBefore = await aliceIdentity.getCurrentNonce();
@@ -902,31 +872,23 @@ describe("IdFactory", () => {
           );
 
         const expiry = Math.floor(Date.now() / 1000) + 3600;
-        const nonce = 0;
         const network = await ethers.provider.getNetwork();
         const chainId = network.chainId;
         const identityAddress = await aliceIdentity.getAddress();
         const factoryAddress = await identityFactory.getAddress();
 
-        const encodedData = ethers.AbiCoder.defaultAbiCoder().encode(
-          ["address", "address", "uint256", "uint256", "address", "uint256"],
-          [
-            overflowWallet.address,
-            identityAddress,
-            nonce,
-            expiry,
-            factoryAddress,
-            chainId,
-          ],
-        );
-        const structHash = ethers.keccak256(encodedData);
-        const signature = await overflowWallet.signMessage(
-          ethers.getBytes(structHash),
+        const signature = await signLinkWallet(
+          overflowWallet,
+          overflowWallet.address,
+          identityAddress,
+          expiry,
+          factoryAddress,
+          chainId,
         );
 
         const data = identityFactory.interface.encodeFunctionData(
           "linkWalletWithSignature",
-          [overflowWallet.address, signature, nonce, expiry],
+          [overflowWallet.address, signature, expiry],
         );
 
         const nonceBefore = await aliceIdentity.getCurrentNonce();
@@ -960,32 +922,23 @@ describe("IdFactory", () => {
           );
 
         const expiry = Math.floor(Date.now() / 1000) + 3600;
-        const nonce = 0;
         const network = await ethers.provider.getNetwork();
         const chainId = network.chainId;
         const identityAddress = await aliceIdentity.getAddress();
         const factoryAddress = await identityFactory.getAddress();
 
-        const encodedData = ethers.AbiCoder.defaultAbiCoder().encode(
-          ["address", "address", "uint256", "uint256", "address", "uint256"],
-          [
-            carolWallet.address,
-            identityAddress,
-            nonce,
-            expiry,
-            factoryAddress,
-            chainId,
-          ],
-        );
-        const structHash = ethers.keccak256(encodedData);
-        // signMessage automatically adds the "\x19Ethereum Signed Message:\n32" prefix
-        const signature = await carolWallet.signMessage(
-          ethers.getBytes(structHash),
+        const signature = await signLinkWallet(
+          carolWallet,
+          carolWallet.address,
+          identityAddress,
+          expiry,
+          factoryAddress,
+          chainId,
         );
 
         const data = identityFactory.interface.encodeFunctionData(
           "linkWalletWithSignature",
-          [carolWallet.address, signature, nonce, expiry],
+          [carolWallet.address, signature, expiry],
         );
 
         // Since aliceWallet has MANAGEMENT key, execute() will auto-approve and execute
@@ -1005,7 +958,7 @@ describe("IdFactory", () => {
         ).to.include(carolWallet.address);
       });
 
-      it("should revert when reusing a signature after unlinking (replay protection)", async () => {
+      it("should revert when replaying an expired signature after unlinking", async () => {
         const { identityFactory, aliceIdentity, aliceWallet, carolWallet } =
           await loadFixture(deployIdentityFixture);
 
@@ -1023,33 +976,28 @@ describe("IdFactory", () => {
             KeyTypes.ECDSA,
           );
 
-        const expiry = Math.floor(Date.now() / 1000) + 3600;
-        const nonce = 0;
         const network = await ethers.provider.getNetwork();
         const chainId = network.chainId;
         const identityAddress = await aliceIdentity.getAddress();
         const factoryAddress = await identityFactory.getAddress();
 
-        const encodedData = ethers.AbiCoder.defaultAbiCoder().encode(
-          ["address", "address", "uint256", "uint256", "address", "uint256"],
-          [
-            carolWallet.address,
-            identityAddress,
-            nonce,
-            expiry,
-            factoryAddress,
-            chainId,
-          ],
-        );
-        const structHash = ethers.keccak256(encodedData);
-        const signature = await carolWallet.signMessage(
-          ethers.getBytes(structHash),
+        // Use a short expiry (60 seconds from now — enough for the link+unlink to complete)
+        const latestBlock = await ethers.provider.getBlock("latest");
+        const shortExpiry = latestBlock!.timestamp + 60;
+
+        const signature = await signLinkWallet(
+          carolWallet,
+          carolWallet.address,
+          identityAddress,
+          shortExpiry,
+          factoryAddress,
+          chainId,
         );
 
         // First link succeeds
         const linkData = identityFactory.interface.encodeFunctionData(
           "linkWalletWithSignature",
-          [carolWallet.address, signature, nonce, expiry],
+          [carolWallet.address, signature, shortExpiry],
         );
         await aliceIdentity
           .connect(aliceWallet)
@@ -1061,7 +1009,7 @@ describe("IdFactory", () => {
 
         // Unlink the wallet
         const unlinkData = identityFactory.interface.encodeFunctionData(
-          "unlinkWalletWithSignature",
+          "unlinkWalletByIdentity",
           [carolWallet.address],
         );
         await aliceIdentity
@@ -1072,11 +1020,14 @@ describe("IdFactory", () => {
           ethers.ZeroAddress,
         );
 
-        // Attempt to replay the same signature with old nonce — should fail
-        // because nonce was incremented to 1 after first link
+        // Advance time past the expiry
+        await ethers.provider.send("evm_increaseTime", [120]);
+        await ethers.provider.send("evm_mine", []);
+
+        // Attempt to replay the same signature — should fail because it's expired
         const replayData = identityFactory.interface.encodeFunctionData(
           "linkWalletWithSignature",
-          [carolWallet.address, signature, nonce, expiry],
+          [carolWallet.address, signature, shortExpiry],
         );
         const identityNonceBefore = await aliceIdentity.getCurrentNonce();
         await aliceIdentity
@@ -1086,7 +1037,7 @@ describe("IdFactory", () => {
         const executionId = Number(identityNonceBefore);
         await aliceIdentity.connect(aliceWallet).approve(executionId, true);
 
-        // Execution should fail due to nonce mismatch (replay protection)
+        // Execution should fail due to expired signature
         const executionData = await aliceIdentity.getExecutionData(executionId);
         expect(executionData.executed).to.be.false;
 
@@ -1094,21 +1045,16 @@ describe("IdFactory", () => {
         expect(await identityFactory.getIdentity(carolWallet.address)).to.equal(
           ethers.ZeroAddress,
         );
-
-        // Verify nonce was incremented
-        expect(await identityFactory.walletNonce(carolWallet.address)).to.equal(
-          1,
-        );
       });
     });
 
-    describe("unlinkWalletWithSignature", () => {
+    describe("unlinkWalletByIdentity", () => {
       it("should revert when wallet is zero address", async () => {
         const { identityFactory, aliceIdentity, aliceWallet } =
           await loadFixture(deployIdentityFixture);
 
         const data = identityFactory.interface.encodeFunctionData(
-          "unlinkWalletWithSignature",
+          "unlinkWalletByIdentity",
           [ethers.ZeroAddress],
         );
 
@@ -1130,7 +1076,7 @@ describe("IdFactory", () => {
           await loadFixture(deployIdentityFixture);
 
         const data = identityFactory.interface.encodeFunctionData(
-          "unlinkWalletWithSignature",
+          "unlinkWalletByIdentity",
           [davidWallet.address],
         );
 
@@ -1171,32 +1117,23 @@ describe("IdFactory", () => {
           );
 
         const expiry = Math.floor(Date.now() / 1000) + 3600;
-        const nonce = 0;
         const network = await ethers.provider.getNetwork();
         const chainId = network.chainId;
         const identityAddress = await aliceIdentity.getAddress();
         const factoryAddress = await identityFactory.getAddress();
 
-        const encodedData = ethers.AbiCoder.defaultAbiCoder().encode(
-          ["address", "address", "uint256", "uint256", "address", "uint256"],
-          [
-            carolWallet.address,
-            identityAddress,
-            nonce,
-            expiry,
-            factoryAddress,
-            chainId,
-          ],
-        );
-        const structHash = ethers.keccak256(encodedData);
-        // signMessage automatically adds the "\x19Ethereum Signed Message:\n32" prefix
-        const signature = await carolWallet.signMessage(
-          ethers.getBytes(structHash),
+        const signature = await signLinkWallet(
+          carolWallet,
+          carolWallet.address,
+          identityAddress,
+          expiry,
+          factoryAddress,
+          chainId,
         );
 
         const registerData = identityFactory.interface.encodeFunctionData(
           "linkWalletWithSignature",
-          [carolWallet.address, signature, nonce, expiry],
+          [carolWallet.address, signature, expiry],
         );
 
         // Since aliceWallet has MANAGEMENT key, execute() will auto-approve and execute
@@ -1210,7 +1147,7 @@ describe("IdFactory", () => {
         expect(walletsBefore).to.include(carolWallet.address);
 
         const unregisterData = identityFactory.interface.encodeFunctionData(
-          "unlinkWalletWithSignature",
+          "unlinkWalletByIdentity",
           [carolWallet.address],
         );
 

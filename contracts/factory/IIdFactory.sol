@@ -98,29 +98,26 @@ interface IIdFactory {
      *  @dev function used to link a wallet to an identity using signature verification
      *  @param wallet the address of the wallet to link
      *  @param signature signature provided by the wallet
-     *  @param nonce replay protection nonce, must match the current nonce for the wallet
      *  @param expiry expiry timestamp for the signature
-     *  requires the wallet to sign a message binding wallet, identity, nonce, expiry, contract and chain id
+     *  requires the wallet to sign an EIP-712 typed message binding wallet, identity, and expiry
      *  requires the wallet to hold a MANAGEMENT key on the identity
      *  requires msg.sender to be the identity contract
      *  wallet cannot be address 0
      *  signature must not be expired
-     *  nonce must match the current wallet nonce (replay protection)
      */
     function linkWalletWithSignature(
         address wallet,
         bytes calldata signature,
-        uint256 nonce,
         uint256 expiry
     ) external;
 
     /**
-     *  @dev function used to unlink a wallet from an identity via the identity contract
+     *  @dev function used to unlink a wallet from an identity, callable by the identity contract
      *  @param wallet the address of the wallet to unlink
      *  requires msg.sender to be the identity contract that the wallet is linked to
      *  wallet cannot be address 0
      */
-    function unlinkWalletWithSignature(address wallet) external;
+    function unlinkWalletByIdentity(address wallet) external;
 
     /**
      *  @dev function used to register an address as a token factory
@@ -174,12 +171,6 @@ interface IIdFactory {
      *  @param _salt the salt used for deployment
      */
     function isSaltTaken(string calldata _salt) external view returns (bool);
-
-    /**
-     *  @dev getter for the current nonce of a wallet, used for signature replay protection
-     *  @param wallet the address of the wallet
-     */
-    function walletNonce(address wallet) external view returns (uint256);
 
     /**
      * @dev getter for the implementation authority used by this factory.
