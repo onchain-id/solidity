@@ -8,8 +8,8 @@ import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy
 import { ClaimIssuer } from "contracts/ClaimIssuer.sol";
 import { Identity } from "contracts/Identity.sol";
 import { IdentityUtilities } from "contracts/IdentityUtilities.sol";
-import { Test as TestContract } from "contracts/_testContracts/Test.sol";
-import { TestIdentityUtilities } from "contracts/_testContracts/TestIdentityUtilities.sol";
+import { Test as TestContract } from "test/mocks/Test.sol";
+import { TestIdentityUtilities } from "test/mocks/TestIdentityUtilities.sol";
 import { IIdentityUtilities } from "contracts/interface/IIdentityUtilities.sol";
 import { KeyPurposes } from "contracts/libraries/KeyPurposes.sol";
 import { KeyTypes } from "contracts/libraries/KeyTypes.sol";

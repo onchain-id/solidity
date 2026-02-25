@@ -5,7 +5,7 @@ import { ClaimSignerHelper } from "../helpers/ClaimSignerHelper.sol";
 import { OnchainIDSetup } from "../helpers/OnchainIDSetup.sol";
 import { Constants } from "../utils/Constants.sol";
 import { Identity } from "contracts/Identity.sol";
-import { RevertingIdentity } from "contracts/_testContracts/RevertingIdentity.sol";
+import { RevertingIdentity } from "test/mocks/RevertingIdentity.sol";
 import { IdFactory } from "contracts/factory/IdFactory.sol";
 import { Errors } from "contracts/libraries/Errors.sol";
 import { KeyPurposes } from "contracts/libraries/KeyPurposes.sol";

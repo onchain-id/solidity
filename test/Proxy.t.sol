@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import { OnchainIDSetup } from "./helpers/OnchainIDSetup.sol";
 import { Identity } from "contracts/Identity.sol";
-import { Test as TestContract } from "contracts/_testContracts/Test.sol";
+import { Test as TestContract } from "test/mocks/Test.sol";
 import { IImplementationAuthority } from "contracts/interface/IImplementationAuthority.sol";
 import { Errors } from "contracts/libraries/Errors.sol";
 import { IdentityProxy } from "contracts/proxy/IdentityProxy.sol";
