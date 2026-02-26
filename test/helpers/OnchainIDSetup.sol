@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import { Constants } from "../utils/Constants.sol";
 import { ClaimIssuerHelper } from "./ClaimIssuerHelper.sol";
 import { ClaimSignerHelper } from "./ClaimSignerHelper.sol";
+import { CreateXHelper } from "./CreateXHelper.sol";
 import { IdentityHelper } from "./IdentityHelper.sol";
 import { ClaimIssuer } from "contracts/ClaimIssuer.sol";
 import { Identity } from "contracts/Identity.sol";
@@ -11,13 +12,13 @@ import { IdFactory } from "contracts/factory/IdFactory.sol";
 import { KeyPurposes } from "contracts/libraries/KeyPurposes.sol";
 import { KeyTypes } from "contracts/libraries/KeyTypes.sol";
 import { ImplementationAuthority } from "contracts/proxy/ImplementationAuthority.sol";
-import { Test } from "forge-std/Test.sol";
 
 /// @notice Base test contract providing full OnchainID infrastructure
-contract OnchainIDSetup is Test {
+contract OnchainIDSetup is CreateXHelper {
 
     // Infrastructure
     IdentityHelper.OnchainIDSetup public onchainidSetup;
+    address public createx;
 
     // Standard test addresses with private keys
     address public deployer;
@@ -59,9 +60,12 @@ contract OnchainIDSetup is Test {
         (david, davidPk) = makeAddrAndKey("david");
         (tokenOwner, tokenOwnerPk) = makeAddrAndKey("tokenOwner");
 
+        // Deploy CreateX from its compiled artifact (solc 0.8.23, compiled via CreateXDeployer.sol)
+        createx = _deployCreateX();
+
         // Deploy factory infrastructure (as deployer)
         vm.startPrank(deployer);
-        onchainidSetup = IdentityHelper.deployFactory(deployer);
+        onchainidSetup = IdentityHelper.deployFactory(deployer, createx);
         vm.stopPrank();
 
         // Deploy ClaimIssuer with proxy

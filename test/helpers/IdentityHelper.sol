@@ -18,10 +18,10 @@ library IdentityHelper {
     /// @notice Deploys complete Identity Factory infrastructure
     /// @param managementKey The initial management key address
     /// @return setup Struct containing all deployed contracts
-    function deployFactory(address managementKey) internal returns (OnchainIDSetup memory setup) {
+    function deployFactory(address managementKey, address createx) internal returns (OnchainIDSetup memory setup) {
         setup.identityImplementation = new Identity(managementKey, false);
         setup.implementationAuthority = new ImplementationAuthority(address(setup.identityImplementation));
-        setup.idFactory = new IdFactory(address(setup.implementationAuthority));
+        setup.idFactory = new IdFactory(address(setup.implementationAuthority), createx);
     }
 
     /// @notice Deploys an Identity through the custom IdentityProxy pattern

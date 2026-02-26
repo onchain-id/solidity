@@ -2,16 +2,16 @@
 pragma solidity ^0.8.27;
 
 import { ClaimSignerHelper } from "../helpers/ClaimSignerHelper.sol";
+import { CreateXHelper } from "../helpers/CreateXHelper.sol";
 import { IdentityHelper } from "../helpers/IdentityHelper.sol";
 import { Identity } from "contracts/Identity.sol";
 import { IdFactory } from "contracts/factory/IdFactory.sol";
 import { Gateway } from "contracts/gateway/Gateway.sol";
 import { Errors } from "contracts/libraries/Errors.sol";
 import { KeyPurposes } from "contracts/libraries/KeyPurposes.sol";
-import { Test } from "forge-std/Test.sol";
 import { Vm } from "forge-std/Vm.sol";
 
-contract GatewayTest is Test {
+contract GatewayTest is CreateXHelper {
 
     IdentityHelper.OnchainIDSetup internal setup;
 
@@ -32,8 +32,10 @@ contract GatewayTest is Test {
 
         vm.warp(365 days);
 
+        address createx = _deployCreateX();
+
         vm.startPrank(deployer);
-        setup = IdentityHelper.deployFactory(deployer);
+        setup = IdentityHelper.deployFactory(deployer, createx);
         vm.stopPrank();
     }
 

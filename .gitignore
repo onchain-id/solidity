@@ -32,6 +32,8 @@ gas-report.txt
 # IDE
 .idea
 .vscode
+.claude
+CLAUDE.md
 
 # Environment variables
 .env

@@ -1,3 +1,4 @@
+@createx/=dependencies/createx-1.0.0/src/
 @forge-std/=dependencies/forge-std-v1.14.0/src/
 @openzeppelin/contracts-upgradeable/=dependencies/@openzeppelin-contracts-upgradeable-4.9.6/
 @openzeppelin/contracts/=dependencies/@openzeppelin-contracts-5.2.0/
