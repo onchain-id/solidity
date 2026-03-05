@@ -173,8 +173,7 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
         });
 
         // 2. New claim or update existing
-        if (!cs.claimsByTopic[_topic].contains(claimId)) {
-            cs.claimsByTopic[_topic].add(claimId);
+        if (cs.claimsByTopic[_topic].add(claimId)) {
             emit ClaimAdded(claimId, _topic, _scheme, _issuer, _signature, _data, _uri);
         } else {
             emit ClaimChanged(claimId, _topic, _scheme, _issuer, _signature, _data, _uri);

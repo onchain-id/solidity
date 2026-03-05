@@ -45,10 +45,6 @@ contract KeyManager is IERC734 {
         bool initialized;
         /// @dev Flag indicating if the contract can be interacted with (prevents direct calls to implementation)
         bool canInteract;
-        /// @dev Mapping of key hash to set of purposes (EnumerableSet for O(1) add/remove/contains)
-        mapping(bytes32 => EnumerableSet.UintSet) keyPurposes;
-        /// @dev Mapping of function selector to set of pending execution IDs
-        mapping(bytes4 => EnumerableSet.UintSet) pendingExecutionsBySelector;
     }
 
     /**
@@ -116,11 +112,6 @@ contract KeyManager is IERC734 {
             _approve(_executionId, true);
         }
 
-        // Only index if execution is still pending (not auto-executed)
-        if (!ks.executions[_executionId].executed) {
-            ks.pendingExecutionsBySelector[_extractSelector(_data)].add(_executionId);
-        }
-
         return _executionId;
     }
 
@@ -147,7 +138,7 @@ contract KeyManager is IERC734 {
         returns (uint256[] memory purposes, uint256 keyType, bytes32 key)
     {
         KeyStorage storage ks = _getKeyStorage();
-        return (ks.keyPurposes[_key].values(), ks.keys[_key].keyType, ks.keys[_key].key);
+        return (ks.keys[_key].purposes.values(), ks.keys[_key].keyType, ks.keys[_key].key);
     }
 
     /**
@@ -157,7 +148,7 @@ contract KeyManager is IERC734 {
      * @return _purposes Returns the purposes of the specified key
      */
     function getKeyPurposes(bytes32 _key) external view virtual returns (uint256[] memory _purposes) {
-        return _getKeyStorage().keyPurposes[_key].values();
+        return _getKeyStorage().keys[_key].purposes.values();
     }
 
     /**
@@ -177,21 +168,6 @@ contract KeyManager is IERC734 {
      */
     function getExecutionData(uint256 _executionId) external view virtual returns (Structs.Execution memory execution) {
         return _getKeyStorage().executions[_executionId];
-    }
-
-    /**
-     * @notice Returns all pending (non-executed) execution IDs for a given function selector.
-     * @dev Use bytes4(0) to query executions with empty or sub-4-byte calldata (e.g., plain ETH transfers).
-     * @param _selector The 4-byte function selector to filter by
-     * @return executionIds Array of pending execution IDs matching the selector
-     */
-    function getPendingExecutionsBySelector(bytes4 _selector)
-        external
-        view
-        virtual
-        returns (uint256[] memory executionIds)
-    {
-        return _getKeyStorage().pendingExecutionsBySelector[_selector].values();
     }
 
     /**
@@ -217,20 +193,16 @@ contract KeyManager is IERC734 {
         returns (bool success)
     {
         KeyStorage storage ks = _getKeyStorage();
-
-        // 1. Early validation: Reject if key already has this purpose (O(1) lookup)
-        require(!ks.keyPurposes[_key].contains(_purpose), Errors.KeyAlreadyHasPurpose(_key, _purpose));
-
         Structs.Key storage k = ks.keys[_key];
 
-        // 2. Initialize new key if it doesn't exist yet
+        // 1. Initialize new key if it doesn't exist yet
         if (k.key == bytes32(0)) {
             k.key = _key;
             k.keyType = _type;
         }
 
-        // 3. Add purpose to key's purpose set and key to purpose's key set
-        ks.keyPurposes[_key].add(_purpose);
+        // 2. Add purpose to key's purpose set (reverts if already present) and key to purpose's key set
+        require(k.purposes.add(_purpose), Errors.KeyAlreadyHasPurpose(_key, _purpose));
         ks.keysByPurpose[_purpose].add(_key);
 
         emit KeyAdded(_key, _purpose, _type);
@@ -258,17 +230,14 @@ contract KeyManager is IERC734 {
         // 1. Validate key exists
         require(k.key == _key, Errors.KeyNotRegistered(_key));
 
-        // 2. Validate key has the specified purpose (O(1) lookup)
-        require(ks.keyPurposes[_key].contains(_purpose), Errors.KeyDoesNotHavePurpose(_key, _purpose));
-
-        // 3. Remove purpose from key's set and key from purpose's set
-        ks.keyPurposes[_key].remove(_purpose);
+        // 2. Remove purpose from key's set (reverts if not present) and key from purpose's set
+        require(k.purposes.remove(_purpose), Errors.KeyDoesNotHavePurpose(_key, _purpose));
         ks.keysByPurpose[_purpose].remove(_key);
 
         emit KeyRemoved(_key, _purpose, k.keyType);
 
         // If key has no more purposes, delete the entire key struct to save gas
-        if (ks.keyPurposes[_key].length() == 0) {
+        if (k.purposes.length() == 0) {
             delete ks.keys[_key];
         }
 
@@ -326,7 +295,7 @@ contract KeyManager is IERC734 {
 
         // O(1) lookup: Check if key has the specific purpose OR MANAGEMENT purpose
         // MANAGEMENT keys have universal permissions in the ERC-734 standard
-        return ks.keyPurposes[_key].contains(_purpose) || ks.keyPurposes[_key].contains(KeyPurposes.MANAGEMENT);
+        return ks.keys[_key].purposes.contains(_purpose) || ks.keys[_key].purposes.contains(KeyPurposes.MANAGEMENT);
     }
 
     /**
@@ -354,9 +323,7 @@ contract KeyManager is IERC734 {
             ks.executions[_id].approved = false;
         }
 
-        // Once approve() is called, the execution is no longer pending.
         ks.executions[_id].executed = true;
-        ks.pendingExecutionsBySelector[_extractSelector(ks.executions[_id].data)].remove(_id);
 
         return success;
     }
@@ -371,7 +338,7 @@ contract KeyManager is IERC734 {
         bytes32 _key = keccak256(abi.encode(initialManagementKey));
         ks.keys[_key].key = _key;
         ks.keys[_key].keyType = KeyTypes.ECDSA;
-        ks.keyPurposes[_key].add(KeyPurposes.MANAGEMENT);
+        ks.keys[_key].purposes.add(KeyPurposes.MANAGEMENT);
         ks.keysByPurpose[KeyPurposes.MANAGEMENT].add(_key);
 
         emit KeyAdded(_key, KeyPurposes.MANAGEMENT, KeyTypes.ECDSA);
@@ -415,18 +382,6 @@ contract KeyManager is IERC734 {
      */
     function _checkDelegated() internal view {
         require(_getKeyStorage().canInteract, Errors.InteractingWithLibraryContractForbidden());
-    }
-
-    /**
-     * @dev Extracts the function selector (first 4 bytes) from calldata.
-     * Returns bytes4(0) if data is shorter than 4 bytes.
-     * @param _data The calldata to extract the selector from
-     * @return selector The 4-byte function selector
-     */
-    function _extractSelector(bytes memory _data) internal pure returns (bytes4 selector) {
-        if (_data.length >= 4) {
-            selector = bytes4(_data);
-        }
     }
 
     /**
