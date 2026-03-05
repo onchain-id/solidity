@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.27;
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { IImplementationAuthority } from "../interface/IImplementationAuthority.sol";
-import { Errors } from "../libraries/Errors.sol";
+import {IImplementationAuthority} from "../interface/IImplementationAuthority.sol";
+import {Errors} from "../libraries/Errors.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract ImplementationAuthority is IImplementationAuthority, Ownable {
     // the address of implementation of ONCHAINID
@@ -19,9 +19,7 @@ contract ImplementationAuthority is IImplementationAuthority, Ownable {
     /**
      *  @dev See {IImplementationAuthority-updateImplementation}.
      */
-    function updateImplementation(
-        address _newImplementation
-    ) external override onlyOwner {
+    function updateImplementation(address _newImplementation) external override onlyOwner {
         require(_newImplementation != address(0), Errors.ZeroAddress());
         _implementation = _newImplementation;
         emit UpdatedImplementation(_newImplementation);

@@ -14,8 +14,5 @@ contract ClaimIssuerProxy is ERC1967Proxy {
      * @param implementation The address of the implementation contract
      * @param data The encoded function call to initialize the proxy
      */
-    constructor(
-        address implementation,
-        bytes memory data
-    ) ERC1967Proxy(implementation, data) {}
+    constructor(address implementation, bytes memory data) ERC1967Proxy(implementation, data) {}
 }

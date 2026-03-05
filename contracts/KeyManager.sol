@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import { IERC734 } from "./interface/IERC734.sol";
-import { Errors } from "./libraries/Errors.sol";
-import { KeyPurposes } from "./libraries/KeyPurposes.sol";
-import { KeyTypes } from "./libraries/KeyTypes.sol";
-import { Structs } from "./storage/Structs.sol";
+import {IERC734} from "./interface/IERC734.sol";
+import {Errors} from "./libraries/Errors.sol";
+import {KeyPurposes} from "./libraries/KeyPurposes.sol";
+import {KeyTypes} from "./libraries/KeyTypes.sol";
+import {Structs} from "./storage/Structs.sol";
 
 // Import events from IERC734
-import { IERC734 } from "./interface/IERC734.sol";
+import {IERC734} from "./interface/IERC734.sol";
 
 /**
  * @title KeyManager
@@ -59,20 +59,13 @@ contract KeyManager is IERC734 {
      * where id is the namespace identifier
      */
     bytes32 internal constant _KEY_STORAGE_SLOT =
-        keccak256(
-            abi.encode(
-                uint256(keccak256(bytes("onchainid.keymanager.storage"))) - 1
-            )
-        ) & ~bytes32(uint256(0xff));
+        keccak256(abi.encode(uint256(keccak256(bytes("onchainid.keymanager.storage"))) - 1)) & ~bytes32(uint256(0xff));
 
     /**
      * @notice Prevent any direct calls to the implementation contract (marked by _canInteract = false).
      */
     modifier delegatedOnly() {
-        require(
-            _getKeyStorage().canInteract,
-            Errors.InteractingWithLibraryContractForbidden()
-        );
+        _checkDelegated();
         _;
     }
 
@@ -81,11 +74,7 @@ contract KeyManager is IERC734 {
      */
     modifier onlyManager() {
         require(
-            msg.sender == address(this) ||
-                keyHasPurpose(
-                    keccak256(abi.encode(msg.sender)),
-                    KeyPurposes.MANAGEMENT
-                ),
+            msg.sender == address(this) || keyHasPurpose(keccak256(abi.encode(msg.sender)), KeyPurposes.MANAGEMENT),
             Errors.SenderDoesNotHaveManagementKey()
         );
         _;
@@ -106,11 +95,12 @@ contract KeyManager is IERC734 {
      * @param _data The calldata for the execution
      * @return executionId The ID to use in the approve function to approve or reject this execution
      */
-    function execute(
-        address _to,
-        uint256 _value,
-        bytes memory _data
-    ) external payable virtual returns (uint256 executionId) {
+    function execute(address _to, uint256 _value, bytes memory _data)
+        external
+        payable
+        virtual
+        returns (uint256 executionId)
+    {
         KeyStorage storage ks = _getKeyStorage();
         uint256 _executionId = ks.executionNonce;
         ks.executions[_executionId].to = _to;
@@ -144,20 +134,14 @@ contract KeyManager is IERC734 {
      * @return keyType Returns the full key data, if present in the identity.
      * @return key Returns the full key data, if present in the identity.
      */
-    function getKey(
-        bytes32 _key
-    )
+    function getKey(bytes32 _key)
         external
         view
         virtual
         returns (uint256[] memory purposes, uint256 keyType, bytes32 key)
     {
         KeyStorage storage ks = _getKeyStorage();
-        return (
-            ks.keys[_key].purposes,
-            ks.keys[_key].keyType,
-            ks.keys[_key].key
-        );
+        return (ks.keys[_key].purposes, ks.keys[_key].keyType, ks.keys[_key].key);
     }
 
     /**
@@ -166,9 +150,7 @@ contract KeyManager is IERC734 {
      * @param _key The public key.  for non-hex and long keys, its the Keccak256 hash of the key
      * @return _purposes Returns the purposes of the specified key
      */
-    function getKeyPurposes(
-        bytes32 _key
-    ) external view virtual returns (uint256[] memory _purposes) {
+    function getKeyPurposes(bytes32 _key) external view virtual returns (uint256[] memory _purposes) {
         return (_getKeyStorage().keys[_key].purposes);
     }
 
@@ -178,9 +160,7 @@ contract KeyManager is IERC734 {
      * @param _purpose a uint256[] Array of the key types, like 1 = MANAGEMENT, 2 = ACTION, 3 = CLAIM, 4 = ENCRYPTION
      * @return keys Returns an array of public key bytes32 hold by this identity and having the specified purpose
      */
-    function getKeysByPurpose(
-        uint256 _purpose
-    ) external view virtual returns (bytes32[] memory keys) {
+    function getKeysByPurpose(uint256 _purpose) external view virtual returns (bytes32[] memory keys) {
         return _getKeyStorage().keysByPurpose[_purpose];
     }
 
@@ -189,9 +169,7 @@ contract KeyManager is IERC734 {
      * @param _executionId The execution ID to get data for
      * @return execution including (to, value, data, approved, executed)
      */
-    function getExecutionData(
-        uint256 _executionId
-    ) external view virtual returns (Structs.Execution memory execution) {
+    function getExecutionData(uint256 _executionId) external view virtual returns (Structs.Execution memory execution) {
         return _getKeyStorage().executions[_executionId];
     }
 
@@ -210,18 +188,17 @@ contract KeyManager is IERC734 {
      * @param _purpose a uint256 specifying the key type, like 1 = MANAGEMENT, 2 = ACTION, 3 = CLAIM, 4 = ENCRYPTION
      * @return success Returns TRUE if the addition was successful and FALSE if not
      */
-    function addKey(
-        bytes32 _key,
-        uint256 _purpose,
-        uint256 _type
-    ) public virtual delegatedOnly onlyManager returns (bool success) {
+    function addKey(bytes32 _key, uint256 _purpose, uint256 _type)
+        public
+        virtual
+        delegatedOnly
+        onlyManager
+        returns (bool success)
+    {
         KeyStorage storage ks = _getKeyStorage();
 
         // 1. Early validation: Reject if key already has this purpose (O(1) lookup)
-        require(
-            ks.purposeIndexInKey[_key][_purpose] == 0,
-            Errors.KeyAlreadyHasPurpose(_key, _purpose)
-        );
+        require(ks.purposeIndexInKey[_key][_purpose] == 0, Errors.KeyAlreadyHasPurpose(_key, _purpose));
 
         Structs.Key storage k = ks.keys[_key];
 
@@ -237,9 +214,7 @@ contract KeyManager is IERC734 {
 
         // 4. Add key to _keysByPurpose array and update index mapping
         ks.keysByPurpose[_purpose].push(_key);
-        ks.keyIndexInPurpose[_purpose][_key] = ks
-            .keysByPurpose[_purpose]
-            .length; // Store 1-based index
+        ks.keyIndexInPurpose[_purpose][_key] = ks.keysByPurpose[_purpose].length; // Store 1-based index
 
         emit KeyAdded(_key, _purpose, _type);
         return true;
@@ -264,10 +239,7 @@ contract KeyManager is IERC734 {
      * @return success True if the purpose was successfully removed
      *
      */
-    function removeKey(
-        bytes32 _key,
-        uint256 _purpose
-    ) public virtual delegatedOnly onlyManager returns (bool success) {
+    function removeKey(bytes32 _key, uint256 _purpose) public virtual delegatedOnly onlyManager returns (bool success) {
         KeyStorage storage ks = _getKeyStorage();
 
         // Fetch the key data for efficient access
@@ -278,10 +250,7 @@ contract KeyManager is IERC734 {
 
         // 2. Validate key has the specified purpose (O(1) lookup)
         uint256 purposeIdxPlusOne = ks.purposeIndexInKey[_key][_purpose];
-        require(
-            purposeIdxPlusOne > 0,
-            Errors.KeyDoesNotHavePurpose(_key, _purpose)
-        );
+        require(purposeIdxPlusOne > 0, Errors.KeyDoesNotHavePurpose(_key, _purpose));
         uint256 purposeIdx = purposeIdxPlusOne - 1; // Convert to 0-based index
 
         // Remove purpose from key struct
@@ -311,10 +280,7 @@ contract KeyManager is IERC734 {
      *  If the destination address is the identity itself, then the execution would be authorized and performed only
      *  if the sender is a MANAGEMENT key.
      */
-    function approve(
-        uint256 _id,
-        bool _shouldApprove
-    ) public virtual delegatedOnly returns (bool success) {
+    function approve(uint256 _id, bool _shouldApprove) public virtual delegatedOnly returns (bool success) {
         KeyStorage storage ks = _getKeyStorage();
         require(_id < ks.executionNonce, Errors.InvalidRequestId());
         require(!ks.executions[_id].executed, Errors.RequestAlreadyExecuted());
@@ -322,18 +288,12 @@ contract KeyManager is IERC734 {
         // Validate that the sender has the appropriate key purpose
         if (ks.executions[_id].to == address(this)) {
             require(
-                keyHasPurpose(
-                    keccak256(abi.encode(msg.sender)),
-                    KeyPurposes.MANAGEMENT
-                ),
+                keyHasPurpose(keccak256(abi.encode(msg.sender)), KeyPurposes.MANAGEMENT),
                 Errors.SenderDoesNotHaveManagementKey()
             );
         } else {
             require(
-                keyHasPurpose(
-                    keccak256(abi.encode(msg.sender)),
-                    KeyPurposes.ACTION
-                ),
+                keyHasPurpose(keccak256(abi.encode(msg.sender)), KeyPurposes.ACTION),
                 Errors.SenderDoesNotHaveActionKey()
             );
         }
@@ -355,10 +315,7 @@ contract KeyManager is IERC734 {
      * @return result True if the key has the specified purpose or MANAGEMENT purpose
      *
      */
-    function keyHasPurpose(
-        bytes32 _key,
-        uint256 _purpose
-    ) public view virtual returns (bool result) {
+    function keyHasPurpose(bytes32 _key, uint256 _purpose) public view virtual returns (bool result) {
         KeyStorage storage ks = _getKeyStorage();
 
         // Early return if key doesn't exist
@@ -366,9 +323,7 @@ contract KeyManager is IERC734 {
 
         // O(1) lookup: Check if key has the specific purpose OR MANAGEMENT purpose
         // MANAGEMENT keys have universal permissions in the ERC-734 standard
-        return
-            ks.purposeIndexInKey[_key][_purpose] > 0 ||
-            ks.purposeIndexInKey[_key][KeyPurposes.MANAGEMENT] > 0;
+        return ks.purposeIndexInKey[_key][_purpose] > 0 || ks.purposeIndexInKey[_key][KeyPurposes.MANAGEMENT] > 0;
     }
 
     /**
@@ -377,10 +332,7 @@ contract KeyManager is IERC734 {
      * @param _shouldApprove Whether to approve or reject the execution
      * @return success Whether the execution was successful
      */
-    function _approve(
-        uint256 _id,
-        bool _shouldApprove
-    ) internal virtual returns (bool success) {
+    function _approve(uint256 _id, bool _shouldApprove) internal virtual returns (bool success) {
         KeyStorage storage ks = _getKeyStorage();
         emit Approved(_id, _shouldApprove);
 
@@ -388,28 +340,16 @@ contract KeyManager is IERC734 {
             ks.executions[_id].approved = true;
 
             // solhint-disable-next-line avoid-low-level-calls
-            (success, ) = ks.executions[_id].to.call{
-                value: (ks.executions[_id].value)
-            }(ks.executions[_id].data);
+            (success,) = ks.executions[_id].to.call{value: (ks.executions[_id].value)}(ks.executions[_id].data);
 
             if (success) {
                 ks.executions[_id].executed = true;
 
-                emit Executed(
-                    _id,
-                    ks.executions[_id].to,
-                    ks.executions[_id].value,
-                    ks.executions[_id].data
-                );
+                emit Executed(_id, ks.executions[_id].to, ks.executions[_id].value, ks.executions[_id].data);
 
                 return true;
             } else {
-                emit ExecutionFailed(
-                    _id,
-                    ks.executions[_id].to,
-                    ks.executions[_id].value,
-                    ks.executions[_id].data
-                );
+                emit ExecutionFailed(_id, ks.executions[_id].to, ks.executions[_id].value, ks.executions[_id].data);
 
                 return false;
             }
@@ -425,11 +365,7 @@ contract KeyManager is IERC734 {
      * @param _purpose The purpose to remove
      * @param _purposeIdx The index of the purpose in the key.purposes array
      */
-    function _removePurposeFromKey(
-        bytes32 _key,
-        uint256 _purpose,
-        uint256 _purposeIdx
-    ) internal virtual {
+    function _removePurposeFromKey(bytes32 _key, uint256 _purpose, uint256 _purposeIdx) internal virtual {
         KeyStorage storage ks = _getKeyStorage();
         Structs.Key storage k = ks.keys[_key];
 
@@ -457,17 +393,11 @@ contract KeyManager is IERC734 {
      * @param _purpose The purpose to remove the key from
      * @param _keyIdx The index of the key in the keysByPurpose array
      */
-    function _removeKeyFromPurposeIndex(
-        bytes32 _key,
-        uint256 _purpose,
-        uint256 _keyIdx
-    ) internal virtual {
+    function _removeKeyFromPurposeIndex(bytes32 _key, uint256 _purpose, uint256 _keyIdx) internal virtual {
         KeyStorage storage ks = _getKeyStorage();
 
         // Get the last key in the purpose array
-        bytes32 lastKey = ks.keysByPurpose[_purpose][
-            ks.keysByPurpose[_purpose].length - 1
-        ];
+        bytes32 lastKey = ks.keysByPurpose[_purpose][ks.keysByPurpose[_purpose].length - 1];
 
         // Move the last key to the position of the one being removed
         ks.keysByPurpose[_purpose][_keyIdx] = lastKey;
@@ -507,20 +437,6 @@ contract KeyManager is IERC734 {
     }
 
     /**
-     * @dev Internal helper to initialize key storage
-     * @param initialManagementKey The ethereum address to be set as the management key
-     */
-    function _initializeKeyStorage(address initialManagementKey) internal {
-        KeyStorage storage ks = _getKeyStorage();
-        require(!ks.initialized, Errors.InitialKeyAlreadySetup());
-
-        ks.initialized = true;
-        ks.canInteract = true;
-
-        _setupInitialManagementKey(initialManagementKey);
-    }
-
-    /**
      * @dev Internal method to check if an execution can be auto-approved based on key purposes.
      *
      * This function determines whether an execution request can be automatically approved
@@ -534,39 +450,30 @@ contract KeyManager is IERC734 {
      * @param _to The target address of the execution
      * @return canAutoApprove Whether the execution can be auto-approved
      */
-    function _canAutoApproveExecution(
-        address _to
-    ) internal view virtual returns (bool canAutoApprove) {
+    function _canAutoApproveExecution(address _to) internal view virtual returns (bool canAutoApprove) {
         // MANAGEMENT keys can auto-approve any execution
-        if (
-            keyHasPurpose(
-                keccak256(abi.encode(msg.sender)),
-                KeyPurposes.MANAGEMENT
-            )
-        ) {
+        if (keyHasPurpose(keccak256(abi.encode(msg.sender)), KeyPurposes.MANAGEMENT)) {
             return true;
         }
 
         // For identity contract calls, check if it's a CLAIM_SIGNER key
-        if (
-            _to == address(this) &&
-            keyHasPurpose(
-                keccak256(abi.encode(msg.sender)),
-                KeyPurposes.CLAIM_SIGNER
-            )
-        ) {
+        if (_to == address(this) && keyHasPurpose(keccak256(abi.encode(msg.sender)), KeyPurposes.CLAIM_SIGNER)) {
             return true;
         }
 
         // ACTION keys can auto-approve external calls
-        if (
-            _to != address(this) &&
-            keyHasPurpose(keccak256(abi.encode(msg.sender)), KeyPurposes.ACTION)
-        ) {
+        if (_to != address(this) && keyHasPurpose(keccak256(abi.encode(msg.sender)), KeyPurposes.ACTION)) {
             return true;
         }
 
         return false;
+    }
+
+    /**
+     * @dev Internal helper to enforce delegatedOnly check.
+     */
+    function _checkDelegated() internal view {
+        require(_getKeyStorage().canInteract, Errors.InteractingWithLibraryContractForbidden());
     }
 
     /**

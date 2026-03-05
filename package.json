@@ -2,25 +2,13 @@
   "name": "@onchain-id/solidity",
   "version": "2.2.2-beta3",
   "description": "EVM solidity smart contracts for Blockchain OnchainID identities.",
+  "license": "ISC",
+  "author": "OnchainID Organization",
+  "type": "module",
   "files": [
-    "artifacts",
     "contracts",
-    "index.js",
-    "index.d.ts",
-    "typechain-types"
+    "out"
   ],
-  "scripts": {
-    "test": "npx hardhat test",
-    "test:coverage": "npx hardhat coverage",
-    "compile": "npx hardhat compile",
-    "lint:js": "npx eslint \"**/*.js\"",
-    "lint:js-fix": "npx eslint \"**/*.js\" --fix",
-    "lint:sol": "npx prettier \"**/*.{json,sol,md}\" --check && npx solhint \"contracts/**/*.sol\"",
-    "lint:sol-fix": "npx prettier \"**/*.{json,sol,md}\" --write && npx solhint \"contracts/**/*.sol\" --fix",
-    "lint": "npm run lint:js && npm run lint:sol",
-    "lint:fix": "npm run lint:js-fix && npm run lint:sol-fix",
-    "prepare": "husky install"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/onchain-id/solidity.git"
@@ -34,33 +22,29 @@
     "solidity",
     "smart contracts"
   ],
-  "author": "OnchainID Organization",
-  "license": "ISC",
   "bugs": {
     "url": "https://github.com/onchain-id/solidity/issues"
   },
   "homepage": "https://github.com/onchain-id/solidity#readme",
-  "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^6.0.0",
-    "@nomiclabs/hardhat-solhint": "^3.1.0",
-    "@openzeppelin/contracts": "^5.2.0",
-    "eslint": "^9.32.0",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-prettier": "^5.5.3",
-    "eslint-plugin-promise": "^7.2.1",
-    "hardhat": "^2.25.0",
-    "hardhat-contract-sizer": "^2.8.0",
-    "husky": "^9.1.7",
-    "prettier": "^3.6.2",
-    "prettier-plugin-solidity": "^2.1.0",
-    "solady": "^0.1.15",
-    "solhint": "^6.0.0",
-    "solhint-community": "^4.0.1",
-    "solidity-coverage": "^0.8.14"
+  "scripts": {
+    "prepare": "husky && forge soldeer install",
+    "build": "forge build",
+    "test": "forge test",
+    "lint": "forge fmt --check",
+    "lint:fix": "forge fmt",
+    "coverage": "forge coverage --no-match-coverage \"(test|script|dependencies|node_modules|FormatResolver)\"",
+    "coverage:report": "mkdir -p coverage && forge coverage --no-match-coverage \"(test|script|dependencies|node_modules|FormatResolver)\" --report lcov --report-file coverage/lcov.info && genhtml coverage/lcov.info -o coverage/report --branch-coverage && open coverage/report/index.html",
+    "docs": "forge doc --serve --open",
+    "clean": "forge clean"
   },
-  "dependencies": {
-    "@openzeppelin/contracts-upgradeable": "^4.9.6",
-    "eslint-plugin-import": "^2.32.0",
-    "eslint-plugin-node": "^11.1.0"
+  "devDependencies": {
+    "@ballcat/commitlint-config-gitmoji": "^1.1.0",
+    "@commitlint/cli": "^19.8.1",
+    "husky": "^9.1.7"
+  },
+  "commitlint": {
+    "extends": [
+      "@ballcat/commitlint-config-gitmoji"
+    ]
   }
 }
