@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import { MulticallUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/MulticallUpgradeable.sol";
-import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import { IIdentity } from "./interface/IIdentity.sol";
+import { KeyManager } from "./KeyManager.sol";
 import { IClaimIssuer } from "./interface/IClaimIssuer.sol";
 import { IERC734 } from "./interface/IERC734.sol";
 import { IERC735 } from "./interface/IERC735.sol";
+import { IIdentity } from "./interface/IIdentity.sol";
 import { Errors } from "./libraries/Errors.sol";
 import { KeyPurposes } from "./libraries/KeyPurposes.sol";
 import { Structs } from "./storage/Structs.sol";
-import { KeyManager } from "./KeyManager.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { MulticallUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/MulticallUpgradeable.sol";
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 /**
  * @title Identity
@@ -35,12 +35,8 @@ import { KeyManager } from "./KeyManager.sol";
  * @custom:security This contract uses ERC-7201 storage slots to prevent storage collision attacks
  * in upgradeable contracts.
  */
-contract Identity is
-    Initializable,
-    IIdentity,
-    KeyManager,
-    MulticallUpgradeable
-{
+contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable {
+
     /**
      * @dev Storage struct for claim management data
      * @custom:storage-location erc7201:onchainid.identity.claim.storage
@@ -64,13 +60,9 @@ contract Identity is
      * Formula: keccak256(abi.encode(uint256(keccak256(bytes(id))) - 1)) & ~bytes32(uint256(0xff))
      * where id is the namespace identifier
      */
-    bytes32 internal constant _CLAIM_STORAGE_SLOT =
-        keccak256(
-            abi.encode(
-                uint256(keccak256(bytes("onchainid.identity.claim.storage"))) -
-                    1
-            )
-        ) & ~bytes32(uint256(0xff));
+    bytes32 internal constant _CLAIM_STORAGE_SLOT = keccak256(
+        abi.encode(uint256(keccak256(bytes("onchainid.identity.claim.storage"))) - 1)
+    ) & ~bytes32(uint256(0xff));
 
     // Key management functionality is inherited from KeyManager contract
 
@@ -79,11 +71,7 @@ contract Identity is
     /// @notice requires claim key to call this function, or internal call
     modifier onlyClaimKey() {
         require(
-            msg.sender == address(this) ||
-                keyHasPurpose(
-                    keccak256(abi.encode(msg.sender)),
-                    KeyPurposes.CLAIM_SIGNER
-                ),
+            msg.sender == address(this) || keyHasPurpose(keccak256(abi.encode(msg.sender)), KeyPurposes.CLAIM_SIGNER),
             Errors.SenderDoesNotHaveClaimSignerKey()
         );
         _;
@@ -112,9 +100,7 @@ contract Identity is
      * @dev This function initializes the contract and sets up the initial management key.
      * @param initialManagementKey The ethereum address to be set as the management key of the ONCHAINID.
      */
-    function initialize(
-        address initialManagementKey
-    ) external virtual initializer {
+    function initialize(address initialManagementKey) external virtual initializer {
         require(initialManagementKey != address(0), Errors.ZeroAddress());
         __Identity_init(initialManagementKey);
     }
@@ -126,9 +112,7 @@ contract Identity is
      * @param _topic The identity of the claim i.e. keccak256(abi.encode(_issuer, _topic))
      * @return claimIds Returns an array of claim IDs by topic.
      */
-    function getClaimIdsByTopic(
-        uint256 _topic
-    ) external view override(IERC735) returns (bytes32[] memory claimIds) {
+    function getClaimIdsByTopic(uint256 _topic) external view override(IERC735) returns (bytes32[] memory claimIds) {
         return _getClaimStorage().claimsByTopic[_topic];
     }
 
@@ -146,13 +130,9 @@ contract Identity is
      * @param interfaceId The interface identifier, as specified in ERC-165
      * @return true if the interface is supported, false otherwise
      */
-    function supportsInterface(
-        bytes4 interfaceId
-    ) external pure returns (bool) {
-        return (interfaceId == type(IERC165).interfaceId ||
-            interfaceId == type(IERC734).interfaceId ||
-            interfaceId == type(IERC735).interfaceId ||
-            interfaceId == type(IIdentity).interfaceId);
+    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
+        return (interfaceId == type(IERC165).interfaceId || interfaceId == type(IERC734).interfaceId
+                || interfaceId == type(IERC735).interfaceId || interfaceId == type(IIdentity).interfaceId);
     }
 
     /**
@@ -186,24 +166,14 @@ contract Identity is
         string memory _uri
     ) public delegatedOnly onlyClaimKey returns (bytes32 claimRequestId) {
         require(
-            IClaimIssuer(_issuer).isClaimValid(
-                IIdentity(address(this)),
-                _topic,
-                _signature,
-                _data
-            ),
+            IClaimIssuer(_issuer).isClaimValid(IIdentity(address(this)), _topic, _signature, _data),
             Errors.InvalidClaim()
         );
 
         ClaimStorage storage cs = _getClaimStorage();
         bytes32 claimId = keccak256(abi.encode(_issuer, _topic));
         cs.claims[claimId] = Structs.Claim({
-            topic: _topic,
-            scheme: _scheme,
-            issuer: _issuer,
-            signature: _signature,
-            data: _data,
-            uri: _uri
+            topic: _topic, scheme: _scheme, issuer: _issuer, signature: _signature, data: _data, uri: _uri
         });
 
         // 2. New claim or update existing
@@ -212,16 +182,7 @@ contract Identity is
             _setupNewClaim(cs, claimId, _topic);
         }
 
-        _emitClaimEvent(
-            claimId,
-            _topic,
-            _scheme,
-            _issuer,
-            _signature,
-            _data,
-            _uri,
-            isNew
-        );
+        _emitClaimEvent(claimId, _topic, _scheme, _issuer, _signature, _data, _uri, isNew);
         return claimId;
     }
 
@@ -243,15 +204,7 @@ contract Identity is
      * @return success True if the claim was successfully removed
      *
      */
-    function removeClaim(
-        bytes32 _claimId
-    )
-        public
-        override(IERC735)
-        delegatedOnly
-        onlyClaimKey
-        returns (bool success)
-    {
+    function removeClaim(bytes32 _claimId) public override(IERC735) delegatedOnly onlyClaimKey returns (bool success) {
         ClaimStorage storage cs = _getClaimStorage();
 
         // 1. Validate claim exists and get topic
@@ -268,15 +221,7 @@ contract Identity is
         _removeClaimFromTopicIndex(cs, _claimId, topic, claimIdx);
 
         // 4. Emit event with claim details before deletion
-        emit ClaimRemoved(
-            _claimId,
-            topic,
-            c.scheme,
-            c.issuer,
-            c.signature,
-            c.data,
-            c.uri
-        );
+        emit ClaimRemoved(_claimId, topic, c.scheme, c.issuer, c.signature, c.data, c.uri);
 
         // 5. Clean up the claim data
         delete cs.claims[_claimId];
@@ -303,9 +248,7 @@ contract Identity is
      * @return uri Returns all the parameters of the claim for the
      * specified _claimId (topic, scheme, signature, issuer, data, uri) .
      */
-    function getClaim(
-        bytes32 _claimId
-    )
+    function getClaim(bytes32 _claimId)
         public
         view
         override(IERC735)
@@ -319,14 +262,7 @@ contract Identity is
         )
     {
         Structs.Claim storage claim = _getClaimStorage().claims[_claimId];
-        return (
-            claim.topic,
-            claim.scheme,
-            claim.issuer,
-            claim.signature,
-            claim.data,
-            claim.uri
-        );
+        return (claim.topic, claim.scheme, claim.issuer, claim.signature, claim.data, claim.uri);
     }
 
     /**
@@ -339,25 +275,21 @@ contract Identity is
      * @param data the data field of the claim
      * @return claimValid true if the claim is valid, false otherwise
      */
-    function isClaimValid(
-        IIdentity _identity,
-        uint256 claimTopic,
-        bytes memory sig,
-        bytes memory data
-    ) public view virtual override returns (bool claimValid) {
+    function isClaimValid(IIdentity _identity, uint256 claimTopic, bytes memory sig, bytes memory data)
+        public
+        view
+        virtual
+        override
+        returns (bool claimValid)
+    {
         // Step 1: Create the data hash that was signed
         bytes32 dataHash = keccak256(abi.encode(_identity, claimTopic, data));
 
         // Step 2: Add Ethereum signature prefix for EIP-191 compliance
-        bytes32 prefixedHash = keccak256(
-            abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash)
-        );
+        bytes32 prefixedHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash));
 
         // Step 3: Recover the signer's address from the signature using OpenZeppelin's ECDSA
-        (address recovered, ECDSA.RecoverError error, ) = ECDSA.tryRecover(
-            prefixedHash,
-            sig
-        );
+        (address recovered, ECDSA.RecoverError error,) = ECDSA.tryRecover(prefixedHash, sig);
 
         // If recovery failed, return false
         if (error != ECDSA.RecoverError.NoError) {
@@ -381,10 +313,7 @@ contract Identity is
     // solhint-disable-next-line func-name-mixedcase
     function __Identity_init(address initialManagementKey) internal {
         KeyStorage storage ks = _getKeyStorage();
-        require(
-            !ks.initialized || _isConstructor(),
-            Errors.InitialKeyAlreadySetup()
-        );
+        require(!ks.initialized, Errors.InitialKeyAlreadySetup());
         ks.initialized = true;
         ks.canInteract = true;
 
@@ -404,12 +333,9 @@ contract Identity is
      * @param _topic The topic identifier for the claim
      * @param _claimIdx The 0-based index of the claim in the claimsByTopic array
      */
-    function _removeClaimFromTopicIndex(
-        ClaimStorage storage cs,
-        bytes32 _claimId,
-        uint256 _topic,
-        uint256 _claimIdx
-    ) internal {
+    function _removeClaimFromTopicIndex(ClaimStorage storage cs, bytes32 _claimId, uint256 _topic, uint256 _claimIdx)
+        internal
+    {
         uint256 lastClaimIdx = cs.claimsByTopic[_topic].length - 1;
 
         // Step 1: Implement swap-and-pop strategy if claim is not the last element
@@ -441,15 +367,9 @@ contract Identity is
      * @param _claimId The unique identifier of the claim
      * @param _topic The topic of the claim
      */
-    function _setupNewClaim(
-        ClaimStorage storage cs,
-        bytes32 _claimId,
-        uint256 _topic
-    ) internal {
+    function _setupNewClaim(ClaimStorage storage cs, bytes32 _claimId, uint256 _topic) internal {
         cs.claimsByTopic[_topic].push(_claimId);
-        cs.claimIndexInTopic[_topic][_claimId] = cs
-            .claimsByTopic[_topic]
-            .length; // index+1
+        cs.claimIndexInTopic[_topic][_claimId] = cs.claimsByTopic[_topic].length; // index+1
         cs.claimExists[_claimId] = true;
     }
 
@@ -479,25 +399,9 @@ contract Identity is
         bool _isNew
     ) internal {
         if (_isNew) {
-            emit ClaimAdded(
-                _claimId,
-                _topic,
-                _scheme,
-                _issuer,
-                _signature,
-                _data,
-                _uri
-            );
+            emit ClaimAdded(_claimId, _topic, _scheme, _issuer, _signature, _data, _uri);
         } else {
-            emit ClaimChanged(
-                _claimId,
-                _topic,
-                _scheme,
-                _issuer,
-                _signature,
-                _data,
-                _uri
-            );
+            emit ClaimChanged(_claimId, _topic, _scheme, _issuer, _signature, _data, _uri);
         }
     }
 
@@ -512,18 +416,4 @@ contract Identity is
         }
     }
 
-    /**
-     * @notice Computes if the context in which the function is called is a constructor or not.
-     *
-     * @return true if the context is a constructor.
-     */
-    function _isConstructor() private view returns (bool) {
-        address self = address(this);
-        uint256 cs;
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            cs := extcodesize(self)
-        }
-        return cs == 0;
-    }
 }

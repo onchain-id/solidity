@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 contract Structs {
+
     /**
      *  @dev Definition of the structure of a Key.
      *
@@ -71,4 +72,5 @@ contract Structs {
         bytes data;
         string uri;
     }
+
 }

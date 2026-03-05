@@ -1,15 +1,30 @@
+# Compiler files
+cache/
+out/
+coverage/
+coverage.json
+lcov.info
+typechain-types/
+artifacts/
+
+# Dependencies
+node_modules/
+
+# Ignores development broadcast logs
+!/broadcast
+/broadcast/*/31337/
+/broadcast/**/dry-run/
+
+# Docs
+docs/
+
 # Logs
 logs
 *.log
 
-# Coverage
-coverage
-
-# Dependencies
-node_modules
-
 # Build
 build/
+gas-report.txt
 
 # macOS
 .DS_Store
@@ -18,8 +33,9 @@ build/
 .idea
 .vscode
 
-# Artifacts
-artifacts
-coverage.json
-cache
-typechain-types
+# Environment variables
+.env
+.env.local
+
+# Soldeer
+/dependencies

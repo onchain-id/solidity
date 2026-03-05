@@ -1,0 +1,5 @@
+@forge-std/=dependencies/forge-std-v1.14.0/src/
+@openzeppelin/contracts-upgradeable/=dependencies/@openzeppelin-contracts-upgradeable-4.9.6/
+@openzeppelin/contracts/=dependencies/@openzeppelin-contracts-5.2.0/
+forge-std/=dependencies/forge-std-v1.14.0/src/
+solady/=dependencies/solady-0.1.15/

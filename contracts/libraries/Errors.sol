@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 /// @title Errors
 /// @notice Library containing all custom errors the protocol may revert with
 library Errors {
+
     /* ----- Generic ----- */
 
     /// @notice Reverts if the address is zero
@@ -174,4 +175,5 @@ library Errors {
 
     /// @notice The call failed.
     error CallFailed();
+
 }
