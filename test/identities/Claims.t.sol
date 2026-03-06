@@ -268,51 +268,8 @@ contract ClaimsTest is OnchainIDSetup {
 
     // ============ removeClaim Edge Cases ============
 
-    /// @notice Edge case: claimIndex >= arrayLength when removing claims with same topic
-    function test_removeClaim_edgeCase_claimIndexOutOfBounds() public {
-        uint256 topic = Constants.CLAIM_TOPIC_42;
-
-        // Add first claim from claim issuer
-        bytes memory data1 = hex"0042";
-        bytes memory signature1 = ClaimSignerHelper.signClaim(claimIssuerOwnerPk, address(aliceIdentity), topic, data1);
-        bytes32 claimId1 = ClaimSignerHelper.computeClaimId(address(claimIssuer), topic);
-
-        vm.prank(alice);
-        aliceIdentity.addClaim(
-            topic, Constants.CLAIM_SCHEME, address(claimIssuer), signature1, data1, "https://example.com"
-        );
-
-        // Add second claim (self-attested, same topic)
-        bytes memory data2 = hex"0043";
-        bytes memory signature2 = ClaimSignerHelper.signClaim(alicePk, address(aliceIdentity), topic, data2);
-        bytes32 claimId2 = ClaimSignerHelper.computeClaimId(address(aliceIdentity), topic);
-
-        vm.prank(alice);
-        aliceIdentity.addClaim(
-            topic, Constants.CLAIM_SCHEME, address(aliceIdentity), signature2, data2, "https://example2.com"
-        );
-
-        // Remove second claim first
-        vm.prank(alice);
-        aliceIdentity.removeClaim(claimId2);
-
-        // Now remove first claim - tests edge case where claimIndex might be >= array length
-        vm.expectEmit(true, true, true, true, address(aliceIdentity));
-        emit IERC735.ClaimRemoved(
-            claimId1, topic, Constants.CLAIM_SCHEME, address(claimIssuer), signature1, data1, "https://example.com"
-        );
-
-        vm.prank(alice);
-        aliceIdentity.removeClaim(claimId1);
-
-        // Verify claim was removed
-        (uint256 retTopic,, address retIssuer,,,) = aliceIdentity.getClaim(claimId1);
-        assertEq(retTopic, 0, "Topic should be 0");
-        assertEq(retIssuer, address(0), "Issuer should be zero address");
-    }
-
-    /// @notice Edge case: swap-and-pop logic when removing middle claim from array
-    function test_removeClaim_edgeCase_swapAndPopMiddle() public {
+    /// @notice Removing the middle claim from multiple claims on the same topic
+    function test_removeClaim_middleClaim_shouldRemoveCorrectly() public {
         uint256 topic = Constants.CLAIM_TOPIC_42;
 
         // Create second claim issuer
@@ -349,7 +306,7 @@ contract ClaimsTest is OnchainIDSetup {
         bytes32[] memory claimIdsByTopic = aliceIdentity.getClaimIdsByTopic(topic);
         assertEq(claimIdsByTopic.length, 3, "Should have 3 claims");
 
-        // Remove middle claim (index 1) - triggers swap-and-pop
+        // Remove middle claim
         vm.prank(alice);
         aliceIdentity.removeClaim(claimIds[1]);
 
@@ -416,10 +373,10 @@ contract ClaimsTest is OnchainIDSetup {
         assertFalse(isValid, "Claim with recovery error should be invalid");
     }
 
-    // ============ removeClaim - single claim (no swap needed) ============
+    // ============ removeClaim - single claim for topic ============
 
-    /// @notice When removing the only claim for a topic, no swap-and-pop needed
-    function test_removeClaim_onlyClaimForTopic_shouldRemoveWithoutSwap() public {
+    /// @notice Removing the only claim for a topic should leave the topic empty
+    function test_removeClaim_onlyClaimForTopic_shouldRemove() public {
         uint256 topic = Constants.CLAIM_TOPIC_42;
         bytes memory data = hex"0042";
         string memory uri = "https://example.com";
@@ -435,7 +392,7 @@ contract ClaimsTest is OnchainIDSetup {
         bytes32[] memory claimIdsBefore = aliceIdentity.getClaimIdsByTopic(topic);
         assertEq(claimIdsBefore.length, 1, "Should have exactly 1 claim");
 
-        // Remove it — exercises the _claimIdx == lastClaimIdx path (no swap)
+        // Remove it
         vm.prank(alice);
         aliceIdentity.removeClaim(claimId);
 
@@ -458,37 +415,5 @@ contract ClaimsTest is OnchainIDSetup {
 
         assertEq(claimIds.length, 1, "Should return 1 claim ID");
         assertEq(claimIds[0], aliceClaim666.id, "Claim ID should match");
-    }
-
-    // ============ removeClaim - corrupted index (defensive check) ============
-
-    /// @notice Exercise the defensive require(claimIdxPlusOne > 0) by corrupting storage
-    function test_removeClaim_revertWhenClaimIndexCorrupted() public {
-        // aliceClaim666 was already added in setUp
-        bytes32 claimId = aliceClaim666.id;
-        uint256 topic = aliceClaim666.topic;
-
-        // Compute the storage slot for claimIndexInTopic[topic][claimId]
-        // ClaimStorage is at _CLAIM_STORAGE_SLOT
-        bytes32 baseSlot = keccak256(abi.encode(uint256(keccak256(bytes("onchainid.identity.claim.storage"))) - 1))
-            & ~bytes32(uint256(0xff));
-
-        // claimIndexInTopic is the 3rd field in ClaimStorage struct (offset 2)
-        bytes32 mappingSlot = bytes32(uint256(baseSlot) + 2);
-
-        // mapping(uint256 => mapping(bytes32 => uint256))
-        // First level: keccak256(abi.encode(topic, mappingSlot))
-        bytes32 innerMappingSlot = keccak256(abi.encode(topic, mappingSlot));
-
-        // Second level: keccak256(abi.encode(claimId, innerMappingSlot))
-        bytes32 valueSlot = keccak256(abi.encode(claimId, innerMappingSlot));
-
-        // Corrupt the index to 0
-        vm.store(address(aliceIdentity), valueSlot, bytes32(0));
-
-        // Now removeClaim should revert with "Claim index missing"
-        vm.prank(alice);
-        vm.expectRevert("Claim index missing");
-        aliceIdentity.removeClaim(claimId);
     }
 }

@@ -326,10 +326,10 @@ contract ExecutionsTest is OnchainIDSetup {
 
         assertEq(carol.balance, carolBalanceBefore);
 
-        // Verify execution is still pending
+        // Verify execution is finalized (not approved, but marked executed to prevent replay)
         Structs.Execution memory exec = aliceIdentity.getExecutionData(0);
         assertFalse(exec.approved);
-        assertFalse(exec.executed);
+        assertTrue(exec.executed);
     }
 
     function test_autoApprovalForAddClaimWithClaimSignerKey() public {
@@ -407,10 +407,10 @@ contract ExecutionsTest is OnchainIDSetup {
         assertTrue(execData1.executed);
         assertTrue(aliceIdentity.keyHasPurpose(key1, KeyPurposes.ACTION));
 
-        // Verify exec2: not approved, not executed
+        // Verify exec2: not approved, but finalized (executed=true to prevent replay)
         Structs.Execution memory execData2 = aliceIdentity.getExecutionData(exec2);
         assertFalse(execData2.approved);
-        assertFalse(execData2.executed);
+        assertTrue(execData2.executed);
         assertFalse(aliceIdentity.keyHasPurpose(key2, KeyPurposes.ACTION));
 
         // Verify exec3: approved and executed
