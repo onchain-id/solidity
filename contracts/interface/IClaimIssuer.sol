@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import "./IIdentity.sol";
 
 interface IClaimIssuer is IIdentity {
+
     /**
      * @dev Emitted when a claim is revoked.
      *
@@ -96,4 +97,5 @@ interface IClaimIssuer is IIdentity {
         external
         view
         returns (bool);
+
 }

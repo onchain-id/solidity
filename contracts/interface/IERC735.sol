@@ -5,6 +5,7 @@ pragma solidity ^0.8.27;
  * @dev interface of the ERC735 (Claim Holder) standard as defined in the EIP.
  */
 interface IERC735 {
+
     /**
      * @dev Emitted when a claim was added.
      *
@@ -100,4 +101,5 @@ interface IERC735 {
      * @dev Returns an array of claim IDs by topic.
      */
     function getClaimIdsByTopic(uint256 _topic) external view returns (bytes32[] memory claimIds);
+
 }

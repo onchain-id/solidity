@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 interface IIdFactory {
+
     /// events
     // event emitted whenever a single contract is deployed by the factory
     event Deployed(address indexed _addr);
@@ -172,4 +173,5 @@ interface IIdFactory {
      * @dev getter for the implementation authority used by this factory.
      */
     function implementationAuthority() external view returns (address);
+
 }

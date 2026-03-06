@@ -5,6 +5,7 @@ pragma solidity ^0.8.27;
  * @dev interface of the ERC734 (Key Holder) standard as defined in the EIP.
  */
 interface IERC734 {
+
     /**
      * @dev Emitted when an execution request was approved.
      *
@@ -107,4 +108,5 @@ interface IERC734 {
      * @dev Returns TRUE if a key is present and has the given purpose. If the key is not present it returns FALSE.
      */
     function keyHasPurpose(bytes32 _key, uint256 _purpose) external view returns (bool exists);
+
 }

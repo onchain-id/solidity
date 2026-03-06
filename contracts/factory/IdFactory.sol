@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
-import {Nonces} from "@openzeppelin/contracts/utils/Nonces.sol";
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { Nonces } from "@openzeppelin/contracts/utils/Nonces.sol";
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
+import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import {IERC734} from "../interface/IERC734.sol";
-import {Errors} from "../libraries/Errors.sol";
-import {KeyPurposes} from "../libraries/KeyPurposes.sol";
-import {KeyTypes} from "../libraries/KeyTypes.sol";
-import {IdentityProxy} from "../proxy/IdentityProxy.sol";
-import {IIdFactory} from "./IIdFactory.sol";
+import { IERC734 } from "../interface/IERC734.sol";
+import { Errors } from "../libraries/Errors.sol";
+import { KeyPurposes } from "../libraries/KeyPurposes.sol";
+import { KeyTypes } from "../libraries/KeyTypes.sol";
+import { IdentityProxy } from "../proxy/IdentityProxy.sol";
+import { IIdFactory } from "./IIdFactory.sol";
 
 contract IdFactory is IIdFactory, Ownable, EIP712, Nonces {
+
     using EnumerableSet for EnumerableSet.AddressSet;
 
     uint256 private constant _MAX_WALLETS_PER_IDENTITY = 101;
@@ -309,4 +310,5 @@ contract IdFactory is IIdFactory, Ownable, EIP712, Nonces {
         (address signer, ECDSA.RecoverError error,) = ECDSA.tryRecover(digest, signature);
         require(error == ECDSA.RecoverError.NoError && signer == wallet, Errors.InvalidSignature());
     }
+
 }

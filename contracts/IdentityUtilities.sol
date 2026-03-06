@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.30;
 
-import {IClaimIssuer} from "./interface/IClaimIssuer.sol";
-import {IIdentity} from "./interface/IIdentity.sol";
-import {IIdentityUtilities} from "./interface/IIdentityUtilities.sol";
-import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import { IClaimIssuer } from "./interface/IClaimIssuer.sol";
+import { IIdentity } from "./interface/IIdentity.sol";
+import { IIdentityUtilities } from "./interface/IIdentityUtilities.sol";
+import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 
 /**
  * @title IdentityUtilities
@@ -14,6 +14,7 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeab
  * using ABI-encoded `string[]` arrays.
  */
 contract IdentityUtilities is IIdentityUtilities, AccessControlUpgradeable, UUPSUpgradeable {
+
     /// @notice Role identifier for accounts allowed to manage topics
     bytes32 public constant TOPIC_MANAGER_ROLE = keccak256("TOPIC_MANAGER_ROLE");
 
@@ -49,7 +50,7 @@ contract IdentityUtilities is IIdentityUtilities, AccessControlUpgradeable, UUPS
         _validateFieldArrays(encodedFieldNames, encodedFieldTypes);
 
         _topics[topicId] =
-            TopicInfo({name: name, encodedFieldNames: encodedFieldNames, encodedFieldTypes: encodedFieldTypes});
+            TopicInfo({ name: name, encodedFieldNames: encodedFieldNames, encodedFieldTypes: encodedFieldTypes });
 
         emit TopicAdded(topicId, name, encodedFieldNames, encodedFieldTypes);
     }
@@ -68,7 +69,7 @@ contract IdentityUtilities is IIdentityUtilities, AccessControlUpgradeable, UUPS
         _validateFieldArrays(encodedFieldNames, encodedFieldTypes);
 
         _topics[topicId] =
-            TopicInfo({name: name, encodedFieldNames: encodedFieldNames, encodedFieldTypes: encodedFieldTypes});
+            TopicInfo({ name: name, encodedFieldNames: encodedFieldNames, encodedFieldTypes: encodedFieldTypes });
 
         emit TopicUpdated(topicId, name, encodedFieldNames, encodedFieldTypes);
     }
@@ -172,7 +173,7 @@ contract IdentityUtilities is IIdentityUtilities, AccessControlUpgradeable, UUPS
      * @dev Required override for UUPS upgradability authorization
      * @param newImplementation Address of the new implementation
      */
-    function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) { }
 
     function _countTotalClaims(address identity, uint256[] calldata topicIds) internal view returns (uint256 total) {
         for (uint256 i = 0; i < topicIds.length; i++) {
@@ -240,4 +241,5 @@ contract IdentityUtilities is IIdentityUtilities, AccessControlUpgradeable, UUPS
 
     /// @dev Reserved storage space to allow future layout changes
     uint256[50] private __gap; // solhint-disable-line ordering
+
 }

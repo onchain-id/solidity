@@ -5,6 +5,7 @@ pragma solidity 0.8.30;
 /// @notice Interface for a schema registry that maps topic IDs to structured metadata schemas
 /// @dev Each topic is uniquely identified and contains ABI-encoded arrays of field names and types
 interface IIdentityUtilities {
+
     /**
      * @notice Struct that defines a registered topic schema
      * @param name Human-readable name of the topic
@@ -106,4 +107,5 @@ interface IIdentityUtilities {
      * @return TopicInfo[] Array of TopicInfo structs corresponding to the input topic IDs
      */
     function getTopicInfos(uint256[] calldata topicIds) external view returns (TopicInfo[] memory);
+
 }

@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {ClaimSignerHelper} from "../helpers/ClaimSignerHelper.sol";
-import {OnchainIDSetup} from "../helpers/OnchainIDSetup.sol";
-import {IIdentity} from "contracts/interface/IIdentity.sol";
-import {Errors} from "contracts/libraries/Errors.sol";
-import {KeyPurposes} from "contracts/libraries/KeyPurposes.sol";
-import {KeyTypes} from "contracts/libraries/KeyTypes.sol";
-import {Test as TestContract} from "test/mocks/Test.sol";
+import { ClaimSignerHelper } from "../helpers/ClaimSignerHelper.sol";
+import { OnchainIDSetup } from "../helpers/OnchainIDSetup.sol";
+import { IIdentity } from "contracts/interface/IIdentity.sol";
+import { Errors } from "contracts/libraries/Errors.sol";
+import { KeyPurposes } from "contracts/libraries/KeyPurposes.sol";
+import { KeyTypes } from "contracts/libraries/KeyTypes.sol";
+import { Test as TestContract } from "test/mocks/Test.sol";
 
 /// @notice Test suite for ClaimIssuer.addClaimTo functionality
 contract ClaimToTest is OnchainIDSetup {
+
     /// @notice When claimIssuer has MANAGEMENT key on aliceIdentity, addClaimTo auto-approves
     function test_addClaimTo_withManagementKey() public {
         // Add claimIssuer as MANAGEMENT key on aliceIdentity
@@ -186,4 +187,5 @@ contract ClaimToTest is OnchainIDSetup {
             topic, 1, signature, data, "https://example.com/invalid-claim", IIdentity(address(invalidIdentity))
         );
     }
+
 }

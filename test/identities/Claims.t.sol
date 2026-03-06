@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {ClaimSignerHelper} from "../helpers/ClaimSignerHelper.sol";
-import {OnchainIDSetup} from "../helpers/OnchainIDSetup.sol";
-import {Constants} from "../utils/Constants.sol";
-import {ClaimIssuer} from "contracts/ClaimIssuer.sol";
-import {Identity} from "contracts/Identity.sol";
-import {IERC734} from "contracts/interface/IERC734.sol";
-import {IERC735} from "contracts/interface/IERC735.sol";
-import {IIdentity} from "contracts/interface/IIdentity.sol";
-import {Errors} from "contracts/libraries/Errors.sol";
-import {KeyPurposes} from "contracts/libraries/KeyPurposes.sol";
-import {KeyTypes} from "contracts/libraries/KeyTypes.sol";
+import { ClaimSignerHelper } from "../helpers/ClaimSignerHelper.sol";
+import { OnchainIDSetup } from "../helpers/OnchainIDSetup.sol";
+import { Constants } from "../utils/Constants.sol";
+import { ClaimIssuer } from "contracts/ClaimIssuer.sol";
+import { Identity } from "contracts/Identity.sol";
+import { IERC734 } from "contracts/interface/IERC734.sol";
+import { IERC735 } from "contracts/interface/IERC735.sol";
+import { IIdentity } from "contracts/interface/IIdentity.sol";
+import { Errors } from "contracts/libraries/Errors.sol";
+import { KeyPurposes } from "contracts/libraries/KeyPurposes.sol";
+import { KeyTypes } from "contracts/libraries/KeyTypes.sol";
 
 /// @notice Test suite for claim management functionality (addClaim, removeClaim, getClaim, getClaimIdsByTopic)
 contract ClaimsTest is OnchainIDSetup {
+
     // ============ addClaim - Self-Attested (issuer = identity) ============
 
     /// @notice When claim is self-attested but signature is invalid, should revert
@@ -416,4 +417,5 @@ contract ClaimsTest is OnchainIDSetup {
         assertEq(claimIds.length, 1, "Should return 1 claim ID");
         assertEq(claimIds[0], aliceClaim666.id, "Claim ID should match");
     }
+
 }

@@ -6,6 +6,7 @@ import "./IERC735.sol";
 
 // solhint-disable-next-line no-empty-blocks
 interface IIdentity is IERC734, IERC735 {
+
     /**
      * @dev Checks if a claim is valid.
      * @param _identity the identity contract related to the claim
@@ -18,4 +19,5 @@ interface IIdentity is IERC734, IERC735 {
         external
         view
         returns (bool);
+
 }

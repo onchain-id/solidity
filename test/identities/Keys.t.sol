@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {ClaimSignerHelper} from "../helpers/ClaimSignerHelper.sol";
-import {OnchainIDSetup} from "../helpers/OnchainIDSetup.sol";
-import {Errors} from "contracts/libraries/Errors.sol";
-import {KeyPurposes} from "contracts/libraries/KeyPurposes.sol";
-import {KeyTypes} from "contracts/libraries/KeyTypes.sol";
+import { ClaimSignerHelper } from "../helpers/ClaimSignerHelper.sol";
+import { OnchainIDSetup } from "../helpers/OnchainIDSetup.sol";
+import { Errors } from "contracts/libraries/Errors.sol";
+import { KeyPurposes } from "contracts/libraries/KeyPurposes.sol";
+import { KeyTypes } from "contracts/libraries/KeyTypes.sol";
 
 /// @notice Tests for Identity Key Management (ERC-734)
 contract KeysTest is OnchainIDSetup {
+
     bytes32 public aliceKeyHash;
     bytes32 public bobKeyHash;
 
@@ -191,4 +192,5 @@ contract KeysTest is OnchainIDSetup {
         assertEq(key2, bytes32(0), "Key should be deleted");
         assertEq(keyType2, 0, "Key type should be 0");
     }
+
 }

@@ -2,10 +2,11 @@
 
 pragma solidity ^0.8.27;
 
-import {IImplementationAuthority} from "../interface/IImplementationAuthority.sol";
-import {Errors} from "../libraries/Errors.sol";
+import { IImplementationAuthority } from "../interface/IImplementationAuthority.sol";
+import { Errors } from "../libraries/Errors.sol";
 
 contract IdentityProxy {
+
     /**
      *  @dev constructor of the proxy Identity contract
      *  @param _implementationAuthority the implementation Authority contract address
@@ -63,4 +64,5 @@ contract IdentityProxy {
         }
         return implemAuth;
     }
+
 }

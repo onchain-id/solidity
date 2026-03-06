@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {Vm} from "forge-std/Vm.sol";
+import { Vm } from "forge-std/Vm.sol";
 
 /// @notice Helper library for building and signing claims in tests
 /// @dev Centralizes the EIP-191 signature logic used across many test files
 library ClaimSignerHelper {
+
     struct Claim {
         address identity;
         address issuer;
@@ -64,4 +65,5 @@ library ClaimSignerHelper {
         claim.id = computeClaimId(issuerAddr, topic);
         claim.signature = signClaim(signerPk, identityAddr, topic, data);
     }
+
 }

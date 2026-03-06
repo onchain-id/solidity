@@ -1,18 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {ClaimSignerHelper} from "../helpers/ClaimSignerHelper.sol";
-import {OnchainIDSetup} from "../helpers/OnchainIDSetup.sol";
-import {Identity} from "contracts/Identity.sol";
-import {KeyManager} from "contracts/KeyManager.sol";
-import {IERC734} from "contracts/interface/IERC734.sol";
-import {IERC735} from "contracts/interface/IERC735.sol";
-import {Errors} from "contracts/libraries/Errors.sol";
-import {KeyPurposes} from "contracts/libraries/KeyPurposes.sol";
-import {KeyTypes} from "contracts/libraries/KeyTypes.sol";
-import {Structs} from "contracts/storage/Structs.sol";
+import { ClaimSignerHelper } from "../helpers/ClaimSignerHelper.sol";
+import { OnchainIDSetup } from "../helpers/OnchainIDSetup.sol";
+import { Identity } from "contracts/Identity.sol";
+import { KeyManager } from "contracts/KeyManager.sol";
+import { IERC734 } from "contracts/interface/IERC734.sol";
+import { IERC735 } from "contracts/interface/IERC735.sol";
+import { Errors } from "contracts/libraries/Errors.sol";
+import { KeyPurposes } from "contracts/libraries/KeyPurposes.sol";
+import { KeyTypes } from "contracts/libraries/KeyTypes.sol";
+import { Structs } from "contracts/storage/Structs.sol";
 
 contract ExecutionsTest is OnchainIDSetup {
+
     function test_getCurrentNonce_newIdentityReturnsZero() public view {
         assertEq(aliceIdentity.getCurrentNonce(), 0);
     }
@@ -21,11 +22,11 @@ contract ExecutionsTest is OnchainIDSetup {
         vm.deal(alice, 1 ether);
 
         vm.prank(alice);
-        aliceIdentity.execute{value: 10}(carol, 10, hex"");
+        aliceIdentity.execute{ value: 10 }(carol, 10, hex"");
         assertEq(aliceIdentity.getCurrentNonce(), 1);
 
         vm.prank(alice);
-        aliceIdentity.execute{value: 5}(carol, 5, hex"");
+        aliceIdentity.execute{ value: 5 }(carol, 5, hex"");
         assertEq(aliceIdentity.getCurrentNonce(), 2);
     }
 
@@ -34,7 +35,7 @@ contract ExecutionsTest is OnchainIDSetup {
 
         uint256 executionId = aliceIdentity.getCurrentNonce();
         vm.prank(alice);
-        aliceIdentity.execute{value: 10}(carol, 10, hex"123456");
+        aliceIdentity.execute{ value: 10 }(carol, 10, hex"123456");
 
         Structs.Execution memory exec = aliceIdentity.getExecutionData(executionId);
 
@@ -50,7 +51,7 @@ contract ExecutionsTest is OnchainIDSetup {
 
         uint256 executionId = aliceIdentity.getCurrentNonce();
         vm.prank(bob);
-        aliceIdentity.execute{value: 10}(carol, 10, hex"123456");
+        aliceIdentity.execute{ value: 10 }(carol, 10, hex"123456");
 
         Structs.Execution memory exec = aliceIdentity.getExecutionData(executionId);
 
@@ -141,7 +142,7 @@ contract ExecutionsTest is OnchainIDSetup {
         uint256 carolBalanceBefore = carol.balance;
 
         vm.prank(alice);
-        aliceIdentity.execute{value: 10}(carol, 10, hex"");
+        aliceIdentity.execute{ value: 10 }(carol, 10, hex"");
 
         assertEq(carol.balance, carolBalanceBefore + 10);
     }
@@ -218,7 +219,7 @@ contract ExecutionsTest is OnchainIDSetup {
         emit IERC734.ExecutionFailed(executionId, address(bobIdentity), 10, addKeyData);
 
         vm.prank(carol);
-        aliceIdentity.execute{value: 10}(address(bobIdentity), 10, addKeyData);
+        aliceIdentity.execute{ value: 10 }(address(bobIdentity), 10, addKeyData);
     }
 
     function test_executeAsAction_targetIsAnotherAddress_success() public {
@@ -231,7 +232,7 @@ contract ExecutionsTest is OnchainIDSetup {
         uint256 davidBalanceBefore = david.balance;
 
         vm.prank(carol);
-        aliceIdentity.execute{value: 10}(david, 10, hex"");
+        aliceIdentity.execute{ value: 10 }(david, 10, hex"");
 
         assertEq(david.balance, davidBalanceBefore + 10);
     }
@@ -242,7 +243,7 @@ contract ExecutionsTest is OnchainIDSetup {
 
         // bob has no keys on aliceIdentity
         vm.prank(bob);
-        aliceIdentity.execute{value: 10}(carol, 10, hex"");
+        aliceIdentity.execute{ value: 10 }(carol, 10, hex"");
 
         // Verify execution is pending and carol balance unchanged
         Structs.Execution memory exec = aliceIdentity.getExecutionData(0);
@@ -261,7 +262,7 @@ contract ExecutionsTest is OnchainIDSetup {
         vm.deal(alice, 1 ether);
 
         vm.prank(alice);
-        aliceIdentity.execute{value: 10}(bob, 10, hex"");
+        aliceIdentity.execute{ value: 10 }(bob, 10, hex"");
 
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(Errors.RequestAlreadyExecuted.selector, 0));
@@ -273,7 +274,7 @@ contract ExecutionsTest is OnchainIDSetup {
 
         // bob creates pending execution
         vm.prank(bob);
-        aliceIdentity.execute{value: 10}(carol, 10, hex"");
+        aliceIdentity.execute{ value: 10 }(carol, 10, hex"");
 
         // bob tries to approve (bob has no ACTION key)
         vm.prank(bob);
@@ -289,7 +290,7 @@ contract ExecutionsTest is OnchainIDSetup {
 
         vm.deal(bob, 1 ether);
         vm.prank(bob);
-        aliceIdentity.execute{value: 10}(address(aliceIdentity), 10, addKeyData);
+        aliceIdentity.execute{ value: 10 }(address(aliceIdentity), 10, addKeyData);
 
         // david tries to approve (david has ACTION key but not MANAGEMENT)
         vm.prank(david);
@@ -303,7 +304,7 @@ contract ExecutionsTest is OnchainIDSetup {
 
         // bob creates pending execution
         vm.prank(bob);
-        aliceIdentity.execute{value: 10}(carol, 10, hex"");
+        aliceIdentity.execute{ value: 10 }(carol, 10, hex"");
 
         // alice approves
         vm.prank(alice);
@@ -318,7 +319,7 @@ contract ExecutionsTest is OnchainIDSetup {
 
         // bob creates pending execution
         vm.prank(bob);
-        aliceIdentity.execute{value: 10}(carol, 10, hex"");
+        aliceIdentity.execute{ value: 10 }(carol, 10, hex"");
 
         // alice approves with false
         vm.prank(alice);
@@ -419,4 +420,5 @@ contract ExecutionsTest is OnchainIDSetup {
         assertTrue(execData3.executed);
         assertTrue(aliceIdentity.keyHasPurpose(key3, KeyPurposes.ACTION));
     }
+
 }

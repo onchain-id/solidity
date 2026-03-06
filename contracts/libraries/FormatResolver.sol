@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 library FormatResolver {
+
     /// @notice The formats we currently support
     enum FormatType {
         Unknown, // 0
@@ -48,4 +49,5 @@ library FormatResolver {
     function decodeAddress(bytes memory data) internal pure returns (address) {
         return abi.decode(data, (address));
     }
+
 }

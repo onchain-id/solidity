@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {OnchainIDSetup} from "./helpers/OnchainIDSetup.sol";
-import {Identity} from "contracts/Identity.sol";
-import {IImplementationAuthority} from "contracts/interface/IImplementationAuthority.sol";
-import {Errors} from "contracts/libraries/Errors.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {IdentityProxy} from "contracts/proxy/IdentityProxy.sol";
-import {ImplementationAuthority} from "contracts/proxy/ImplementationAuthority.sol";
-import {Test as TestContract} from "test/mocks/Test.sol";
+import { OnchainIDSetup } from "./helpers/OnchainIDSetup.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { Identity } from "contracts/Identity.sol";
+import { IImplementationAuthority } from "contracts/interface/IImplementationAuthority.sol";
+import { Errors } from "contracts/libraries/Errors.sol";
+import { IdentityProxy } from "contracts/proxy/IdentityProxy.sol";
+import { ImplementationAuthority } from "contracts/proxy/ImplementationAuthority.sol";
+import { Test as TestContract } from "test/mocks/Test.sol";
 
 contract ProxyTest is OnchainIDSetup {
+
     function test_revertBecauseImplementationIsZeroAddress() public {
         vm.expectRevert(Errors.ZeroAddress.selector);
         new IdentityProxy(address(0), alice);
@@ -71,4 +72,5 @@ contract ProxyTest is OnchainIDSetup {
         emit IImplementationAuthority.UpdatedImplementation(address(newImpl));
         authority.updateImplementation(address(newImpl));
     }
+
 }

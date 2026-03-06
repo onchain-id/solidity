@@ -2,11 +2,12 @@
 
 pragma solidity ^0.8.27;
 
-import {IImplementationAuthority} from "../interface/IImplementationAuthority.sol";
-import {Errors} from "../libraries/Errors.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import { IImplementationAuthority } from "../interface/IImplementationAuthority.sol";
+import { Errors } from "../libraries/Errors.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract ImplementationAuthority is IImplementationAuthority, Ownable {
+
     // the address of implementation of ONCHAINID
     address internal _implementation;
 
@@ -31,4 +32,5 @@ contract ImplementationAuthority is IImplementationAuthority, Ownable {
     function getImplementation() external view override returns (address) {
         return _implementation;
     }
+
 }

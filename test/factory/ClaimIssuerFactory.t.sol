@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {ClaimIssuer} from "contracts/ClaimIssuer.sol";
-import {ClaimIssuerFactory} from "contracts/factory/ClaimIssuerFactory.sol";
-import {Errors} from "contracts/libraries/Errors.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {Test} from "forge-std/Test.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { ClaimIssuer } from "contracts/ClaimIssuer.sol";
+import { ClaimIssuerFactory } from "contracts/factory/ClaimIssuerFactory.sol";
+import { Errors } from "contracts/libraries/Errors.sol";
+import { Test } from "forge-std/Test.sol";
 
 contract ClaimIssuerFactoryTest is Test {
+
     ClaimIssuerFactory internal factory;
     ClaimIssuer internal claimIssuerImpl;
 
@@ -116,4 +117,5 @@ contract ClaimIssuerFactoryTest is Test {
 
         assertEq(factory.implementation(), alice);
     }
+
 }

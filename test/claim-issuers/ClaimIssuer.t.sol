@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {ClaimSignerHelper} from "../helpers/ClaimSignerHelper.sol";
-import {OnchainIDSetup} from "../helpers/OnchainIDSetup.sol";
-import {ClaimIssuer} from "contracts/ClaimIssuer.sol";
-import {IClaimIssuer} from "contracts/interface/IClaimIssuer.sol";
-import {IIdentity} from "contracts/interface/IIdentity.sol";
-import {Errors} from "contracts/libraries/Errors.sol";
-import {KeyPurposes} from "contracts/libraries/KeyPurposes.sol";
-import {ClaimIssuerProxy} from "contracts/proxy/ClaimIssuerProxy.sol";
+import { ClaimSignerHelper } from "../helpers/ClaimSignerHelper.sol";
+import { OnchainIDSetup } from "../helpers/OnchainIDSetup.sol";
+import { ClaimIssuer } from "contracts/ClaimIssuer.sol";
+import { IClaimIssuer } from "contracts/interface/IClaimIssuer.sol";
+import { IIdentity } from "contracts/interface/IIdentity.sol";
+import { Errors } from "contracts/libraries/Errors.sol";
+import { KeyPurposes } from "contracts/libraries/KeyPurposes.sol";
+import { ClaimIssuerProxy } from "contracts/proxy/ClaimIssuerProxy.sol";
 
 contract ClaimIssuerTest is OnchainIDSetup {
+
     // ---- revokeClaim ----
 
     function test_revokeClaim_revertNonManagementKey() public {
@@ -159,4 +160,5 @@ contract ClaimIssuerTest is OnchainIDSetup {
 
         assertTrue(proxy.keyHasPurpose(ClaimSignerHelper.addressToKey(freshDeployer), KeyPurposes.MANAGEMENT));
     }
+
 }

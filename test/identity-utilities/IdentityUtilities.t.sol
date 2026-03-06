@@ -1,23 +1,24 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {ClaimIssuerHelper} from "../helpers/ClaimIssuerHelper.sol";
-import {ClaimSignerHelper} from "../helpers/ClaimSignerHelper.sol";
-import {IdentityHelper} from "../helpers/IdentityHelper.sol";
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {ClaimIssuer} from "contracts/ClaimIssuer.sol";
-import {Identity} from "contracts/Identity.sol";
-import {IdentityUtilities} from "contracts/IdentityUtilities.sol";
-import {IIdentityUtilities} from "contracts/interface/IIdentityUtilities.sol";
-import {KeyPurposes} from "contracts/libraries/KeyPurposes.sol";
-import {KeyTypes} from "contracts/libraries/KeyTypes.sol";
-import {IdentityUtilitiesProxy} from "contracts/proxy/IdentityUtilitiesProxy.sol";
-import {Test} from "forge-std/Test.sol";
-import {Test as TestContract} from "test/mocks/Test.sol";
-import {TestIdentityUtilities} from "test/mocks/TestIdentityUtilities.sol";
+import { ClaimIssuerHelper } from "../helpers/ClaimIssuerHelper.sol";
+import { ClaimSignerHelper } from "../helpers/ClaimSignerHelper.sol";
+import { IdentityHelper } from "../helpers/IdentityHelper.sol";
+import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { ClaimIssuer } from "contracts/ClaimIssuer.sol";
+import { Identity } from "contracts/Identity.sol";
+import { IdentityUtilities } from "contracts/IdentityUtilities.sol";
+import { IIdentityUtilities } from "contracts/interface/IIdentityUtilities.sol";
+import { KeyPurposes } from "contracts/libraries/KeyPurposes.sol";
+import { KeyTypes } from "contracts/libraries/KeyTypes.sol";
+import { IdentityUtilitiesProxy } from "contracts/proxy/IdentityUtilitiesProxy.sol";
+import { Test } from "forge-std/Test.sol";
+import { Test as TestContract } from "test/mocks/Test.sol";
+import { TestIdentityUtilities } from "test/mocks/TestIdentityUtilities.sol";
 
 /// @notice Test suite for IdentityUtilities topic schema registry
 contract IdentityUtilitiesTest is Test {
+
     IdentityUtilities internal utilities;
     address internal admin;
     uint256 internal adminPk;
@@ -1025,4 +1026,5 @@ contract IdentityUtilitiesTest is Test {
         vm.expectRevert();
         proxyUtil.upgradeToAndCall(address(newImpl), bytes(""));
     }
+
 }

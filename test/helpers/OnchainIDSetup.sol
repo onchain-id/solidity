@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {Constants} from "../utils/Constants.sol";
-import {ClaimIssuerHelper} from "./ClaimIssuerHelper.sol";
-import {ClaimSignerHelper} from "./ClaimSignerHelper.sol";
-import {IdentityHelper} from "./IdentityHelper.sol";
-import {ClaimIssuer} from "contracts/ClaimIssuer.sol";
-import {Identity} from "contracts/Identity.sol";
-import {IdFactory} from "contracts/factory/IdFactory.sol";
-import {KeyPurposes} from "contracts/libraries/KeyPurposes.sol";
-import {KeyTypes} from "contracts/libraries/KeyTypes.sol";
-import {ImplementationAuthority} from "contracts/proxy/ImplementationAuthority.sol";
-import {Test} from "forge-std/Test.sol";
+import { Constants } from "../utils/Constants.sol";
+import { ClaimIssuerHelper } from "./ClaimIssuerHelper.sol";
+import { ClaimSignerHelper } from "./ClaimSignerHelper.sol";
+import { IdentityHelper } from "./IdentityHelper.sol";
+import { ClaimIssuer } from "contracts/ClaimIssuer.sol";
+import { Identity } from "contracts/Identity.sol";
+import { IdFactory } from "contracts/factory/IdFactory.sol";
+import { KeyPurposes } from "contracts/libraries/KeyPurposes.sol";
+import { KeyTypes } from "contracts/libraries/KeyTypes.sol";
+import { ImplementationAuthority } from "contracts/proxy/ImplementationAuthority.sol";
+import { Test } from "forge-std/Test.sol";
 
 /// @notice Base test contract providing full OnchainID infrastructure
 contract OnchainIDSetup is Test {
+
     // Infrastructure
     IdentityHelper.OnchainIDSetup public onchainidSetup;
 
@@ -124,4 +125,5 @@ contract OnchainIDSetup is Test {
     function getIdentityImplementation() public view returns (Identity) {
         return onchainidSetup.identityImplementation;
     }
+
 }

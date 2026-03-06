@@ -1,19 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {ClaimSignerHelper} from "../helpers/ClaimSignerHelper.sol";
-import {OnchainIDSetup} from "../helpers/OnchainIDSetup.sol";
-import {Constants} from "../utils/Constants.sol";
-import {Identity} from "contracts/Identity.sol";
-import {IdFactory} from "contracts/factory/IdFactory.sol";
-import {IIdFactory} from "contracts/factory/IIdFactory.sol";
-import {Errors} from "contracts/libraries/Errors.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {KeyPurposes} from "contracts/libraries/KeyPurposes.sol";
-import {ImplementationAuthority} from "contracts/proxy/ImplementationAuthority.sol";
-import {RevertingIdentity} from "test/mocks/RevertingIdentity.sol";
+import { ClaimSignerHelper } from "../helpers/ClaimSignerHelper.sol";
+import { OnchainIDSetup } from "../helpers/OnchainIDSetup.sol";
+import { Constants } from "../utils/Constants.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { Identity } from "contracts/Identity.sol";
+import { IIdFactory } from "contracts/factory/IIdFactory.sol";
+import { IdFactory } from "contracts/factory/IdFactory.sol";
+import { Errors } from "contracts/libraries/Errors.sol";
+import { KeyPurposes } from "contracts/libraries/KeyPurposes.sol";
+import { ImplementationAuthority } from "contracts/proxy/ImplementationAuthority.sol";
+import { RevertingIdentity } from "test/mocks/RevertingIdentity.sol";
 
 contract IdFactoryTest is OnchainIDSetup {
+
     bytes32 private constant _LINK_WALLET_TYPEHASH =
         keccak256("LinkWallet(address wallet,address identity,uint256 nonce,uint256 expiry)");
 
@@ -779,4 +780,5 @@ contract IdFactoryTest is OnchainIDSetup {
         vm.expectRevert(Errors.OnlyLinkedWalletCanUnlink.selector);
         onchainidSetup.idFactory.unlinkWallet(carol);
     }
+
 }

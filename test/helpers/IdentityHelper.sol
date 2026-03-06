@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {Identity} from "contracts/Identity.sol";
-import {IdFactory} from "contracts/factory/IdFactory.sol";
-import {IdentityProxy} from "contracts/proxy/IdentityProxy.sol";
-import {ImplementationAuthority} from "contracts/proxy/ImplementationAuthority.sol";
+import { Identity } from "contracts/Identity.sol";
+import { IdFactory } from "contracts/factory/IdFactory.sol";
+import { IdentityProxy } from "contracts/proxy/IdentityProxy.sol";
+import { ImplementationAuthority } from "contracts/proxy/ImplementationAuthority.sol";
 
 /// @notice Helper library for deploying OnchainID Identity Factory infrastructure
 library IdentityHelper {
+
     struct OnchainIDSetup {
         Identity identityImplementation;
         ImplementationAuthority implementationAuthority;
@@ -32,4 +33,5 @@ library IdentityHelper {
         IdentityProxy proxy = new IdentityProxy(address(ia), initialManagementKey);
         return Identity(address(proxy));
     }
+
 }

@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {CREATE3} from "solady/src/utils/CREATE3.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { CREATE3 } from "solady/src/utils/CREATE3.sol";
 
-import {Errors} from "../libraries/Errors.sol";
+import { Errors } from "../libraries/Errors.sol";
 
 contract ClaimIssuerFactory is Ownable {
+
     address private _implementation;
     mapping(address => address) private _deployedClaimIssuers;
     mapping(address => bool) private _blacklistedAddresses;
@@ -113,4 +114,5 @@ contract ClaimIssuerFactory is Ownable {
 
         return claimIssuerAddress;
     }
+
 }

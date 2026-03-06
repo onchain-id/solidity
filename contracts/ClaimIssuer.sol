@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {IIdentity, Identity} from "./Identity.sol";
-import {IClaimIssuer} from "./interface/IClaimIssuer.sol";
-import {Errors} from "./libraries/Errors.sol";
-import {KeyPurposes} from "./libraries/KeyPurposes.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { IIdentity, Identity } from "./Identity.sol";
+import { IClaimIssuer } from "./interface/IClaimIssuer.sol";
+import { Errors } from "./libraries/Errors.sol";
+import { KeyPurposes } from "./libraries/KeyPurposes.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
+
     mapping(bytes => bool) public revokedClaims;
 
     /**
@@ -16,7 +17,7 @@ contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
      * @param initialManagementKey The initial management key for the ClaimIssuer
      */
     // solhint-disable-next-line no-empty-blocks
-    constructor(address initialManagementKey) Identity(initialManagementKey, false) {}
+    constructor(address initialManagementKey) Identity(initialManagementKey, false) { }
 
     /**
      * @notice External initializer for proxy deployments
@@ -80,7 +81,7 @@ contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
             _identity.addClaim.selector, _topic, _scheme, address(this), _signature, _data, _uri
         );
 
-        try _identity.execute(address(_identity), 0, addClaimData) {}
+        try _identity.execute(address(_identity), 0, addClaimData) { }
         catch {
             revert Errors.CallFailed();
         }
@@ -144,4 +145,5 @@ contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
         // Only management keys can authorize upgrades
         // This prevents unauthorized upgrades and potential security issues
     }
+
 }

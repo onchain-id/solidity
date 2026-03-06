@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {KeyManager} from "./KeyManager.sol";
-import {IClaimIssuer} from "./interface/IClaimIssuer.sol";
-import {IERC734} from "./interface/IERC734.sol";
-import {IERC735} from "./interface/IERC735.sol";
-import {IIdentity} from "./interface/IIdentity.sol";
-import {Errors} from "./libraries/Errors.sol";
-import {KeyPurposes} from "./libraries/KeyPurposes.sol";
-import {Structs} from "./storage/Structs.sol";
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {MulticallUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/MulticallUpgradeable.sol";
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import { KeyManager } from "./KeyManager.sol";
+import { IClaimIssuer } from "./interface/IClaimIssuer.sol";
+import { IERC734 } from "./interface/IERC734.sol";
+import { IERC735 } from "./interface/IERC735.sol";
+import { IIdentity } from "./interface/IIdentity.sol";
+import { Errors } from "./libraries/Errors.sol";
+import { KeyPurposes } from "./libraries/KeyPurposes.sol";
+import { Structs } from "./storage/Structs.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { MulticallUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/MulticallUpgradeable.sol";
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 /**
  * @title Identity
@@ -35,6 +35,7 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
  * in upgradeable contracts.
  */
 contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable {
+
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
     /**
@@ -316,4 +317,5 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
             s.slot := slot
         }
     }
+
 }

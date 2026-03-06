@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {IERC734} from "./interface/IERC734.sol";
-import {Errors} from "./libraries/Errors.sol";
-import {KeyPurposes} from "./libraries/KeyPurposes.sol";
-import {KeyTypes} from "./libraries/KeyTypes.sol";
-import {Structs} from "./storage/Structs.sol";
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import { IERC734 } from "./interface/IERC734.sol";
+import { Errors } from "./libraries/Errors.sol";
+import { KeyPurposes } from "./libraries/KeyPurposes.sol";
+import { KeyTypes } from "./libraries/KeyTypes.sol";
+import { Structs } from "./storage/Structs.sol";
+import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 /**
  * @title KeyManager
@@ -24,6 +24,7 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
  * in upgradeable contracts.
  */
 contract KeyManager is IERC734 {
+
     using EnumerableSet for EnumerableSet.UintSet;
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
@@ -310,7 +311,7 @@ contract KeyManager is IERC734 {
             ks.executions[_id].approved = true;
 
             // solhint-disable-next-line avoid-low-level-calls
-            (success,) = ks.executions[_id].to.call{value: (ks.executions[_id].value)}(ks.executions[_id].data);
+            (success,) = ks.executions[_id].to.call{ value: (ks.executions[_id].value) }(ks.executions[_id].data);
 
             if (success) {
                 emit Executed(_id, ks.executions[_id].to, ks.executions[_id].value, ks.executions[_id].data);
@@ -392,4 +393,5 @@ contract KeyManager is IERC734 {
             s.slot := slot
         }
     }
+
 }

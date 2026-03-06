@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {OnchainIDSetup} from "../helpers/OnchainIDSetup.sol";
-import {Identity} from "contracts/Identity.sol";
-import {Errors} from "contracts/libraries/Errors.sol";
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { OnchainIDSetup } from "../helpers/OnchainIDSetup.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { Identity } from "contracts/Identity.sol";
+import { Errors } from "contracts/libraries/Errors.sol";
 
 contract InitTest is OnchainIDSetup {
+
     function test_revert_whenReinitializingDeployedIdentity() public {
         vm.prank(alice);
         vm.expectRevert(Initializable.InvalidInitialization.selector);
@@ -52,4 +53,5 @@ contract InitTest is OnchainIDSetup {
         assertFalse(aliceIdentity.supportsInterface(0x00000000));
         assertFalse(aliceIdentity.supportsInterface(0xffffffff));
     }
+
 }

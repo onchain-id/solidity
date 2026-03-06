@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {ClaimSignerHelper} from "../helpers/ClaimSignerHelper.sol";
-import {OnchainIDSetup} from "../helpers/OnchainIDSetup.sol";
-import {KeyPurposes} from "contracts/libraries/KeyPurposes.sol";
-import {KeyTypes} from "contracts/libraries/KeyTypes.sol";
+import { ClaimSignerHelper } from "../helpers/ClaimSignerHelper.sol";
+import { OnchainIDSetup } from "../helpers/OnchainIDSetup.sol";
+import { KeyPurposes } from "contracts/libraries/KeyPurposes.sol";
+import { KeyTypes } from "contracts/libraries/KeyTypes.sol";
 
 contract VersionUpgradeTest is OnchainIDSetup {
+
     function test_returnInitialVersion() public view {
         assertEq(aliceIdentity.version(), "3.0.0");
     }
@@ -43,4 +44,5 @@ contract VersionUpgradeTest is OnchainIDSetup {
         assertEq(data, claimData);
         assertEq(uri, claimUri);
     }
+
 }

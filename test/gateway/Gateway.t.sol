@@ -1,18 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {ClaimSignerHelper} from "../helpers/ClaimSignerHelper.sol";
-import {IdentityHelper} from "../helpers/IdentityHelper.sol";
-import {Identity} from "contracts/Identity.sol";
-import {IdFactory} from "contracts/factory/IdFactory.sol";
-import {Gateway} from "contracts/gateway/Gateway.sol";
-import {Errors} from "contracts/libraries/Errors.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {KeyPurposes} from "contracts/libraries/KeyPurposes.sol";
-import {Test} from "forge-std/Test.sol";
-import {Vm} from "forge-std/Vm.sol";
+import { ClaimSignerHelper } from "../helpers/ClaimSignerHelper.sol";
+import { IdentityHelper } from "../helpers/IdentityHelper.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { Identity } from "contracts/Identity.sol";
+import { IdFactory } from "contracts/factory/IdFactory.sol";
+import { Gateway } from "contracts/gateway/Gateway.sol";
+import { Errors } from "contracts/libraries/Errors.sol";
+import { KeyPurposes } from "contracts/libraries/KeyPurposes.sol";
+import { Test } from "forge-std/Test.sol";
+import { Vm } from "forge-std/Vm.sol";
 
 contract GatewayTest is Test {
+
     IdentityHelper.OnchainIDSetup internal setup;
 
     address internal deployer;
@@ -485,4 +486,5 @@ contract GatewayTest is Test {
         gateway.callFactory(abi.encodeCall(IdFactory.addTokenFactory, (bob)));
         assertTrue(setup.idFactory.isTokenFactory(bob));
     }
+
 }

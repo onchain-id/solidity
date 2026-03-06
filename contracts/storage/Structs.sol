@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 contract Structs {
+
     /**
      *  @dev Definition of the structure of a Key.
      *
@@ -73,4 +74,5 @@ contract Structs {
         bytes data;
         string uri;
     }
+
 }

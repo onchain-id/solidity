@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {ClaimSignerHelper} from "../helpers/ClaimSignerHelper.sol";
-import {IdentityHelper} from "../helpers/IdentityHelper.sol";
-import {Identity} from "contracts/Identity.sol";
-import {KeyPurposes} from "contracts/libraries/KeyPurposes.sol";
-import {KeyTypes} from "contracts/libraries/KeyTypes.sol";
-import {Test} from "forge-std/Test.sol";
+import { ClaimSignerHelper } from "../helpers/ClaimSignerHelper.sol";
+import { IdentityHelper } from "../helpers/IdentityHelper.sol";
+import { Identity } from "contracts/Identity.sol";
+import { KeyPurposes } from "contracts/libraries/KeyPurposes.sol";
+import { KeyTypes } from "contracts/libraries/KeyTypes.sol";
+import { Test } from "forge-std/Test.sol";
 
 contract ProxyPatternTest is Test {
+
     address internal deployer;
     address internal alice;
 
@@ -32,4 +33,5 @@ contract ProxyPatternTest is Test {
 
         assertTrue(identityProxy.keyHasPurpose(aliceKey, KeyPurposes.ACTION));
     }
+
 }

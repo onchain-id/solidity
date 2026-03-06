@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {IdFactory} from "../factory/IdFactory.sol";
-import {Errors} from "../libraries/Errors.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import { IdFactory } from "../factory/IdFactory.sol";
+import { Errors } from "../libraries/Errors.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { MessageHashUtils } from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 contract Gateway is Ownable {
+
     using ECDSA for bytes32;
     using MessageHashUtils for bytes32;
 
@@ -171,4 +172,5 @@ contract Gateway is Ownable {
         (bool success,) = address(idFactory).call(data);
         require(success, Errors.CallToFactoryFailed());
     }
+
 }
