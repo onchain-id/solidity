@@ -4,20 +4,23 @@ pragma solidity ^0.8.27;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
+import {Nonces} from "@openzeppelin/contracts/utils/Nonces.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {IERC734} from "../interface/IERC734.sol";
-import {IIdentity} from "../interface/IIdentity.sol";
 import {Errors} from "../libraries/Errors.sol";
 import {KeyPurposes} from "../libraries/KeyPurposes.sol";
 import {KeyTypes} from "../libraries/KeyTypes.sol";
 import {IdentityProxy} from "../proxy/IdentityProxy.sol";
 import {IIdFactory} from "./IIdFactory.sol";
 
-contract IdFactory is IIdFactory, Ownable, EIP712 {
+contract IdFactory is IIdFactory, Ownable, EIP712, Nonces {
+    using EnumerableSet for EnumerableSet.AddressSet;
+
     uint256 private constant _MAX_WALLETS_PER_IDENTITY = 101;
 
     bytes32 private constant _LINK_WALLET_TYPEHASH =
-        keccak256("LinkWallet(address wallet,address identity,uint256 expiry)");
+        keccak256("LinkWallet(address wallet,address identity,uint256 nonce,uint256 expiry)");
 
     // address of the _implementationAuthority contract making the link to the implementation contract
     address public immutable implementationAuthority;
@@ -28,11 +31,11 @@ contract IdFactory is IIdFactory, Ownable, EIP712 {
     // salt is taken and which is not
     mapping(string => bool) private _saltTaken;
 
-    // ONCHAINID of the wallet owner
+    // ONCHAINID of the wallet owner (never cleared — wallet stays bound to its identity forever)
     mapping(address => address) private _userIdentity;
 
-    // wallets currently linked to an ONCHAINID
-    mapping(address => address[]) private _wallets;
+    // wallets actively linked to an ONCHAINID
+    mapping(address => EnumerableSet.AddressSet) private _wallets;
 
     // ONCHAINID of the token
     mapping(address => address) private _tokenIdentity;
@@ -78,7 +81,7 @@ contract IdFactory is IIdFactory, Ownable, EIP712 {
         address identity = _deployIdentity(oidSalt, _wallet);
         _saltTaken[oidSalt] = true;
         _userIdentity[_wallet] = identity;
-        _wallets[identity].push(_wallet);
+        _wallets[identity].add(_wallet);
         emit WalletLinked(_wallet, identity);
         return identity;
     }
@@ -112,7 +115,7 @@ contract IdFactory is IIdFactory, Ownable, EIP712 {
 
         _saltTaken[oidSalt] = true;
         _userIdentity[_wallet] = identity;
-        _wallets[identity].push(_wallet);
+        _wallets[identity].add(_wallet);
         emit WalletLinked(_wallet, identity);
 
         return identity;
@@ -146,14 +149,12 @@ contract IdFactory is IIdFactory, Ownable, EIP712 {
      */
     function linkWallet(address _newWallet) external override {
         require(_newWallet != address(0), Errors.ZeroAddress());
-        require(_userIdentity[msg.sender] != address(0), Errors.WalletNotLinkedToIdentity(msg.sender));
-        require(_userIdentity[_newWallet] == address(0), Errors.WalletAlreadyLinkedToIdentity(_newWallet));
-        require(_tokenIdentity[_newWallet] == address(0), Errors.TokenAlreadyLinked(_newWallet));
         address identity = _userIdentity[msg.sender];
-        require(_wallets[identity].length < _MAX_WALLETS_PER_IDENTITY, Errors.MaxWalletsPerIdentityExceeded());
-        _userIdentity[_newWallet] = identity;
-        _wallets[identity].push(_newWallet);
-        emit WalletLinked(_newWallet, identity);
+        require(
+            identity != address(0) && _wallets[identity].contains(msg.sender),
+            Errors.WalletNotLinkedToIdentity(msg.sender)
+        );
+        _linkWallet(_newWallet, identity);
     }
 
     /**
@@ -162,37 +163,30 @@ contract IdFactory is IIdFactory, Ownable, EIP712 {
     function unlinkWallet(address _oldWallet) external override {
         require(_oldWallet != address(0), Errors.ZeroAddress());
         require(_oldWallet != msg.sender, Errors.CannotBeCalledOnSenderAddress());
-        require(_userIdentity[msg.sender] == _userIdentity[_oldWallet], Errors.OnlyLinkedWalletCanUnlink());
-        _unlinkWallet(_oldWallet, _userIdentity[_oldWallet]);
+        address identity = _userIdentity[msg.sender];
+        require(identity != address(0) && _wallets[identity].contains(msg.sender), Errors.OnlyLinkedWalletCanUnlink());
+        require(
+            _userIdentity[_oldWallet] == identity && _wallets[identity].contains(_oldWallet),
+            Errors.OnlyLinkedWalletCanUnlink()
+        );
+        _unlinkWallet(_oldWallet, identity);
     }
 
     /**
      *  @dev See {IIdFactory-linkWalletWithSignature}.
      */
-    function linkWalletWithSignature(address wallet, bytes calldata signature, uint256 expiry) external override {
+    function linkWalletWithSignature(address wallet, bytes calldata signature, uint256 nonce, uint256 expiry)
+        external
+        override
+    {
         require(wallet != address(0), Errors.ZeroAddress());
         require(block.timestamp <= expiry, Errors.ExpiredSignature(signature));
 
         address identity = msg.sender;
-        _verifyWalletSignature(wallet, identity, expiry, signature);
 
-        // require the wallet is a MANAGEMENT key on the identity
-        bytes32 key = keccak256(abi.encode(wallet));
-        require(
-            IIdentity(identity).keyHasPurpose(key, KeyPurposes.MANAGEMENT),
-            Errors.KeyDoesNotHavePurpose(key, KeyPurposes.MANAGEMENT)
-        );
-
-        // Check if wallet is already linked
-        require(_userIdentity[wallet] == address(0), Errors.WalletAlreadyLinkedToIdentity(wallet));
-        require(_tokenIdentity[wallet] == address(0), Errors.TokenAlreadyLinked(wallet));
-
-        // Check max wallets per identity
-        require(_wallets[identity].length < _MAX_WALLETS_PER_IDENTITY, Errors.MaxWalletsPerIdentityExceeded());
-
-        _userIdentity[wallet] = identity;
-        _wallets[identity].push(wallet);
-        emit WalletLinked(wallet, identity);
+        _useCheckedNonce(wallet, nonce);
+        _verifyWalletSignature(wallet, identity, nonce, expiry, signature);
+        _linkWallet(wallet, identity);
     }
 
     /**
@@ -200,8 +194,11 @@ contract IdFactory is IIdFactory, Ownable, EIP712 {
      */
     function unlinkWalletByIdentity(address wallet) external override {
         require(wallet != address(0), Errors.ZeroAddress());
-        require(_userIdentity[wallet] == msg.sender, Errors.WalletNotLinkedToIdentity(wallet));
-        _unlinkWallet(wallet, _userIdentity[wallet]);
+        require(
+            _userIdentity[wallet] == msg.sender && _wallets[msg.sender].contains(wallet),
+            Errors.WalletNotLinkedToIdentity(wallet)
+        );
+        _unlinkWallet(wallet, msg.sender);
     }
 
     /**
@@ -212,7 +209,11 @@ contract IdFactory is IIdFactory, Ownable, EIP712 {
             return _tokenIdentity[_wallet];
         }
 
-        return _userIdentity[_wallet];
+        address identity = _userIdentity[_wallet];
+        if (identity != address(0) && _wallets[identity].contains(_wallet)) {
+            return identity;
+        }
+        return address(0);
     }
 
     /**
@@ -226,7 +227,7 @@ contract IdFactory is IIdFactory, Ownable, EIP712 {
      *  @dev See {IdFactory-getWallets}.
      */
     function getWallets(address _identity) external view override returns (address[] memory) {
-        return _wallets[_identity];
+        return _wallets[_identity].values();
     }
 
     /**
@@ -234,6 +235,13 @@ contract IdFactory is IIdFactory, Ownable, EIP712 {
      */
     function getToken(address _identity) external view override returns (address) {
         return _tokenAddress[_identity];
+    }
+
+    /**
+     *  @dev See {Nonces-nonces}.
+     */
+    function nonces(address owner) public view override(IIdFactory, Nonces) returns (uint256) {
+        return super.nonces(owner);
     }
 
     /**
@@ -261,16 +269,22 @@ contract IdFactory is IIdFactory, Ownable, EIP712 {
         return addr;
     }
 
-    function _unlinkWallet(address _wallet, address _identity) private {
-        delete _userIdentity[_wallet];
-        uint256 length = _wallets[_identity].length;
-        for (uint256 i = 0; i < length; i++) {
-            if (_wallets[_identity][i] == _wallet) {
-                _wallets[_identity][i] = _wallets[_identity][length - 1];
-                _wallets[_identity].pop();
-                break;
-            }
+    function _linkWallet(address _wallet, address _identity) private {
+        address boundIdentity = _userIdentity[_wallet];
+        if (boundIdentity != address(0)) {
+            require(boundIdentity == _identity, Errors.WalletBoundToAnotherIdentity(_wallet, boundIdentity));
         }
+        require(!_wallets[_identity].contains(_wallet), Errors.WalletAlreadyLinkedToIdentity(_wallet));
+        require(_tokenIdentity[_wallet] == address(0), Errors.TokenAlreadyLinked(_wallet));
+        require(_wallets[_identity].length() < _MAX_WALLETS_PER_IDENTITY, Errors.MaxWalletsPerIdentityExceeded());
+
+        _userIdentity[_wallet] = _identity;
+        _wallets[_identity].add(_wallet);
+        emit WalletLinked(_wallet, _identity);
+    }
+
+    function _unlinkWallet(address _wallet, address _identity) private {
+        _wallets[_identity].remove(_wallet);
         emit WalletUnlinked(_wallet, _identity);
     }
 
@@ -282,11 +296,14 @@ contract IdFactory is IIdFactory, Ownable, EIP712 {
         return _deploy(_salt, bytecode);
     }
 
-    function _verifyWalletSignature(address wallet, address identity, uint256 expiry, bytes calldata signature)
-        private
-        view
-    {
-        bytes32 structHash = keccak256(abi.encode(_LINK_WALLET_TYPEHASH, wallet, identity, expiry));
+    function _verifyWalletSignature(
+        address wallet,
+        address identity,
+        uint256 nonce,
+        uint256 expiry,
+        bytes calldata signature
+    ) private view {
+        bytes32 structHash = keccak256(abi.encode(_LINK_WALLET_TYPEHASH, wallet, identity, nonce, expiry));
 
         bytes32 digest = _hashTypedDataV4(structHash);
         (address signer, ECDSA.RecoverError error,) = ECDSA.tryRecover(digest, signature);

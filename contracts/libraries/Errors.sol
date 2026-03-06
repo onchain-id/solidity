@@ -50,6 +50,9 @@ library Errors {
     /// @notice Reverts if the wallet is not linked to an identity
     error WalletNotLinkedToIdentity(address wallet);
 
+    /// @notice Reverts if a previously unlinked wallet is being linked to a different identity
+    error WalletBoundToAnotherIdentity(address wallet, address boundIdentity);
+
     /* ----- Gateway ----- */
 
     /// @notice The maximum number of signers was reached at deployment.
