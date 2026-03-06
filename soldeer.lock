@@ -14,9 +14,9 @@ integrity = "e67f536c763f35149aac483acfa21637c6b6b6c3f8a71860f8e717cf110138cd"
 
 [[dependencies]]
 name = "createx"
-version = "1.0.0"
-git = "https://github.com/pcaversaccio/createx.git"
-rev = "v1.0.0"
+version = "main"
+git = "https://github.com/TokenySolutions/createx"
+rev = "829450f70a9119413911877eae695bec95e49ba1"
 
 [[dependencies]]
 name = "forge-std"

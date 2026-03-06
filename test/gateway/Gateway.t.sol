@@ -1,17 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import { ClaimSignerHelper } from "../helpers/ClaimSignerHelper.sol";
-import { CreateXHelper } from "../helpers/CreateXHelper.sol";
-import { IdentityHelper } from "../helpers/IdentityHelper.sol";
+import { CreateX } from "@createx/CreateX.sol";
+import { Test, Vm } from "@forge-std/Test.sol";
+
 import { Identity } from "contracts/Identity.sol";
 import { IdFactory } from "contracts/factory/IdFactory.sol";
 import { Gateway } from "contracts/gateway/Gateway.sol";
 import { Errors } from "contracts/libraries/Errors.sol";
 import { KeyPurposes } from "contracts/libraries/KeyPurposes.sol";
-import { Vm } from "forge-std/Vm.sol";
 
-contract GatewayTest is CreateXHelper {
+import { ClaimSignerHelper } from "../helpers/ClaimSignerHelper.sol";
+import { IdentityHelper } from "../helpers/IdentityHelper.sol";
+
+contract GatewayTest is Test {
 
     IdentityHelper.OnchainIDSetup internal setup;
 
@@ -32,10 +34,8 @@ contract GatewayTest is CreateXHelper {
 
         vm.warp(365 days);
 
-        address createx = _deployCreateX();
-
         vm.startPrank(deployer);
-        setup = IdentityHelper.deployFactory(deployer, createx);
+        setup = IdentityHelper.deployFactory(deployer, address(new CreateX()));
         vm.stopPrank();
     }
 

@@ -5,7 +5,7 @@ test = "test"
 script = "scripts"
 libs = ["dependencies"]
 
-auto_detect_solc = true
+solc_version = "0.8.30"
 optimizer = true
 optimizer_runs = 200
 evm_version = "shanghai"
@@ -31,5 +31,5 @@ remappings_regenerate = false
 forge-std = { version = "v1.14.0", git = "https://github.com/foundry-rs/forge-std.git", tag = "v1.14.0" }
 "@openzeppelin-contracts" = "5.2.0"
 "@openzeppelin-contracts-upgradeable" = "4.9.6"
-createx = { version = "1.0.0", git = "https://github.com/pcaversaccio/createx.git", tag = "v1.0.0" }
+createx = { version = "main", git = "https://github.com/TokenySolutions/createx", branch = "main" }
 solady = "0.1.15"
