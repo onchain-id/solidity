@@ -13,6 +13,7 @@ import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/I
 import { MulticallUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/MulticallUpgradeable.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 /**
  * @title Identity
@@ -20,9 +21,7 @@ import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol
  * into a common Identity Contract.
  *
  * This implementation uses ERC-7201 storage slots for upgradeability, providing:
- * - O(1) key and claim management operations
- * - Efficient index mappings for fast lookups
- * - Swap-and-pop techniques for gas-optimized array operations
+ * - O(1) key and claim management operations via EnumerableSet
  * - Separation of key and claim storage for better organization
  * - Upgradeable version management through ERC-7201 storage slots
  *
@@ -37,6 +36,8 @@ import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol
  */
 contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable {
 
+    using EnumerableSet for EnumerableSet.Bytes32Set;
+
     /**
      * @dev Storage struct for claim management data
      * @custom:storage-location erc7201:onchainid.identity.claim.storage
@@ -44,13 +45,8 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
     struct ClaimStorage {
         /// @dev Mapping of claim ID to Claim struct as defined by IERC735
         mapping(bytes32 => Structs.Claim) claims;
-        /// @dev Mapping of topic to array of claim IDs for efficient topic-based lookups
-        mapping(uint256 => bytes32[]) claimsByTopic;
-        /// @dev O(1) index mapping: topic -> claimId -> index in claimsByTopic array
-        /// @dev Value 0 means not found, value 1+ means found at index (value-1)
-        mapping(uint256 => mapping(bytes32 => uint256)) claimIndexInTopic;
-        /// @dev Mapping of claimId -> true if claim exists (used for validation/fallback)
-        mapping(bytes32 => bool) claimExists;
+        /// @dev Mapping of topic to set of claim IDs (EnumerableSet for O(1) add/remove/contains)
+        mapping(uint256 => EnumerableSet.Bytes32Set) claimsByTopic;
     }
 
     /**
@@ -113,7 +109,7 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
      * @return claimIds Returns an array of claim IDs by topic.
      */
     function getClaimIdsByTopic(uint256 _topic) external view override(IERC735) returns (bytes32[] memory claimIds) {
-        return _getClaimStorage().claimsByTopic[_topic];
+        return _getClaimStorage().claimsByTopic[_topic].values();
     }
 
     /**
@@ -139,8 +135,7 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
      * @dev See {IERC735-addClaim}.
      * @notice Adds or updates a claim for this identity.
      *
-     * This function uses O(1) index mappings for efficient claim management, eliminating
-     * the need for linear searches through claim arrays.
+     * Uses EnumerableSet for O(1) claim existence checks and management.
      *
      * Claim validation:
      * - If the issuer is not the identity itself, the claim must be validated by the issuer
@@ -165,6 +160,7 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
         bytes memory _data,
         string memory _uri
     ) public delegatedOnly onlyClaimKey returns (bytes32 claimRequestId) {
+        // 1. Validate claim if issuer is not self
         require(
             IClaimIssuer(_issuer).isClaimValid(IIdentity(address(this)), _topic, _signature, _data),
             Errors.InvalidClaim()
@@ -177,12 +173,12 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
         });
 
         // 2. New claim or update existing
-        bool isNew = !cs.claimExists[claimId];
-        if (isNew) {
-            _setupNewClaim(cs, claimId, _topic);
+        if (cs.claimsByTopic[_topic].add(claimId)) {
+            emit ClaimAdded(claimId, _topic, _scheme, _issuer, _signature, _data, _uri);
+        } else {
+            emit ClaimChanged(claimId, _topic, _scheme, _issuer, _signature, _data, _uri);
         }
 
-        _emitClaimEvent(claimId, _topic, _scheme, _issuer, _signature, _data, _uri, isNew);
         return claimId;
     }
 
@@ -190,13 +186,7 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
      * @dev See {IERC735-removeClaim}.
      * @notice Removes a claim from this identity.
      *
-     * This function uses O(1) index mappings and efficient swap-and-pop technique
-     * to maintain array consistency without gaps, ensuring optimal gas usage.
-     *
-     * The swap-and-pop technique:
-     * 1. Moves the last claim to the position of the claim being removed
-     * 2. Updates the index mappings for the swapped claim
-     * 3. Removes the last claim (which is now the target claim)
+     * Uses EnumerableSet for O(1) add/remove/contains operations.
      *
      * Access control: Only CLAIM_SIGNER keys can remove claims.
      *
@@ -212,18 +202,13 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
         uint256 topic = c.topic;
         require(topic != 0, Errors.ClaimNotRegistered(_claimId));
 
-        // 2. Get claim index using O(1) lookup
-        uint256 claimIdxPlusOne = cs.claimIndexInTopic[topic][_claimId];
-        require(claimIdxPlusOne > 0, "Claim index missing");
-        uint256 claimIdx = claimIdxPlusOne - 1; // Convert to 0-based index
+        // 2. Remove claim from topic set
+        cs.claimsByTopic[topic].remove(_claimId);
 
-        // 3. Remove claim from topic index using efficient swap-and-pop technique
-        _removeClaimFromTopicIndex(cs, _claimId, topic, claimIdx);
-
-        // 4. Emit event with claim details before deletion
+        // 3. Emit event with claim details before deletion
         emit ClaimRemoved(_claimId, topic, c.scheme, c.issuer, c.signature, c.data, c.uri);
 
-        // 5. Clean up the claim data
+        // 4. Clean up the claim data
         delete cs.claims[_claimId];
 
         return true;
@@ -321,89 +306,6 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
     }
 
     // ========= Internal (non-view/pure) =========
-
-    /**
-     * @dev Internal helper to remove claim from topic index using swap-and-pop technique.
-     *
-     * Maintains array consistency by swapping elements before removal and updates
-     * all related index mappings.
-     *
-     * @param cs The claim storage struct
-     * @param _claimId The claim ID to remove from the topic index
-     * @param _topic The topic identifier for the claim
-     * @param _claimIdx The 0-based index of the claim in the claimsByTopic array
-     */
-    function _removeClaimFromTopicIndex(ClaimStorage storage cs, bytes32 _claimId, uint256 _topic, uint256 _claimIdx)
-        internal
-    {
-        uint256 lastClaimIdx = cs.claimsByTopic[_topic].length - 1;
-
-        // Step 1: Implement swap-and-pop strategy if claim is not the last element
-        if (_claimIdx != lastClaimIdx) {
-            // Swap: Move the last element to the position being vacated
-            bytes32 lastClaimId = cs.claimsByTopic[_topic][lastClaimIdx];
-            cs.claimsByTopic[_topic][_claimIdx] = lastClaimId;
-
-            // Update: Fix the index mapping for the swapped claim
-            // Note: We add 1 because our index mapping uses 1-based indexing
-            cs.claimIndexInTopic[_topic][lastClaimId] = _claimIdx + 1;
-        }
-
-        // Step 2: Remove the last element (either the target claim or the swapped element)
-        cs.claimsByTopic[_topic].pop();
-
-        // Step 3: Clean up all related storage mappings to prevent orphaned references
-        delete cs.claimIndexInTopic[_topic][_claimId]; // Remove index mapping
-        delete cs.claimExists[_claimId]; // Remove existence flag
-    }
-
-    /**
-     * @dev Internal helper to setup new claim tracking with index mappings.
-     *
-     * This function initializes the index mappings for a new claim to enable
-     * O(1) lookups and efficient claim management.
-     *
-     * @param cs The claim storage struct
-     * @param _claimId The unique identifier of the claim
-     * @param _topic The topic of the claim
-     */
-    function _setupNewClaim(ClaimStorage storage cs, bytes32 _claimId, uint256 _topic) internal {
-        cs.claimsByTopic[_topic].push(_claimId);
-        cs.claimIndexInTopic[_topic][_claimId] = cs.claimsByTopic[_topic].length; // index+1
-        cs.claimExists[_claimId] = true;
-    }
-
-    /**
-     * @dev Internal helper to emit appropriate claim events based on whether the claim is new or updated.
-     *
-     * This function emits either ClaimAdded or ClaimChanged events depending on whether
-     * the claim is being added for the first time or updated.
-     *
-     * @param _claimId The unique identifier of the claim
-     * @param _topic The topic of the claim
-     * @param _scheme The verification scheme for the claim
-     * @param _issuer The address of the claim issuer
-     * @param _signature The cryptographic proof of the claim
-     * @param _data The claim data or hash
-     * @param _uri The location of additional claim data
-     * @param _isNew Whether this is a new claim (true) or an update (false)
-     */
-    function _emitClaimEvent(
-        bytes32 _claimId,
-        uint256 _topic,
-        uint256 _scheme,
-        address _issuer,
-        bytes memory _signature,
-        bytes memory _data,
-        string memory _uri,
-        bool _isNew
-    ) internal {
-        if (_isNew) {
-            emit ClaimAdded(_claimId, _topic, _scheme, _issuer, _signature, _data, _uri);
-        } else {
-            emit ClaimChanged(_claimId, _topic, _scheme, _issuer, _signature, _data, _uri);
-        }
-    }
 
     /**
      * @dev Returns the claim storage struct at the specified ERC-7201 slot

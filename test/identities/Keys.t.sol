@@ -140,13 +140,13 @@ contract KeysTest is OnchainIDSetup {
         aliceIdentity.removeKey(aliceKeyHash, KeyPurposes.ACTION);
     }
 
-    function test_HandleEdgeCase_RemoveKeyFromPurposeArray() public {
+    function test_RemoveKeyFromPurposeArray() public {
         // Add bob as MANAGEMENT + ACTION key
         vm.startPrank(alice);
         aliceIdentity.addKey(bobKeyHash, KeyPurposes.MANAGEMENT, KeyTypes.ECDSA);
         aliceIdentity.addKey(bobKeyHash, KeyPurposes.ACTION, KeyTypes.ECDSA);
 
-        // Remove MANAGEMENT purpose - this tests the edge case where key is removed from array
+        // Remove MANAGEMENT purpose
         aliceIdentity.removeKey(bobKeyHash, KeyPurposes.MANAGEMENT);
         vm.stopPrank();
 
@@ -159,15 +159,14 @@ contract KeysTest is OnchainIDSetup {
         assertEq(keyType, KeyTypes.ECDSA);
     }
 
-    // ============ Remove key - swap-and-pop edge cases ============
+    // ============ Remove key - edge cases ============
 
-    /// @notice Remove the only key for a given purpose (no swap needed in keysByPurpose)
+    /// @notice Remove the only key for a given purpose
     function test_RemoveOnlyKeyForPurpose() public {
         // carol has CLAIM_SIGNER only on aliceIdentity (added in setUp)
         bytes32 carolKeyHash = ClaimSignerHelper.addressToKey(carol);
 
         // Remove carol's CLAIM_SIGNER purpose
-        // This tests the `lastKey == _key` path in _removeKeyFromPurposeIndex (no swap needed)
         vm.prank(alice);
         aliceIdentity.removeKey(carolKeyHash, KeyPurposes.CLAIM_SIGNER);
 
@@ -175,7 +174,7 @@ contract KeysTest is OnchainIDSetup {
         assertFalse(aliceIdentity.keyHasPurpose(carolKeyHash, KeyPurposes.CLAIM_SIGNER));
     }
 
-    /// @notice Remove a key's only purpose (no swap needed in purposes array)
+    /// @notice Remove a key's only purpose — key should be fully deleted
     function test_RemoveKeyWithSinglePurpose() public {
         // david has ACTION only on aliceIdentity (added in setUp)
         bytes32 davidKeyHash = ClaimSignerHelper.addressToKey(david);
@@ -184,7 +183,7 @@ contract KeysTest is OnchainIDSetup {
         uint256[] memory purposes = aliceIdentity.getKeyPurposes(davidKeyHash);
         assertEq(purposes.length, 1, "David should have exactly 1 purpose");
 
-        // Remove ACTION purpose — exercises `lastPurpose == _purpose` in _removePurposeFromKey
+        // Remove ACTION purpose
         vm.prank(alice);
         aliceIdentity.removeKey(davidKeyHash, KeyPurposes.ACTION);
 
