@@ -6,7 +6,6 @@ import { OnchainIDSetup } from "../helpers/OnchainIDSetup.sol";
 import { Identity } from "contracts/Identity.sol";
 import { KeyManager } from "contracts/KeyManager.sol";
 import { IERC734 } from "contracts/interface/IERC734.sol";
-import { IERC735 } from "contracts/interface/IERC735.sol";
 import { Errors } from "contracts/libraries/Errors.sol";
 import { KeyPurposes } from "contracts/libraries/KeyPurposes.sol";
 import { KeyTypes } from "contracts/libraries/KeyTypes.sol";
