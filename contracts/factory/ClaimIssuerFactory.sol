@@ -10,24 +10,19 @@ import { Errors } from "../libraries/Errors.sol";
 import { IdentityTypes } from "../libraries/IdentityTypes.sol";
 
 contract ClaimIssuerFactory is Ownable {
+
     address private _implementation;
     mapping(address => address) private _deployedClaimIssuers;
     mapping(address => bool) private _blacklistedAddresses;
 
     /// @notice Event emitted when a new ClaimIssuer is deployed
-    event ClaimIssuerDeployed(
-        address indexed managementKey,
-        address indexed claimIssuer
-    );
+    event ClaimIssuerDeployed(address indexed managementKey, address indexed claimIssuer);
 
     /// @notice Event emitted when an address is blacklisted
     event Blacklisted(address indexed addr, bool blacklisted);
 
     /// @notice Event emitted when the implementation is updated
-    event ImplementationUpdated(
-        address indexed oldImplementation,
-        address indexed newImplementation
-    );
+    event ImplementationUpdated(address indexed oldImplementation, address indexed newImplementation);
 
     constructor(address implementationAddress) Ownable(msg.sender) {
         _implementation = implementationAddress;
@@ -46,9 +41,7 @@ contract ClaimIssuerFactory is Ownable {
      * @param managementKey The initial management key for the ClaimIssuer
      * @return The address of the deployed ClaimIssuer contract
      */
-    function deployClaimIssuerOnBehalf(
-        address managementKey
-    ) external onlyOwner returns (address) {
+    function deployClaimIssuerOnBehalf(address managementKey) external onlyOwner returns (address) {
         return _deployClaimIssuer(managementKey);
     }
 
@@ -56,10 +49,7 @@ contract ClaimIssuerFactory is Ownable {
      * @dev Blacklists an address from deploying ClaimIssuers
      * @param addr The address to blacklist
      */
-    function blacklistAddress(
-        address addr,
-        bool blacklisted
-    ) external onlyOwner {
+    function blacklistAddress(address addr, bool blacklisted) external onlyOwner {
         require(addr != address(0), Errors.ZeroAddress());
         _blacklistedAddresses[addr] = blacklisted;
         emit Blacklisted(addr, blacklisted);
@@ -69,9 +59,7 @@ contract ClaimIssuerFactory is Ownable {
      * @dev Updates the implementation address
      * @param newImplementation The new implementation address
      */
-    function updateImplementation(
-        address newImplementation
-    ) external onlyOwner {
+    function updateImplementation(address newImplementation) external onlyOwner {
         require(newImplementation != address(0), Errors.ZeroAddress());
 
         address oldImplementation = _implementation;
@@ -108,28 +96,16 @@ contract ClaimIssuerFactory is Ownable {
      * @param managementKey The initial management key for the ClaimIssuer
      * @return The address of the deployed ClaimIssuer contract
      */
-    function _deployClaimIssuer(
-        address managementKey
-    ) internal returns (address) {
+    function _deployClaimIssuer(address managementKey) internal returns (address) {
         require(managementKey != address(0), Errors.ZeroAddress());
-        require(
-            !_blacklistedAddresses[msg.sender],
-            Errors.Blacklisted(msg.sender)
-        );
-        require(
-            _deployedClaimIssuers[managementKey] == address(0),
-            Errors.ClaimIssuerAlreadyDeployed(managementKey)
-        );
+        require(!_blacklistedAddresses[msg.sender], Errors.Blacklisted(msg.sender));
+        require(_deployedClaimIssuers[managementKey] == address(0), Errors.ClaimIssuerAlreadyDeployed(managementKey));
 
         address claimIssuerAddress = CREATE3.deployDeterministic(
             abi.encodePacked(
                 type(ERC1967Proxy).creationCode,
                 abi.encode(
-                    _implementation,
-                    abi.encodeCall(
-                        Identity.initialize,
-                        (managementKey, IdentityTypes.CLAIM_ISSUER)
-                    )
+                    _implementation, abi.encodeCall(Identity.initialize, (managementKey, IdentityTypes.CLAIM_ISSUER))
                 )
             ),
             bytes32(uint256(uint160(managementKey)))
@@ -140,4 +116,5 @@ contract ClaimIssuerFactory is Ownable {
 
         return claimIssuerAddress;
     }
+
 }

@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 /// @title KeyPurposes
 /// @notice Constants for Key Purposes
 library KeyPurposes {
+
     /// @dev 1: MANAGEMENT keys, which can manage the identity
     uint256 internal constant MANAGEMENT = 1;
 
@@ -18,4 +19,5 @@ library KeyPurposes {
 
     /// @dev 5: CLAIM_ADDER key, can add claims but cannot remove them.
     uint256 internal constant CLAIM_ADDER = 5;
+
 }

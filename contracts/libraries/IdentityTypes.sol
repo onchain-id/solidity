@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 /// @title IdentityTypes
 /// @notice Constants for Identity Types
 library IdentityTypes {
+
     /// @dev 1: ASSET identity, used for token identities
     uint256 internal constant ASSET = 1;
 
@@ -18,4 +19,11 @@ library IdentityTypes {
 
     /// @dev 5: CLAIM_ISSUER identity
     uint256 internal constant CLAIM_ISSUER = 5;
+
+    /// @dev 6: SMART_CONTRACT identity (DeFi protocols, vaults, bridges, escrows, etc.)
+    uint256 internal constant SMART_CONTRACT = 6;
+
+    /// @dev 7: PUBLIC_AUTHORITY identity (regulators, courts, government issuers, etc.)
+    uint256 internal constant PUBLIC_AUTHORITY = 7;
+
 }

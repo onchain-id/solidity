@@ -6,6 +6,7 @@ import { IImplementationAuthority } from "../interface/IImplementationAuthority.
 import { Errors } from "../libraries/Errors.sol";
 
 contract IdentityProxy {
+
     /**
      *  @dev constructor of the proxy Identity contract
      *  @param _implementationAuthority the implementation Authority contract address
@@ -14,32 +15,20 @@ contract IdentityProxy {
      *  the proxy is going to use the logic deployed on the implementation contract
      *  deployed at an address listed in the ImplementationAuthority contract
      */
-    constructor(
-        address _implementationAuthority,
-        address initialManagementKey,
-        uint256 _identityType
-    ) {
+    constructor(address _implementationAuthority, address initialManagementKey, uint256 _identityType) {
         require(_implementationAuthority != address(0), Errors.ZeroAddress());
         require(initialManagementKey != address(0), Errors.ZeroAddress());
 
         // solhint-disable-next-line no-inline-assembly
         assembly {
-            sstore(
-                0x821f3e4d3d679f19eacc940c87acf846ea6eae24a63058ea750304437a62aafc,
-                _implementationAuthority
-            )
+            sstore(0x821f3e4d3d679f19eacc940c87acf846ea6eae24a63058ea750304437a62aafc, _implementationAuthority)
         }
 
-        address logic = IImplementationAuthority(_implementationAuthority)
-            .getImplementation();
+        address logic = IImplementationAuthority(_implementationAuthority).getImplementation();
 
         // solhint-disable-next-line avoid-low-level-calls
-        (bool success, ) = logic.delegatecall(
-            abi.encodeWithSignature(
-                "initialize(address,uint256)",
-                initialManagementKey,
-                _identityType
-            )
+        (bool success,) = logic.delegatecall(
+            abi.encodeWithSignature("initialize(address,uint256)", initialManagementKey, _identityType)
         );
         require(success, Errors.InitializationFailed());
     }
@@ -52,20 +41,12 @@ contract IdentityProxy {
      */
     // solhint-disable-next-line no-complex-fallback
     fallback() external payable {
-        address logic = IImplementationAuthority(implementationAuthority())
-            .getImplementation();
+        address logic = IImplementationAuthority(implementationAuthority()).getImplementation();
 
         // solhint-disable-next-line no-inline-assembly
         assembly {
             calldatacopy(0x0, 0x0, calldatasize())
-            let success := delegatecall(
-                sub(gas(), 10000),
-                logic,
-                0x0,
-                calldatasize(),
-                0,
-                0
-            )
+            let success := delegatecall(sub(gas(), 10000), logic, 0x0, calldatasize(), 0, 0)
             let retSz := returndatasize()
             returndatacopy(0, 0, retSz)
             switch success
@@ -82,10 +63,9 @@ contract IdentityProxy {
         address implemAuth;
         // solhint-disable-next-line no-inline-assembly
         assembly {
-            implemAuth := sload(
-                0x821f3e4d3d679f19eacc940c87acf846ea6eae24a63058ea750304437a62aafc
-            )
+            implemAuth := sload(0x821f3e4d3d679f19eacc940c87acf846ea6eae24a63058ea750304437a62aafc)
         }
         return implemAuth;
     }
+
 }

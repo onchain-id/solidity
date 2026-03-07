@@ -9,13 +9,12 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
  * This proxy delegates all calls to the implementation contract
  */
 contract ClaimIssuerProxy is ERC1967Proxy {
+
     /**
      * @dev Constructor for ClaimIssuerProxy
      * @param implementation The address of the implementation contract
      * @param data The encoded function call to initialize the proxy
      */
-    constructor(
-        address implementation,
-        bytes memory data
-    ) ERC1967Proxy(implementation, data) {}
+    constructor(address implementation, bytes memory data) ERC1967Proxy(implementation, data) { }
+
 }
