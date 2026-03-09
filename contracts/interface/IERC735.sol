@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.8.17;
+pragma solidity ^0.8.27;
 
 /**
  * @dev interface of the ERC735 (Claim Holder) standard as defined in the EIP.
@@ -18,7 +18,8 @@ interface IERC735 {
         address indexed issuer,
         bytes signature,
         bytes data,
-        string uri);
+        string uri
+    );
 
     /**
      * @dev Emitted when a claim was removed.
@@ -32,7 +33,8 @@ interface IERC735 {
         address indexed issuer,
         bytes signature,
         bytes data,
-        string uri);
+        string uri
+    );
 
     /**
      * @dev Emitted when a claim was changed.
@@ -46,7 +48,8 @@ interface IERC735 {
         address indexed issuer,
         bytes signature,
         bytes data,
-        string uri);
+        string uri
+    );
 
     /**
      * @dev Add or update a claim.
@@ -65,8 +68,8 @@ interface IERC735 {
         address issuer,
         bytes calldata _signature,
         bytes calldata _data,
-        string calldata _uri)
-    external returns (bytes32 claimRequestId);
+        string calldata _uri
+    ) external returns (bytes32 claimRequestId);
 
     /**
      * @dev Removes a claim.
@@ -83,16 +86,20 @@ interface IERC735 {
      * Claim IDs are generated using `keccak256(abi.encode(address issuer_address, uint256 topic))`.
      */
     function getClaim(bytes32 _claimId)
-    external view returns(
-        uint256 topic,
-        uint256 scheme,
-        address issuer,
-        bytes memory signature,
-        bytes memory data,
-        string memory uri);
+        external
+        view
+        returns (
+            uint256 topic,
+            uint256 scheme,
+            address issuer,
+            bytes memory signature,
+            bytes memory data,
+            string memory uri
+        );
 
     /**
      * @dev Returns an array of claim IDs by topic.
      */
-    function getClaimIdsByTopic(uint256 _topic) external view returns(bytes32[] memory claimIds);
+    function getClaimIdsByTopic(uint256 _topic) external view returns (bytes32[] memory claimIds);
+
 }

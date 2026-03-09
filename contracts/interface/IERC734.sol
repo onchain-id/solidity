@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.8.17;
+pragma solidity ^0.8.27;
 
 /**
  * @dev interface of the ERC734 (Key Holder) standard as defined in the EIP.
@@ -53,18 +53,18 @@ interface IERC734 {
      *
      * Triggers Event: `KeyAdded`
      *
-     * Specification: MUST only be done by keys of purpose 1, or the identity
+     * Specification: MUST only be done by keys of purpose KeyPurposes.MANAGEMENT, or the identity
      * itself. If it's the identity itself, the approval process will determine its approval.
      */
     function addKey(bytes32 _key, uint256 _purpose, uint256 _keyType) external returns (bool success);
 
     /**
-    * @dev Approves an execution.
-    *
-    * Triggers Event: `Approved`
-    * Triggers on execution successful Event: `Executed`
-    * Triggers on execution failure Event: `ExecutionFailed`
-    */
+     * @dev Approves an execution.
+     *
+     * Triggers Event: `Approved`
+     * Triggers on execution successful Event: `Executed`
+     * Triggers on execution failure Event: `ExecutionFailed`
+     */
     function approve(uint256 _id, bool _approve) external returns (bool success);
 
     /**
@@ -72,7 +72,7 @@ interface IERC734 {
      *
      * Triggers Event: `KeyRemoved`
      *
-     * Specification: MUST only be done by keys of purpose 1, or the identity itself.
+     * Specification: MUST only be done by keys of purpose KeyPurposes.MANAGEMENT, or the identity itself.
      * If it's the identity itself, the approval process will determine its approval.
      */
     function removeKey(bytes32 _key, uint256 _purpose) external returns (bool success);
@@ -80,8 +80,8 @@ interface IERC734 {
     /**
      * @dev Passes an execution instruction to an ERC734 identity.
      * How the execution is handled is up to the identity implementation:
-     * An execution COULD be requested and require `approve` to be called with one or more keys of purpose 1 or 2 to
-     * approve this execution.
+     * An execution COULD be requested and require `approve` to be called with one or more keys of purpose
+     * KeyPurposes.MANAGEMENT or KeyPurposes.ACTION to approve this execution.
      * Execute COULD be used as the only accessor for `addKey` and `removeKey`.
      *
      * Triggers Event: ExecutionRequested
@@ -97,7 +97,7 @@ interface IERC734 {
     /**
      * @dev Returns the list of purposes associated with a key.
      */
-    function getKeyPurposes(bytes32 _key) external view returns(uint256[] memory _purposes);
+    function getKeyPurposes(bytes32 _key) external view returns (uint256[] memory _purposes);
 
     /**
      * @dev Returns an array of public key bytes32 held by this identity.
@@ -108,4 +108,5 @@ interface IERC734 {
      * @dev Returns TRUE if a key is present and has the given purpose. If the key is not present it returns FALSE.
      */
     function keyHasPurpose(bytes32 _key, uint256 _purpose) external view returns (bool exists);
+
 }

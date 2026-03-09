@@ -1,20 +1,14 @@
 {
   "name": "@onchain-id/solidity",
-  "version": "2.2.1",
+  "version": "2.2.2-beta3",
   "description": "EVM solidity smart contracts for Blockchain OnchainID identities.",
+  "license": "ISC",
+  "author": "OnchainID Organization",
+  "type": "module",
   "files": [
-    "artifacts",
     "contracts",
-    "index.js",
-    "index.d.ts",
-    "typechain-types"
+    "out"
   ],
-  "scripts": {
-    "build": "npx hardhat compile",
-    "coverage": "npx hardhat coverage",
-    "lint": "npx hardhat check",
-    "test": "hardhat test"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/onchain-id/solidity.git"
@@ -28,18 +22,29 @@
     "solidity",
     "smart contracts"
   ],
-  "author": "OnchainID Organization",
-  "license": "ISC",
   "bugs": {
     "url": "https://github.com/onchain-id/solidity/issues"
   },
   "homepage": "https://github.com/onchain-id/solidity#readme",
+  "scripts": {
+    "prepare": "husky && forge soldeer install",
+    "build": "forge build",
+    "test": "forge test",
+    "lint": "forge fmt --check",
+    "lint:fix": "forge fmt",
+    "coverage": "forge coverage --no-match-coverage \"(test|script|dependencies|node_modules|FormatResolver)\"",
+    "coverage:report": "mkdir -p coverage && forge coverage --no-match-coverage \"(test|script|dependencies|node_modules|FormatResolver)\" --report lcov --report-file coverage/lcov.info && genhtml coverage/lcov.info -o coverage/report --branch-coverage && open coverage/report/index.html",
+    "docs": "forge doc --serve --open",
+    "clean": "forge clean"
+  },
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^2.0.1",
-    "@nomiclabs/hardhat-solhint": "^3.0.0",
-    "@openzeppelin/contracts": "^4.8.3",
-    "hardhat": "^2.12.6",
-    "solhint-plugin-prettier": "^0.0.5",
-    "solidity-coverage": "^0.8.2"
+    "@ballcat/commitlint-config-gitmoji": "^1.1.0",
+    "@commitlint/cli": "^19.8.1",
+    "husky": "^9.1.7"
+  },
+  "commitlint": {
+    "extends": [
+      "@ballcat/commitlint-config-gitmoji"
+    ]
   }
 }

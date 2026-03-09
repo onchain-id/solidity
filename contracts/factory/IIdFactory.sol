@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.8.17;
+pragma solidity ^0.8.27;
 
 interface IIdFactory {
 
     /// events
-
     // event emitted whenever a single contract is deployed by the factory
     event Deployed(address indexed _addr);
 
@@ -51,11 +50,9 @@ interface IIdFactory {
      *  of the function, including calls to oracles for multichain
      *  deployment security (avoid identity theft), defining payment requirements, etc.
      */
-    function createIdentityWithManagementKeys(
-        address _wallet,
-        string memory _salt,
-        bytes32[] memory _managementKeys
-    ) external returns (address);
+    function createIdentityWithManagementKeys(address _wallet, string memory _salt, bytes32[] memory _managementKeys)
+        external
+        returns (address);
 
     /**
      *  @dev function used to create a new Token Identity proxy from the factory
@@ -132,7 +129,7 @@ interface IIdFactory {
      *  @param _factory the address of the factory
      *  returns true if the address corresponds to a registered factory
      */
-    function isTokenFactory(address _factory) external view returns(bool);
+    function isTokenFactory(address _factory) external view returns (bool);
 
     /**
      *  @dev getter to know if a salt is taken for the create2 deployment
@@ -144,4 +141,5 @@ interface IIdFactory {
      * @dev getter for the implementation authority used by this factory.
      */
     function implementationAuthority() external view returns (address);
+
 }

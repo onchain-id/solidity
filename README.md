@@ -1,5 +1,4 @@
-![OnchainID Smart Contracts](./onchainid_logo_final.png)
----
+## ![OnchainID Smart Contracts](./onchainid_logo_final.png)
 
 ![GitHub](https://img.shields.io/github/license/onchain-id/solidity?color=green)
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/onchain-id/solidity)
@@ -8,6 +7,7 @@
 ![GitHub Release Date](https://img.shields.io/github/release-date/onchain-id/solidity)
 
 ---
+
 # OnchainID Smart Contracts
 
 Smart Contracts for secure Blockchain Identities, implementation of the ERC734 and ERC735 proposal standards.
@@ -19,11 +19,15 @@ Learn more about OnchainID and Blockchain Identities on the official OnchainID w
 - Install contracts package to use in your repository `yarn add @onchain-id/solidity`
 - Require desired contracts in-code (should you need to deploy them):
   ```javascript
-  const { contracts: { ERC734, Identity } } = require('@onchain-id/solidity');
+  const {
+    contracts: { ERC734, Identity },
+  } = require("@onchain-id/solidity");
   ```
 - Require desired interfaces in-code (should you need to interact with deployed contracts):
   ```javascript
-  const { interfaces: { IERC734, IERC735 } } = require('@onchain-id/solidity');
+  const {
+    interfaces: { IERC734, IERC735 },
+  } = require("@onchain-id/solidity");
   ```
 - Access contract ABI `ERC734.abi` and ByteCode `ERC734.bytecode`.
 
