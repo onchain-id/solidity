@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import { ClaimSignerHelper } from "../helpers/ClaimSignerHelper.sol";
 import { IdentityHelper } from "../helpers/IdentityHelper.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Identity } from "contracts/Identity.sol";
 import { IdFactory } from "contracts/factory/IdFactory.sol";
 import { Gateway } from "contracts/gateway/Gateway.sol";
@@ -322,7 +323,7 @@ contract GatewayTest is Test {
         setup.idFactory.transferOwnership(address(gateway));
 
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(Errors.OwnableUnauthorizedAccount.selector, alice));
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, alice));
         gateway.transferFactoryOwnership(bob);
     }
 
@@ -334,7 +335,7 @@ contract GatewayTest is Test {
         bytes memory sig = _signDeploy(carolPk, alice, "saltToUse", expiry);
 
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(Errors.OwnableUnauthorizedAccount.selector, alice));
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, alice));
         gateway.revokeSignature(sig);
     }
 
@@ -357,7 +358,7 @@ contract GatewayTest is Test {
         bytes memory sig = _signDeploy(carolPk, alice, "saltToUse", expiry);
 
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(Errors.OwnableUnauthorizedAccount.selector, alice));
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, alice));
         gateway.approveSignature(sig);
     }
 
@@ -392,7 +393,7 @@ contract GatewayTest is Test {
         Gateway gateway = _deployGatewayWithCarol();
 
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(Errors.OwnableUnauthorizedAccount.selector, alice));
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, alice));
         gateway.approveSigner(bob);
     }
 
@@ -428,7 +429,7 @@ contract GatewayTest is Test {
         Gateway gateway = _deployGateway(signers);
 
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(Errors.OwnableUnauthorizedAccount.selector, alice));
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, alice));
         gateway.revokeSigner(bob);
     }
 
@@ -460,7 +461,7 @@ contract GatewayTest is Test {
         setup.idFactory.transferOwnership(address(gateway));
 
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(Errors.OwnableUnauthorizedAccount.selector, alice));
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, alice));
         gateway.callFactory(abi.encodeCall(IdFactory.addTokenFactory, (address(0))));
     }
 

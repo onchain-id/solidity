@@ -15,6 +15,9 @@ library Errors {
     /// @notice Reverts if the factory is already registered
     error AlreadyAFactory(address factory);
 
+    /// @notice Reverts when the recovered signer does not match the wallet being registered
+    error InvalidSignature();
+
     /// @notice Reverts if the function is called on the sender address
     error CannotBeCalledOnSenderAddress();
 
@@ -33,9 +36,6 @@ library Errors {
     /// @notice Reverts if the only linked wallet tries to unlink
     error OnlyLinkedWalletCanUnlink();
 
-    /// @notice Reverts if the account is not authorized to call the function
-    error OwnableUnauthorizedAccount(address account); // TODO: OZ
-
     /// @notice Reverts if the salt is taken
     error SaltTaken(string salt);
 
@@ -50,6 +50,9 @@ library Errors {
 
     /// @notice Reverts if the wallet is not linked to an identity
     error WalletNotLinkedToIdentity(address wallet);
+
+    /// @notice Reverts if a previously unlinked wallet is being linked to a different identity
+    error WalletBoundToAnotherIdentity(address wallet, address boundIdentity);
 
     /* ----- Gateway ----- */
 
@@ -80,25 +83,7 @@ library Errors {
     /// @notice A call to the factory failed.
     error CallToFactoryFailed();
 
-    /* ----- Verifier ----- */
-
-    /// @notice The claim topic already exists.
-    error ClaimTopicAlreadyExists(uint256 claimTopic);
-
-    /// @notice The maximum number of claim topics is exceeded.
-    error MaxClaimTopicsExceeded();
-
-    /// @notice The maximum number of trusted issuers is exceeded.
-    error MaxTrustedIssuersExceeded();
-
-    /// @notice The trusted issuer already exists.
-    error TrustedIssuerAlreadyExists(address trustedIssuer);
-
-    /// @notice The trusted claim topics cannot be empty.
-    error TrustedClaimTopicsCannotBeEmpty();
-
-    /// @notice The trusted issuer does not exist.
-    error NotATrustedIssuer(address trustedIssuer);
+    /* ----- IdentityProxy ----- */
 
     /* ----- ClaimIssuer ----- */
 
@@ -142,23 +127,6 @@ library Errors {
 
     /// @notice The claim is invalid.
     error InvalidClaim();
-
-    /* ----- IdentityUtilities ----- */
-
-    /// @notice 0 is not a valid topic.
-    error EmptyTopic();
-
-    /// @notice 0 is not a valid Format.
-    error EmptyFormat();
-
-    /// @notice Name cannot be left empty.
-    error EmptyName();
-
-    /// @notice Use update function for existing topics.
-    error TopicAlreadyExists(uint256 topic);
-
-    /// @notice Topic is not registered yet.
-    error TopicNotFound(uint256 topic);
 
     /* ----- ClaimIssuerFactory ----- */
 

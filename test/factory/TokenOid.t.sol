@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import { IdentityHelper } from "../helpers/IdentityHelper.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IdFactory } from "contracts/factory/IdFactory.sol";
 import { Errors } from "contracts/libraries/Errors.sol";
 import { Test } from "forge-std/Test.sol";
@@ -28,7 +29,7 @@ contract TokenOidTest is Test {
 
     function test_addTokenFactory_revertNotOwner() public {
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(Errors.OwnableUnauthorizedAccount.selector, alice));
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, alice));
         setup.idFactory.addTokenFactory(alice);
     }
 
@@ -57,7 +58,7 @@ contract TokenOidTest is Test {
 
     function test_removeTokenFactory_revertNotOwner() public {
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(Errors.OwnableUnauthorizedAccount.selector, alice));
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, alice));
         setup.idFactory.removeTokenFactory(bob);
     }
 
@@ -86,7 +87,7 @@ contract TokenOidTest is Test {
 
     function test_createTokenIdentity_revertNotAuthorized() public {
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(Errors.OwnableUnauthorizedAccount.selector, alice));
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, alice));
         setup.idFactory.createTokenIdentity(alice, alice, "TST");
     }
 

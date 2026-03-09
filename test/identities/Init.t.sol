@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import { OnchainIDSetup } from "../helpers/OnchainIDSetup.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { Identity } from "contracts/Identity.sol";
 import { Errors } from "contracts/libraries/Errors.sol";
 
@@ -9,7 +10,7 @@ contract InitTest is OnchainIDSetup {
 
     function test_revert_whenReinitializingDeployedIdentity() public {
         vm.prank(alice);
-        vm.expectRevert("Initializable: contract is already initialized");
+        vm.expectRevert(Initializable.InvalidInitialization.selector);
         aliceIdentity.initialize(alice);
     }
 

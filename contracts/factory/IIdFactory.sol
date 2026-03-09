@@ -69,9 +69,10 @@ interface IIdFactory {
     /**
      *  @dev function used to link a new wallet to an existing identity
      *  @param _newWallet the address of the wallet to link
-     *  requires msg.sender to be linked to an existing onchainid
+     *  requires msg.sender to be actively linked to an existing onchainid
      *  the _newWallet will be linked to the same OID contract as msg.sender
-     *  _newWallet cannot be linked to an OID yet
+     *  _newWallet cannot be actively linked to an OID yet
+     *  if _newWallet was previously unlinked, it can only be re-linked to the same identity
      *  _newWallet cannot be address 0
      *  cannot link more than 100 wallets to an OID, for gas consumption reason
      */
@@ -80,11 +81,35 @@ interface IIdFactory {
     /**
      *  @dev function used to unlink a wallet from an existing identity
      *  @param _oldWallet the address of the wallet to unlink
-     *  requires msg.sender to be linked to the same onchainid as _oldWallet
+     *  requires msg.sender to be actively linked to the same onchainid as _oldWallet
      *  msg.sender cannot be _oldWallet to keep at least 1 wallet linked to any OID
      *  _oldWallet cannot be address 0
+     *  unlinked wallets remain bound to their identity and can only be re-linked to the same identity
      */
     function unlinkWallet(address _oldWallet) external;
+
+    /**
+     *  @dev function used to link a wallet to an identity using signature verification
+     *  @param wallet the address of the wallet to link
+     *  @param signature EIP-712 signature provided by the wallet
+     *  @param nonce the current nonce of the wallet (prevents replay attacks)
+     *  @param expiry expiry timestamp for the signature
+     *  requires the wallet to sign an EIP-712 typed message binding wallet, identity, nonce, and expiry
+     *  requires msg.sender to be the identity contract (called via execute())
+     *  if the wallet was previously unlinked, it can only be re-linked to the same identity
+     *  wallet cannot be address 0
+     *  signature must not be expired
+     *  nonce must match the current nonce of the wallet
+     */
+    function linkWalletWithSignature(address wallet, bytes calldata signature, uint256 nonce, uint256 expiry) external;
+
+    /**
+     *  @dev function used to unlink a wallet from an identity, callable by the identity contract
+     *  @param wallet the address of the wallet to unlink
+     *  requires msg.sender to be the identity contract that the wallet is linked to
+     *  wallet cannot be address 0
+     */
+    function unlinkWalletByIdentity(address wallet) external;
 
     /**
      *  @dev function used to register an address as a token factory
@@ -130,6 +155,13 @@ interface IIdFactory {
      *  returns true if the address corresponds to a registered factory
      */
     function isTokenFactory(address _factory) external view returns (bool);
+
+    /**
+     *  @dev getter for the current nonce of a wallet address (used for EIP-712 replay protection)
+     *  @param owner the wallet address to check the nonce for
+     *  @return the current nonce value
+     */
+    function nonces(address owner) external view returns (uint256);
 
     /**
      *  @dev getter to know if a salt is taken for the create2 deployment

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.8.27;
+pragma solidity 0.8.30;
 
 /// @title IIdentityUtilities
 /// @notice Interface for a schema registry that maps topic IDs to structured metadata schemas

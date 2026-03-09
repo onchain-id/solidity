@@ -131,9 +131,6 @@ contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
      */
     // solhint-disable-next-line func-name-mixedcase
     function __ClaimIssuer_init(address initialManagementKey) internal {
-        // Initialize UUPS upgradeability
-        __UUPSUpgradeable_init();
-
         // Initialize Identity functionality
         __Identity_init(initialManagementKey);
     }

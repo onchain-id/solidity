@@ -54,9 +54,8 @@ contract KeyManager is IERC734 {
      * Formula: keccak256(abi.encode(uint256(keccak256(bytes(id))) - 1)) & ~bytes32(uint256(0xff))
      * where id is the namespace identifier
      */
-    bytes32 internal constant _KEY_STORAGE_SLOT = keccak256(
-        abi.encode(uint256(keccak256(bytes("onchainid.keymanager.storage"))) - 1)
-    ) & ~bytes32(uint256(0xff));
+    bytes32 internal constant _KEY_STORAGE_SLOT =
+        keccak256(abi.encode(uint256(keccak256(bytes("onchainid.keymanager.storage"))) - 1)) & ~bytes32(uint256(0xff));
 
     /**
      * @notice Prevent any direct calls to the implementation contract (marked by _canInteract = false).

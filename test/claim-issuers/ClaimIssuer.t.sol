@@ -142,7 +142,7 @@ contract ClaimIssuerTest is OnchainIDSetup {
 
         vm.prank(nonOwner);
         vm.expectRevert(Errors.SenderDoesNotHaveManagementKey.selector);
-        proxy.upgradeTo(address(newImpl));
+        proxy.upgradeToAndCall(address(newImpl), "");
     }
 
     function test_upgrade_shouldUpgrade() public {
@@ -156,7 +156,7 @@ contract ClaimIssuerTest is OnchainIDSetup {
         ClaimIssuer newImpl = new ClaimIssuer(freshDeployer);
 
         vm.prank(freshDeployer);
-        proxy.upgradeTo(address(newImpl));
+        proxy.upgradeToAndCall(address(newImpl), "");
 
         assertTrue(proxy.keyHasPurpose(ClaimSignerHelper.addressToKey(freshDeployer), KeyPurposes.MANAGEMENT));
     }

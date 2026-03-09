@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - develop
   pull_request:
   workflow_dispatch:
 
@@ -44,4 +45,5 @@ jobs:
         run: forge test -vvv
 
       - name: Run coverage
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
         run: ./.github/scripts/coverage.sh

@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ERC1967Utils } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
+
 import { UpgradeableBeacon } from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import { Errors as OZErrors } from "@openzeppelin/contracts/utils/Errors.sol";
 
@@ -49,7 +51,7 @@ contract ProxyTest is OnchainIDSetup {
 
     function test_preventUpdatingWhenNotOwner() public {
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(Errors.OwnableUnauthorizedAccount.selector, alice));
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, alice));
         onchainidSetup.implementationAuthority.upgradeTo(address(0));
     }
 

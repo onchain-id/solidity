@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ClaimIssuer } from "contracts/ClaimIssuer.sol";
 import { ClaimIssuerFactory } from "contracts/factory/ClaimIssuerFactory.sol";
 import { Errors } from "contracts/libraries/Errors.sol";
@@ -49,7 +50,7 @@ contract ClaimIssuerFactoryTest is Test {
 
     function test_revertBlacklistNotOwner() public {
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(Errors.OwnableUnauthorizedAccount.selector, alice));
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, alice));
         factory.blacklistAddress(deployer, true);
     }
 
@@ -86,13 +87,13 @@ contract ClaimIssuerFactoryTest is Test {
 
     function test_revertDeployOnBehalfNotOwner() public {
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(Errors.OwnableUnauthorizedAccount.selector, alice));
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, alice));
         factory.deployClaimIssuerOnBehalf(alice);
     }
 
     function test_revertUpdateImplementationNotOwner() public {
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(Errors.OwnableUnauthorizedAccount.selector, alice));
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, alice));
         factory.updateImplementation(alice);
     }
 

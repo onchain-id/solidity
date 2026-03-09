@@ -11,7 +11,6 @@ echo "$COVERAGE_OUTPUT"
 echo "======================="
 
 TOTAL_LINE=$(echo "$COVERAGE_OUTPUT" | grep "| Total.*|")
-
 if [ -z "$TOTAL_LINE" ]; then
     echo "❌ Could not find Total coverage line"
     exit 1
@@ -44,7 +43,7 @@ fi
 
 if [ $FAIL = 1 ]; then
     echo ""
-    echo "Coverage check failed! All metrics must be 100%"
+    echo "Coverage check failed! All coverage metrics must be 100%"
     exit 1
 else
     echo "✅ Coverage requirements met!"
