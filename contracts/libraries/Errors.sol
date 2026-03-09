@@ -85,9 +85,6 @@ library Errors {
 
     /* ----- IdentityProxy ----- */
 
-    /// @notice The initialization failed.
-    error InitializationFailed();
-
     /* ----- ClaimIssuer ----- */
 
     /// @notice The claim already exists.
