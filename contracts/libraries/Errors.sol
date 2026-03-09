@@ -80,11 +80,6 @@ library Errors {
     /// @notice A call to the factory failed.
     error CallToFactoryFailed();
 
-    /* ----- IdentityProxy ----- */
-
-    /// @notice The initialization failed.
-    error InitializationFailed();
-
     /* ----- Verifier ----- */
 
     /// @notice The claim topic already exists.
