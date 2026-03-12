@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
+import { ClaimSignerHelper } from "../helpers/ClaimSignerHelper.sol";
 import { IdentityHelper } from "../helpers/IdentityHelper.sol";
+import { Identity } from "contracts/Identity.sol";
 import { IdFactory } from "contracts/factory/IdFactory.sol";
 import { Errors } from "contracts/libraries/Errors.sol";
+import { KeyPurposes } from "contracts/libraries/KeyPurposes.sol";
 import { Test } from "forge-std/Test.sol";
 
 contract TokenOidTest is Test {
@@ -87,25 +90,25 @@ contract TokenOidTest is Test {
     function test_createTokenIdentity_revertNotAuthorized() public {
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(Errors.OwnableUnauthorizedAccount.selector, alice));
-        setup.idFactory.createTokenIdentity(alice, alice, "TST");
+        setup.idFactory.createTokenIdentity(alice, alice, "TST", new address[](0));
     }
 
     function test_createTokenIdentity_revertTokenZeroAddress() public {
         vm.prank(deployer);
         vm.expectRevert(Errors.ZeroAddress.selector);
-        setup.idFactory.createTokenIdentity(address(0), alice, "TST");
+        setup.idFactory.createTokenIdentity(address(0), alice, "TST", new address[](0));
     }
 
     function test_createTokenIdentity_revertOwnerZeroAddress() public {
         vm.prank(deployer);
         vm.expectRevert(Errors.ZeroAddress.selector);
-        setup.idFactory.createTokenIdentity(alice, address(0), "TST");
+        setup.idFactory.createTokenIdentity(alice, address(0), "TST", new address[](0));
     }
 
     function test_createTokenIdentity_revertEmptySalt() public {
         vm.prank(deployer);
         vm.expectRevert(Errors.EmptyString.selector);
-        setup.idFactory.createTokenIdentity(alice, alice, "");
+        setup.idFactory.createTokenIdentity(alice, alice, "", new address[](0));
     }
 
     /// @notice Token factory should be able to create token identity
@@ -117,7 +120,7 @@ contract TokenOidTest is Test {
         // alice (as token factory) creates a token identity
         address token = makeAddr("tokenAddr");
         vm.prank(alice);
-        address identity = setup.idFactory.createTokenIdentity(token, bob, "factorySalt");
+        address identity = setup.idFactory.createTokenIdentity(token, bob, "factorySalt", new address[](0));
 
         assertTrue(identity != address(0), "Identity should be deployed");
         assertEq(setup.idFactory.getIdentity(token), identity, "Token should map to identity");
@@ -128,7 +131,7 @@ contract TokenOidTest is Test {
         assertFalse(setup.idFactory.isSaltTaken("Tokensalt1"));
 
         vm.prank(deployer);
-        setup.idFactory.createTokenIdentity(alice, bob, "salt1");
+        setup.idFactory.createTokenIdentity(alice, bob, "salt1", new address[](0));
 
         address tokenIdentityAddr = setup.idFactory.getIdentity(alice);
         assertTrue(tokenIdentityAddr != address(0));
@@ -139,12 +142,37 @@ contract TokenOidTest is Test {
         // Same salt should revert
         vm.prank(deployer);
         vm.expectRevert(abi.encodeWithSelector(Errors.SaltTaken.selector, "Tokensalt1"));
-        setup.idFactory.createTokenIdentity(alice, alice, "salt1");
+        setup.idFactory.createTokenIdentity(alice, alice, "salt1", new address[](0));
 
         // Same token address should revert
         vm.prank(deployer);
         vm.expectRevert(abi.encodeWithSelector(Errors.TokenAlreadyLinked.selector, alice));
-        setup.idFactory.createTokenIdentity(alice, alice, "salt2");
+        setup.idFactory.createTokenIdentity(alice, alice, "salt2", new address[](0));
+    }
+
+    /// @notice createTokenIdentity with claimAdders should set CLAIM_ADDER keys
+    function test_createTokenIdentity_withClaimAdders_shouldSetClaimAdderKeys() public {
+        address claimAdder = makeAddr("tokenClaimAdder");
+        address[] memory claimAdders = new address[](1);
+        claimAdders[0] = claimAdder;
+
+        address token = makeAddr("tokenWithAdders");
+        vm.prank(deployer);
+        address identityAddr = setup.idFactory.createTokenIdentity(token, bob, "saltAdders", claimAdders);
+
+        Identity identity = Identity(identityAddr);
+
+        // Verify CLAIM_ADDER key is set
+        assertTrue(
+            identity.keyHasPurpose(ClaimSignerHelper.addressToKey(claimAdder), KeyPurposes.CLAIM_ADDER),
+            "claimAdder should have CLAIM_ADDER purpose"
+        );
+
+        // Verify token owner has management key
+        assertTrue(
+            identity.keyHasPurpose(ClaimSignerHelper.addressToKey(bob), KeyPurposes.MANAGEMENT),
+            "token owner should have MANAGEMENT purpose"
+        );
     }
 
 }

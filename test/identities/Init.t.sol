@@ -4,19 +4,20 @@ pragma solidity ^0.8.27;
 import { OnchainIDSetup } from "../helpers/OnchainIDSetup.sol";
 import { Identity } from "contracts/Identity.sol";
 import { Errors } from "contracts/libraries/Errors.sol";
+import { IdentityTypes } from "contracts/libraries/IdentityTypes.sol";
 
 contract InitTest is OnchainIDSetup {
 
     function test_revert_whenReinitializingDeployedIdentity() public {
         vm.prank(alice);
         vm.expectRevert("Initializable: contract is already initialized");
-        aliceIdentity.initialize(alice);
+        aliceIdentity.initialize(alice, IdentityTypes.INDIVIDUAL);
     }
 
     function test_revert_whenInitializingWithZeroAddress() public {
         Identity libraryImpl = new Identity(deployer, true);
         vm.expectRevert(Errors.ZeroAddress.selector);
-        libraryImpl.initialize(address(0));
+        libraryImpl.initialize(address(0), IdentityTypes.INDIVIDUAL);
     }
 
     function test_revert_whenCreatingIdentityWithInvalidInitialKey() public {
@@ -32,7 +33,7 @@ contract InitTest is OnchainIDSetup {
     function test_revert_whenInitializingLibraryWithValidAddress() public {
         Identity libraryImpl = new Identity(deployer, true);
         vm.expectRevert(Errors.InitialKeyAlreadySetup.selector);
-        libraryImpl.initialize(deployer);
+        libraryImpl.initialize(deployer, IdentityTypes.INDIVIDUAL);
     }
 
     function test_revert_whenCallingLibraryImplementationDirectly() public {

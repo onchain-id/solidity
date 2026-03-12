@@ -5,7 +5,9 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { CREATE3 } from "solady/src/utils/CREATE3.sol";
 
+import { Identity } from "../Identity.sol";
 import { Errors } from "../libraries/Errors.sol";
+import { IdentityTypes } from "../libraries/IdentityTypes.sol";
 
 contract ClaimIssuerFactory is Ownable {
 
@@ -103,7 +105,7 @@ contract ClaimIssuerFactory is Ownable {
             abi.encodePacked(
                 type(ERC1967Proxy).creationCode,
                 abi.encode(
-                    _implementation, abi.encodeWithSelector(bytes4(keccak256("initialize(address)")), managementKey)
+                    _implementation, abi.encodeCall(Identity.initialize, (managementKey, IdentityTypes.CLAIM_ISSUER))
                 )
             ),
             bytes32(uint256(uint160(managementKey)))

@@ -7,8 +7,10 @@ import { Identity } from "../Identity.sol";
 
 contract IdentityProxy is BeaconProxy {
 
-    constructor(address _implementationAuthority, address _initialManagementKey)
-        BeaconProxy(_implementationAuthority, abi.encodeCall(Identity.initialize, (_initialManagementKey)))
+    constructor(address _implementationAuthority, address _initialManagementKey, uint256 _identityType)
+        BeaconProxy(
+            _implementationAuthority, abi.encodeCall(Identity.initialize, (_initialManagementKey, _identityType))
+        )
     { }
 
 }

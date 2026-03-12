@@ -4,12 +4,20 @@ pragma solidity ^0.8.27;
 import { IIdentity, Identity } from "./Identity.sol";
 import { IClaimIssuer } from "./interface/IClaimIssuer.sol";
 import { Errors } from "./libraries/Errors.sol";
+import { IdentityTypes } from "./libraries/IdentityTypes.sol";
 import { KeyPurposes } from "./libraries/KeyPurposes.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
+/**
+ * @title ClaimIssuer
+ * @notice Extension of Identity that can issue, validate, and revoke claims for other identities.
+ * @dev Adds claim revocation tracking, claim issuance to external identities, and
+ * signature-based claim validation. Uses UUPS upgradeability for proxy deployments.
+ */
 contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
 
+    /// @notice Tracks revoked claim signatures. True if the claim signature has been revoked.
     mapping(bytes => bool) public revokedClaims;
 
     /**
@@ -21,10 +29,18 @@ contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
 
     /**
      * @notice External initializer for proxy deployments
-     * @dev This function should be called when deploying ClaimIssuer through a proxy
+     * @dev This function should be called when deploying ClaimIssuer through a proxy.
+     * The _identityType parameter is ignored — ClaimIssuer always sets type 5.
      * @param initialManagementKey The initial management key for the ClaimIssuer
      */
-    function initialize(address initialManagementKey) external override initializer {
+    function initialize(
+        address initialManagementKey,
+        uint256 /* _identityType */
+    )
+        external
+        override
+        initializer
+    {
         __ClaimIssuer_init(initialManagementKey);
     }
 
@@ -112,8 +128,7 @@ contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
         // Take hash of recovered address
         bytes32 hashedAddr = keccak256(abi.encode(recovered));
 
-        // Does the trusted identifier have they key which signed the user's claim?
-        //  && (isClaimRevoked(_claimId) == false)
+        // Check if the recovered address has CLAIM_SIGNER purpose (CLAIM_ADDER cannot sign claims)
         return keyHasPurpose(hashedAddr, KeyPurposes.CLAIM_SIGNER) && !isClaimRevoked(sig);
     }
 
@@ -133,6 +148,9 @@ contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
     function __ClaimIssuer_init(address initialManagementKey) internal {
         // Initialize UUPS upgradeability
         __UUPSUpgradeable_init();
+
+        // Set identity type to ClaimIssuer
+        _getClaimStorage().identityType = IdentityTypes.CLAIM_ISSUER;
 
         // Initialize Identity functionality
         __Identity_init(initialManagementKey);
