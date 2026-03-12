@@ -26,4 +26,7 @@ library IdentityTypes {
     /// @dev 7: PUBLIC_AUTHORITY identity (regulators, courts, government issuers, etc.)
     uint256 internal constant PUBLIC_AUTHORITY = 7;
 
+    /// @dev 8: AI_AGENT identity
+    uint256 internal constant AI_AGENT = 8;
+
 }
