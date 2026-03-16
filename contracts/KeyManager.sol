@@ -78,14 +78,10 @@ contract KeyManager is IERC734 {
     }
 
     /**
-     * @dev See {IERC734-execute}.
+     * @inheritdoc IERC734
      * @notice Passes an execution instruction to the keymanager.
      *
-     * Execution flow:
-     * 1. If the sender is an ACTION key and the destination is external, execution is auto-approved
-     * 2. If the sender is a MANAGEMENT key, execution is auto-approved for any destination
-     * 3. If the sender is a CLAIM_SIGNER key and the call is to addClaim, execution is auto-approved
-     * 4. Otherwise, the execution request must be approved via the `approve` method
+     * Access control: Only addresses with a MANAGEMENT, ACTION, or PROPOSER key can call this function.
      *
      * @param _to The destination address for the execution
      * @param _value The amount of ETH to send with the execution
@@ -99,6 +95,14 @@ contract KeyManager is IERC734 {
         returns (uint256 executionId)
     {
         KeyStorage storage ks = _getKeyStorage();
+
+        bytes32 senderKey = keccak256(abi.encode(msg.sender));
+        require(
+            keyHasPurpose(senderKey, KeyPurposes.MANAGEMENT) || keyHasPurpose(senderKey, KeyPurposes.ACTION)
+                || keyHasPurpose(senderKey, KeyPurposes.PROPOSER),
+            Errors.SenderCannotPropose()
+        );
+
         uint256 _executionId = ks.executionNonce;
         ks.executions[_executionId].to = _to;
         ks.executions[_executionId].value = _value;
@@ -171,18 +175,10 @@ contract KeyManager is IERC734 {
     }
 
     /**
-     * @dev See {IERC734-addKey}.
-     * @notice implementation of the addKey function of the ERC-734 standard
-     * Adds a _key to the identity. The _purpose specifies the purpose of key. Initially we propose four purposes:
-     * 1: MANAGEMENT keys, which can manage the identity
-     * 2: ACTION keys, which perform actions in this identities name (signing, logins, transactions, etc.)
-     * 3: CLAIM signer keys, used to sign claims on other identities which need to be revokable.
-     * 4: ENCRYPTION keys, used to encrypt data e.g. hold in claims.
-     * MUST only be done by keys of purpose 1, or the identity itself.
-     * If its the identity itself, the approval process will determine its approval.
+     * @inheritdoc IERC734
      * @param _key keccak256 representation of an ethereum address
-     * @param _type type of key used, which would be a uint256 for different key types. e.g. 1 = ECDSA, 2 = RSA, etc.
-     * @param _purpose a uint256 specifying the key type, like 1 = MANAGEMENT, 2 = ACTION, 3 = CLAIM, 4 = ENCRYPTION
+     * @param _type type of key used (see KeyTypes library)
+     * @param _purpose specifying the key purpose (see KeyPurposes library)
      * @return success Returns TRUE if the addition was successful and FALSE if not
      */
     function addKey(bytes32 _key, uint256 _purpose, uint256 _type)

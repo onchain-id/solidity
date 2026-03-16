@@ -54,7 +54,11 @@ contract ClaimsTest is OnchainIDSetup {
             Identity.addClaim, (topic, Constants.CLAIM_SCHEME, address(aliceIdentity), signature, data, uri)
         );
 
-        // Bob (ACTION key) executes
+        // Give bob a PROPOSER key so he can call execute (creates pending execution)
+        vm.prank(alice);
+        aliceIdentity.addKey(keccak256(abi.encode(bob)), KeyPurposes.PROPOSER, KeyTypes.ECDSA);
+
+        // Bob (PROPOSER key) executes — creates pending request
         vm.prank(bob);
         uint256 executionId = aliceIdentity.execute(address(aliceIdentity), 0, actionData);
 
@@ -128,7 +132,11 @@ contract ClaimsTest is OnchainIDSetup {
             Identity.addClaim, (topic, Constants.CLAIM_SCHEME, address(claimIssuer), signature, data, uri)
         );
 
-        // Bob (ACTION key) executes
+        // Give bob a PROPOSER key so he can call execute (creates pending execution)
+        vm.prank(alice);
+        aliceIdentity.addKey(keccak256(abi.encode(bob)), KeyPurposes.PROPOSER, KeyTypes.ECDSA);
+
+        // Bob (PROPOSER key) executes — creates pending request
         vm.prank(bob);
         uint256 executionId = aliceIdentity.execute(address(aliceIdentity), 0, actionData);
 
@@ -211,7 +219,11 @@ contract ClaimsTest is OnchainIDSetup {
         // Encode removeClaim call
         bytes memory actionData = abi.encodeCall(Identity.removeClaim, (claimId));
 
-        // Bob (ACTION key) executes
+        // Give bob a PROPOSER key so he can call execute (creates pending execution)
+        vm.prank(alice);
+        aliceIdentity.addKey(keccak256(abi.encode(bob)), KeyPurposes.PROPOSER, KeyTypes.ECDSA);
+
+        // Bob (PROPOSER key) executes — creates pending request
         vm.prank(bob);
         uint256 executionId = aliceIdentity.execute(address(aliceIdentity), 0, actionData);
 
@@ -334,7 +346,7 @@ contract ClaimsTest is OnchainIDSetup {
     // ============ getClaim ============
 
     /// @notice When claim does not exist, should return empty struct
-    function test_getClaim_nonExistent_shouldReturnEmpty() public {
+    function test_getClaim_nonExistent_shouldReturnEmpty() public view {
         bytes32 claimId = ClaimSignerHelper.computeClaimId(address(claimIssuer), Constants.CLAIM_TOPIC_42);
 
         (uint256 topic, uint256 scheme, address issuer, bytes memory signature, bytes memory data, string memory uri) =
@@ -349,7 +361,7 @@ contract ClaimsTest is OnchainIDSetup {
     }
 
     /// @notice When claim exists, should return correct data
-    function test_getClaim_existing_shouldReturnData() public {
+    function test_getClaim_existing_shouldReturnData() public view {
         // Use the pre-built aliceClaim666 from setup
         (uint256 topic, uint256 scheme, address issuer, bytes memory signature, bytes memory data, string memory uri) =
             aliceIdentity.getClaim(aliceClaim666.id);
@@ -404,13 +416,13 @@ contract ClaimsTest is OnchainIDSetup {
     // ============ getClaimIdsByTopic ============
 
     /// @notice When no claims exist for topic, should return empty array
-    function test_getClaimIdsByTopic_empty_shouldReturnEmpty() public {
+    function test_getClaimIdsByTopic_empty_shouldReturnEmpty() public view {
         bytes32[] memory claimIds = aliceIdentity.getClaimIdsByTopic(101010);
         assertEq(claimIds.length, 0, "Should return empty array");
     }
 
     /// @notice When claims exist for topic, should return array of claim IDs
-    function test_getClaimIdsByTopic_hasClaims_shouldReturnIds() public {
+    function test_getClaimIdsByTopic_hasClaims_shouldReturnIds() public view {
         // Use the pre-built aliceClaim666 from setup
         bytes32[] memory claimIds = aliceIdentity.getClaimIdsByTopic(aliceClaim666.topic);
 

@@ -119,6 +119,9 @@ library Errors {
     /// @notice The sender does not have the action key.
     error SenderDoesNotHaveActionKey();
 
+    /// @notice The sender does not have a key that allows proposing executions (MANAGEMENT, ACTION, or PROPOSER).
+    error SenderCannotPropose();
+
     /// @notice The initial key was already setup.
     error InitialKeyAlreadySetup();
 
