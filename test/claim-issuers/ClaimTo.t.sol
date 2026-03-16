@@ -7,6 +7,7 @@ import { IIdentity } from "contracts/interface/IIdentity.sol";
 import { Errors } from "contracts/libraries/Errors.sol";
 import { KeyPurposes } from "contracts/libraries/KeyPurposes.sol";
 import { KeyTypes } from "contracts/libraries/KeyTypes.sol";
+
 import { Test as TestContract } from "test/mocks/Test.sol";
 
 /// @notice Test suite for ClaimIssuer.addClaimTo functionality
@@ -80,10 +81,11 @@ contract ClaimToTest is OnchainIDSetup {
         claimIssuer.addClaimTo(999, 1, hex"0099", hex"0099", "https://example.com/new-claim", IIdentity(address(0)));
     }
 
-    /// @notice Without key on aliceIdentity, addClaimTo creates pending execution requiring approval
+    /// @notice Without management key on aliceIdentity, addClaimTo creates pending execution requiring approval
     function test_addClaimTo_requiresApproval() public {
-        // ClaimIssuer does NOT have any key on aliceIdentity
-        // So the execution requires manual approval from alice
+        // Add claimIssuer as PROPOSER key so it can call execute (but not auto-approve)
+        vm.prank(alice);
+        aliceIdentity.addKey(ClaimSignerHelper.addressToKey(address(claimIssuer)), KeyPurposes.PROPOSER, KeyTypes.ECDSA);
         uint256 topic = 999;
         bytes memory data = hex"0099";
         string memory uri = "https://example.com/new-claim";
@@ -109,6 +111,10 @@ contract ClaimToTest is OnchainIDSetup {
 
     /// @notice Pending execution then owner approves -- full verification of claim fields
     function test_addClaimTo_pendingThenOwnerApproves() public {
+        // Add claimIssuer as PROPOSER key so it can call execute (but not auto-approve)
+        vm.prank(alice);
+        aliceIdentity.addKey(ClaimSignerHelper.addressToKey(address(claimIssuer)), KeyPurposes.PROPOSER, KeyTypes.ECDSA);
+
         uint256 topic = 999;
         bytes memory data = hex"0099";
         string memory uri = "https://example.com/new-claim";

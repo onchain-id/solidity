@@ -17,4 +17,7 @@ library KeyPurposes {
     /// @dev 4: ENCRYPTION keys, used to encrypt data e.g. hold in claims.
     uint256 internal constant ENCRYPTION = 4;
 
+    /// @dev 5: PROPOSER keys, which can propose execution requests but cannot approve or auto-execute them.
+    uint256 internal constant PROPOSER = 5;
+
 }

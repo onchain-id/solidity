@@ -25,12 +25,6 @@ import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableS
  * - Separation of key and claim storage for better organization
  * - Upgradeable version management through ERC-7201 storage slots
  *
- * The contract supports four key purposes:
- * - MANAGEMENT: Keys that can manage the identity
- * - ACTION: Keys that can perform actions on behalf of the identity
- * - CLAIM_SIGNER: Keys that can sign claims for other identities
- * - ENCRYPTION: Keys used for data encryption
- *
  * @custom:security This contract uses ERC-7201 storage slots to prevent storage collision attacks
  * in upgradeable contracts.
  */

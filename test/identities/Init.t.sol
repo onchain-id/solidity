@@ -24,7 +24,7 @@ contract InitTest is OnchainIDSetup {
         new Identity(address(0), false);
     }
 
-    function test_versionInitializedWhenDeployedAsRegularContract() public {
+    function test_versionInitializedWhenDeployedAsRegularContract() public view {
         Identity identityImplementation = getIdentityImplementation();
         assertEq(identityImplementation.version(), "3.0.0");
     }
@@ -43,7 +43,7 @@ contract InitTest is OnchainIDSetup {
         libraryImpl.addKey(keccak256(abi.encode(alice)), 1, 1);
     }
 
-    function test_supportsERC165InterfaceDetection() public {
+    function test_supportsERC165InterfaceDetection() public view {
         // ERC165 interface ID
         assertTrue(aliceIdentity.supportsInterface(0x01ffc9a7));
 

@@ -49,6 +49,10 @@ contract ExecutionsTest is OnchainIDSetup {
     function test_getExecutionData_pendingExecution() public {
         vm.deal(bob, 1 ether);
 
+        // Give bob a PROPOSER key on alice's identity so he can call execute
+        vm.prank(alice);
+        aliceIdentity.addKey(keccak256(abi.encode(bob)), KeyPurposes.PROPOSER, KeyTypes.ECDSA);
+
         uint256 executionId = aliceIdentity.getCurrentNonce();
         vm.prank(bob);
         aliceIdentity.execute{ value: 10 }(carol, 10, hex"123456");
@@ -103,7 +107,9 @@ contract ExecutionsTest is OnchainIDSetup {
     }
 
     function test_nestedExecute_claimIssuerNotManagementKey_pendingExecution() public {
-        // DON'T add claimIssuer as MANAGEMENT key
+        // Add claimIssuer as PROPOSER key (not MANAGEMENT) so it can call execute
+        vm.prank(alice);
+        aliceIdentity.addKey(keccak256(abi.encode(address(claimIssuer))), KeyPurposes.PROPOSER, KeyTypes.ECDSA);
 
         // Build claim
         ClaimSignerHelper.Claim memory claim = ClaimSignerHelper.buildClaim(
@@ -132,7 +138,6 @@ contract ExecutionsTest is OnchainIDSetup {
         aliceIdentity.approve(0, true);
 
         // Verify claim was added
-        bytes32 claimId = keccak256(abi.encode(claim.issuer, claim.topic));
         bytes32[] memory claimIds = aliceIdentity.getClaimIdsByTopic(42);
         assertEq(claimIds.length, 1);
     }
@@ -237,19 +242,13 @@ contract ExecutionsTest is OnchainIDSetup {
         assertEq(david.balance, davidBalanceBefore + 10);
     }
 
-    function test_executeAsNonActionKey_pendingRequest() public {
+    function test_executeAsUnauthorizedKey_reverts() public {
         vm.deal(bob, 1 ether);
-        uint256 carolBalanceBefore = carol.balance;
 
-        // bob has no keys on aliceIdentity
+        // bob has no keys on aliceIdentity — should revert
         vm.prank(bob);
+        vm.expectRevert(abi.encodeWithSelector(Errors.SenderCannotPropose.selector));
         aliceIdentity.execute{ value: 10 }(carol, 10, hex"");
-
-        // Verify execution is pending and carol balance unchanged
-        Structs.Execution memory exec = aliceIdentity.getExecutionData(0);
-        assertFalse(exec.approved);
-        assertFalse(exec.executed);
-        assertEq(carol.balance, carolBalanceBefore);
     }
 
     function test_approveNonExistingExecution() public {
@@ -272,17 +271,25 @@ contract ExecutionsTest is OnchainIDSetup {
     function test_approveAsNonActionKey_forExternalTarget() public {
         vm.deal(bob, 1 ether);
 
+        // Give bob a PROPOSER key so he can call execute
+        vm.prank(alice);
+        aliceIdentity.addKey(keccak256(abi.encode(bob)), KeyPurposes.PROPOSER, KeyTypes.ECDSA);
+
         // bob creates pending execution
         vm.prank(bob);
         aliceIdentity.execute{ value: 10 }(carol, 10, hex"");
 
-        // bob tries to approve (bob has no ACTION key)
+        // bob tries to approve (bob has PROPOSER but not ACTION key)
         vm.prank(bob);
         vm.expectRevert(abi.encodeWithSelector(Errors.SenderDoesNotHaveActionKey.selector, bob));
         aliceIdentity.approve(0, true);
     }
 
     function test_approveAsNonManagementKey_forIdentityTarget() public {
+        // Give bob a PROPOSER key so he can call execute
+        vm.prank(alice);
+        aliceIdentity.addKey(keccak256(abi.encode(bob)), KeyPurposes.PROPOSER, KeyTypes.ECDSA);
+
         // bob creates pending execution targeting the identity itself
         bytes memory addKeyData = abi.encodeCall(
             KeyManager.addKey, (keccak256(abi.encode(makeAddr("newKey"))), KeyPurposes.ACTION, KeyTypes.ECDSA)
@@ -302,6 +309,10 @@ contract ExecutionsTest is OnchainIDSetup {
         vm.deal(bob, 1 ether);
         uint256 carolBalanceBefore = carol.balance;
 
+        // Give bob a PROPOSER key so he can call execute
+        vm.prank(alice);
+        aliceIdentity.addKey(keccak256(abi.encode(bob)), KeyPurposes.PROPOSER, KeyTypes.ECDSA);
+
         // bob creates pending execution
         vm.prank(bob);
         aliceIdentity.execute{ value: 10 }(carol, 10, hex"");
@@ -316,6 +327,10 @@ contract ExecutionsTest is OnchainIDSetup {
     function test_approveWithFalse_doesNotExecute() public {
         vm.deal(bob, 1 ether);
         uint256 carolBalanceBefore = carol.balance;
+
+        // Give bob a PROPOSER key so he can call execute
+        vm.prank(alice);
+        aliceIdentity.addKey(keccak256(abi.encode(bob)), KeyPurposes.PROPOSER, KeyTypes.ECDSA);
 
         // bob creates pending execution
         vm.prank(bob);
@@ -334,10 +349,12 @@ contract ExecutionsTest is OnchainIDSetup {
     }
 
     function test_autoApprovalForAddClaimWithClaimSignerKey() public {
-        // Add bob as CLAIM_SIGNER
+        // Add bob as CLAIM_SIGNER and PROPOSER (PROPOSER needed to call execute, CLAIM_SIGNER for auto-approval)
         bytes32 bobKeyHash = keccak256(abi.encode(bob));
-        vm.prank(alice);
+        vm.startPrank(alice);
         aliceIdentity.addKey(bobKeyHash, KeyPurposes.CLAIM_SIGNER, KeyTypes.ECDSA);
+        aliceIdentity.addKey(bobKeyHash, KeyPurposes.PROPOSER, KeyTypes.ECDSA);
+        vm.stopPrank();
 
         // Build claim with claimIssuer as issuer
         ClaimSignerHelper.Claim memory claim = ClaimSignerHelper.buildClaim(
@@ -358,6 +375,172 @@ contract ExecutionsTest is OnchainIDSetup {
         bytes32[] memory claimIds = aliceIdentity.getClaimIdsByTopic(42);
         assertEq(claimIds.length, 1);
         assertEq(claimIds[0], claimId);
+    }
+
+    // ========= Proposer Key Tests =========
+
+    function test_executeAsProposer_createsPendingExternalRequest() public {
+        address proposer = makeAddr("proposer");
+        bytes32 proposerKeyHash = keccak256(abi.encode(proposer));
+        vm.prank(alice);
+        aliceIdentity.addKey(proposerKeyHash, KeyPurposes.PROPOSER, KeyTypes.ECDSA);
+
+        vm.deal(proposer, 1 ether);
+        uint256 carolBalanceBefore = carol.balance;
+
+        vm.prank(proposer);
+        aliceIdentity.execute{ value: 10 }(carol, 10, hex"");
+
+        // Proposer key should NOT auto-approve — execution is pending
+        Structs.Execution memory exec = aliceIdentity.getExecutionData(0);
+        assertFalse(exec.approved);
+        assertFalse(exec.executed);
+        assertEq(carol.balance, carolBalanceBefore);
+    }
+
+    function test_executeAsProposer_createsPendingInternalRequest() public {
+        address proposer = makeAddr("proposer");
+        bytes32 proposerKeyHash = keccak256(abi.encode(proposer));
+        vm.prank(alice);
+        aliceIdentity.addKey(proposerKeyHash, KeyPurposes.PROPOSER, KeyTypes.ECDSA);
+
+        bytes memory addKeyData = abi.encodeCall(
+            KeyManager.addKey, (keccak256(abi.encode(makeAddr("newKey"))), KeyPurposes.ACTION, KeyTypes.ECDSA)
+        );
+
+        vm.prank(proposer);
+        aliceIdentity.execute(address(aliceIdentity), 0, addKeyData);
+
+        // Proposer key should NOT auto-approve internal calls either
+        Structs.Execution memory exec = aliceIdentity.getExecutionData(0);
+        assertFalse(exec.approved);
+        assertFalse(exec.executed);
+    }
+
+    function test_approveAsProposerOnly_revertsForInternal() public {
+        address proposer = makeAddr("proposer");
+        bytes32 proposerKeyHash = keccak256(abi.encode(proposer));
+        vm.prank(alice);
+        aliceIdentity.addKey(proposerKeyHash, KeyPurposes.PROPOSER, KeyTypes.ECDSA);
+
+        // Proposer creates a pending internal execution
+        bytes memory addKeyData = abi.encodeCall(
+            KeyManager.addKey, (keccak256(abi.encode(makeAddr("newKey"))), KeyPurposes.ACTION, KeyTypes.ECDSA)
+        );
+        vm.prank(proposer);
+        aliceIdentity.execute(address(aliceIdentity), 0, addKeyData);
+
+        // Proposer tries to approve — should revert (no MANAGEMENT key)
+        vm.prank(proposer);
+        vm.expectRevert(abi.encodeWithSelector(Errors.SenderDoesNotHaveManagementKey.selector, proposer));
+        aliceIdentity.approve(0, true);
+    }
+
+    function test_approveAsProposerOnly_revertsForExternal() public {
+        address proposer = makeAddr("proposer");
+        bytes32 proposerKeyHash = keccak256(abi.encode(proposer));
+        vm.prank(alice);
+        aliceIdentity.addKey(proposerKeyHash, KeyPurposes.PROPOSER, KeyTypes.ECDSA);
+
+        vm.deal(proposer, 1 ether);
+        vm.prank(proposer);
+        aliceIdentity.execute{ value: 10 }(carol, 10, hex"");
+
+        // Proposer tries to approve — should revert (no ACTION key)
+        vm.prank(proposer);
+        vm.expectRevert(abi.encodeWithSelector(Errors.SenderDoesNotHaveActionKey.selector, proposer));
+        aliceIdentity.approve(0, true);
+    }
+
+    function test_proposerWithManagement_canAutoApprove() public {
+        address proposerManager = makeAddr("proposerManager");
+        bytes32 keyHash = keccak256(abi.encode(proposerManager));
+        vm.startPrank(alice);
+        aliceIdentity.addKey(keyHash, KeyPurposes.MANAGEMENT, KeyTypes.ECDSA);
+        aliceIdentity.addKey(keyHash, KeyPurposes.PROPOSER, KeyTypes.ECDSA);
+        vm.stopPrank();
+
+        vm.deal(proposerManager, 1 ether);
+        uint256 carolBalanceBefore = carol.balance;
+
+        vm.prank(proposerManager);
+        aliceIdentity.execute{ value: 10 }(carol, 10, hex"");
+
+        // MANAGEMENT takes precedence — should auto-approve
+        Structs.Execution memory exec = aliceIdentity.getExecutionData(0);
+        assertTrue(exec.approved);
+        assertTrue(exec.executed);
+        assertEq(carol.balance, carolBalanceBefore + 10);
+    }
+
+    function test_proposerWithAction_canAutoApproveExternal() public {
+        address proposerAction = makeAddr("proposerAction");
+        bytes32 keyHash = keccak256(abi.encode(proposerAction));
+        vm.startPrank(alice);
+        aliceIdentity.addKey(keyHash, KeyPurposes.ACTION, KeyTypes.ECDSA);
+        aliceIdentity.addKey(keyHash, KeyPurposes.PROPOSER, KeyTypes.ECDSA);
+        vm.stopPrank();
+
+        vm.deal(proposerAction, 1 ether);
+        uint256 carolBalanceBefore = carol.balance;
+
+        vm.prank(proposerAction);
+        aliceIdentity.execute{ value: 10 }(carol, 10, hex"");
+
+        // ACTION key auto-approves external calls
+        Structs.Execution memory exec = aliceIdentity.getExecutionData(0);
+        assertTrue(exec.approved);
+        assertTrue(exec.executed);
+        assertEq(carol.balance, carolBalanceBefore + 10);
+    }
+
+    function test_addAndRemoveProposerKey() public {
+        address proposer = makeAddr("proposer");
+        bytes32 proposerKeyHash = keccak256(abi.encode(proposer));
+
+        // Add PROPOSER key
+        vm.prank(alice);
+        aliceIdentity.addKey(proposerKeyHash, KeyPurposes.PROPOSER, KeyTypes.ECDSA);
+
+        // Verify key exists and has PROPOSER purpose
+        assertTrue(aliceIdentity.keyHasPurpose(proposerKeyHash, KeyPurposes.PROPOSER));
+        bytes32[] memory proposerKeys = aliceIdentity.getKeysByPurpose(KeyPurposes.PROPOSER);
+        assertEq(proposerKeys.length, 1);
+        assertEq(proposerKeys[0], proposerKeyHash);
+
+        // Verify getKey returns correct data
+        (uint256[] memory purposes, uint256 keyType, bytes32 key) = aliceIdentity.getKey(proposerKeyHash);
+        assertEq(key, proposerKeyHash);
+        assertEq(keyType, KeyTypes.ECDSA);
+        assertEq(purposes.length, 1);
+        assertEq(purposes[0], KeyPurposes.PROPOSER);
+
+        // Remove PROPOSER key
+        vm.prank(alice);
+        aliceIdentity.removeKey(proposerKeyHash, KeyPurposes.PROPOSER);
+
+        // Verify key is removed
+        assertFalse(aliceIdentity.keyHasPurpose(proposerKeyHash, KeyPurposes.PROPOSER));
+        proposerKeys = aliceIdentity.getKeysByPurpose(KeyPurposes.PROPOSER);
+        assertEq(proposerKeys.length, 0);
+    }
+
+    function test_executeAsClaimSignerOnly_reverts() public {
+        // carol already has CLAIM_SIGNER on aliceIdentity from setup
+        // CLAIM_SIGNER alone cannot call execute — needs PROPOSER, MANAGEMENT, or ACTION
+        vm.prank(carol);
+        vm.expectRevert(abi.encodeWithSelector(Errors.SenderCannotPropose.selector));
+        aliceIdentity.execute(address(aliceIdentity), 0, hex"");
+    }
+
+    function test_executeAsEncryptionOnly_reverts() public {
+        address encKey = makeAddr("encKey");
+        vm.prank(alice);
+        aliceIdentity.addKey(keccak256(abi.encode(encKey)), KeyPurposes.ENCRYPTION, KeyTypes.ECDSA);
+
+        vm.prank(encKey);
+        vm.expectRevert(abi.encodeWithSelector(Errors.SenderCannotPropose.selector));
+        aliceIdentity.execute(carol, 0, hex"");
     }
 
     function test_multicallWithMixedApproveReject() public {
