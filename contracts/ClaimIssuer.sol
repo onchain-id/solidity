@@ -41,7 +41,9 @@ contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
         override
         initializer
     {
-        __ClaimIssuer_init(initialManagementKey);
+        __UUPSUpgradeable_init();
+        _getClaimStorage().identityType = IdentityTypes.CLAIM_ISSUER;
+        __Identity_init(initialManagementKey);
     }
 
     /**
@@ -137,23 +139,6 @@ contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
      */
     function isClaimRevoked(bytes memory _sig) public view override returns (bool) {
         return revokedClaims[_sig];
-    }
-
-    /**
-     * @notice Initializer function for proxy deployments
-     * @dev This function should be called when deploying ClaimIssuer through a proxy
-     * @param initialManagementKey The initial management key for the ClaimIssuer
-     */
-    // solhint-disable-next-line func-name-mixedcase
-    function __ClaimIssuer_init(address initialManagementKey) internal {
-        // Initialize UUPS upgradeability
-        __UUPSUpgradeable_init();
-
-        // Set identity type to ClaimIssuer
-        _getClaimStorage().identityType = IdentityTypes.CLAIM_ISSUER;
-
-        // Initialize Identity functionality
-        __Identity_init(initialManagementKey);
     }
 
     /**

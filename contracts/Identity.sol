@@ -95,8 +95,6 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
      * calls __Identity_init if contract is not library
      */
     constructor(address initialManagementKey, bool _isLibrary) {
-        require(initialManagementKey != address(0), Errors.ZeroAddress());
-
         if (!_isLibrary) {
             __Identity_init(initialManagementKey);
         } else {
@@ -111,7 +109,6 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
      * @param _identityType The type of the identity.
      */
     function initialize(address initialManagementKey, uint256 _identityType) external virtual initializer {
-        require(initialManagementKey != address(0), Errors.ZeroAddress());
         _getClaimStorage().identityType = _identityType;
         __Identity_init(initialManagementKey);
     }
@@ -326,6 +323,7 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
      */
     // solhint-disable-next-line func-name-mixedcase
     function __Identity_init(address initialManagementKey) internal {
+        require(initialManagementKey != address(0), Errors.ZeroAddress());
         KeyStorage storage ks = _getKeyStorage();
         require(!ks.initialized, Errors.InitialKeyAlreadySetup());
         ks.initialized = true;
