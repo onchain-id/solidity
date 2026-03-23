@@ -26,7 +26,7 @@ contract Gateway is Ownable {
      *  @dev Constructor for the ONCHAINID Factory Gateway.
      *  @param idFactoryAddress the address of the factory to operate (the Gateway must be owner of the Factory).
      */
-    constructor(address idFactoryAddress, address[] memory signersToApprove) Ownable(msg.sender) {
+    constructor(address idFactoryAddress, address[] memory signersToApprove, address owner) Ownable(owner) {
         require(idFactoryAddress != address(0), Errors.ZeroAddress());
         require(signersToApprove.length <= 10, Errors.TooManySigners());
 

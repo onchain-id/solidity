@@ -20,7 +20,7 @@ contract ClaimIssuerFactoryTest is Test {
 
         vm.startPrank(deployer);
         claimIssuerImpl = new ClaimIssuer(deployer);
-        factory = new ClaimIssuerFactory(address(claimIssuerImpl));
+        factory = new ClaimIssuerFactory(address(claimIssuerImpl), address(this));
         vm.stopPrank();
     }
 
@@ -42,7 +42,6 @@ contract ClaimIssuerFactoryTest is Test {
     }
 
     function test_revertDeployOnBehalfZeroAddress() public {
-        vm.prank(deployer);
         vm.expectRevert(Errors.ZeroAddress.selector);
         factory.deployClaimIssuerOnBehalf(address(0));
     }
@@ -54,29 +53,24 @@ contract ClaimIssuerFactoryTest is Test {
     }
 
     function test_revertBlacklistZeroAddress() public {
-        vm.prank(deployer);
         vm.expectRevert(Errors.ZeroAddress.selector);
         factory.blacklistAddress(address(0), true);
     }
 
     function test_shouldBlacklistAddress() public {
-        vm.prank(deployer);
         factory.blacklistAddress(alice, true);
 
         assertTrue(factory.isBlacklisted(alice));
     }
 
     function test_shouldUnblacklistAddress() public {
-        vm.startPrank(deployer);
         factory.blacklistAddress(alice, true);
         factory.blacklistAddress(alice, false);
-        vm.stopPrank();
 
         assertFalse(factory.isBlacklisted(alice));
     }
 
     function test_revertDeployFromBlacklisted() public {
-        vm.prank(deployer);
         factory.blacklistAddress(alice, true);
 
         vm.prank(alice);
@@ -97,13 +91,11 @@ contract ClaimIssuerFactoryTest is Test {
     }
 
     function test_revertUpdateImplementationZeroAddress() public {
-        vm.prank(deployer);
         vm.expectRevert(Errors.ZeroAddress.selector);
         factory.updateImplementation(address(0));
     }
 
     function test_shouldDeployClaimIssuerOnBehalf() public {
-        vm.prank(deployer);
         address deployed = factory.deployClaimIssuerOnBehalf(alice);
 
         assertTrue(deployed != address(0), "Should deploy ClaimIssuer");
@@ -111,7 +103,6 @@ contract ClaimIssuerFactoryTest is Test {
     }
 
     function test_shouldUpdateImplementation() public {
-        vm.prank(deployer);
         factory.updateImplementation(alice);
 
         assertEq(factory.implementation(), alice);

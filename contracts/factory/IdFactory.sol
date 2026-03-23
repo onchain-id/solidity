@@ -37,7 +37,7 @@ contract IdFactory is IIdFactory, Ownable {
     mapping(address => address) private _tokenAddress;
 
     // setting
-    constructor(address implementationAuthorityAddress, address deployerAddress) Ownable(msg.sender) {
+    constructor(address implementationAuthorityAddress, address deployerAddress, address owner) Ownable(owner) {
         require(implementationAuthorityAddress != address(0), Errors.ZeroAddress());
         require(deployerAddress != address(0), Errors.ZeroAddress());
 

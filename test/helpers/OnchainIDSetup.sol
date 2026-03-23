@@ -65,7 +65,7 @@ contract OnchainIDSetup is Test {
 
         // Deploy factory infrastructure (as deployer)
         vm.startPrank(deployer);
-        onchainidSetup = IdentityHelper.deployFactory(deployer, address(createx));
+        onchainidSetup = IdentityHelper.deployFactory(deployer, address(createx), deployer);
         vm.stopPrank();
 
         // Deploy ClaimIssuer with proxy

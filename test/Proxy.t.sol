@@ -18,7 +18,7 @@ contract ProxyTest is OnchainIDSetup {
 
     function test_revertBecauseImplementationIsNotIdentity() public {
         TestContract testContract = new TestContract();
-        ImplementationAuthority authority = new ImplementationAuthority(address(testContract));
+        ImplementationAuthority authority = new ImplementationAuthority(address(testContract), address(this));
 
         vm.expectRevert(Errors.InitializationFailed.selector);
         new IdentityProxy(address(authority), alice);
@@ -26,7 +26,7 @@ contract ProxyTest is OnchainIDSetup {
 
     function test_revertBecauseInitialKeyIsZeroAddress() public {
         Identity impl = new Identity(deployer, true);
-        ImplementationAuthority authority = new ImplementationAuthority(address(impl));
+        ImplementationAuthority authority = new ImplementationAuthority(address(impl), address(this));
 
         vm.expectRevert(Errors.ZeroAddress.selector);
         new IdentityProxy(address(authority), address(0));
@@ -34,7 +34,7 @@ contract ProxyTest is OnchainIDSetup {
 
     function test_preventCreatingAuthorityWithZeroAddress() public {
         vm.expectRevert(Errors.ZeroAddress.selector);
-        new ImplementationAuthority(address(0));
+        new ImplementationAuthority(address(0), address(this));
     }
 
     function test_preventUpdatingToZeroAddress() public {
@@ -51,7 +51,7 @@ contract ProxyTest is OnchainIDSetup {
 
     function test_implementationAuthority_shouldReturnCorrectAddress() public {
         Identity impl = new Identity(deployer, false);
-        ImplementationAuthority authority = new ImplementationAuthority(address(impl));
+        ImplementationAuthority authority = new ImplementationAuthority(address(impl), address(this));
         IdentityProxy proxy = new IdentityProxy(address(authority), deployer);
 
         assertEq(proxy.implementationAuthority(), address(authority), "Should return the correct authority address");
@@ -60,7 +60,7 @@ contract ProxyTest is OnchainIDSetup {
     function test_updateImplementationAddress() public {
         // Deploy identity with its own proxy and authority
         Identity impl = new Identity(deployer, false);
-        ImplementationAuthority authority = new ImplementationAuthority(address(impl));
+        ImplementationAuthority authority = new ImplementationAuthority(address(impl), address(this));
         new IdentityProxy(address(authority), deployer);
 
         // Deploy new implementation

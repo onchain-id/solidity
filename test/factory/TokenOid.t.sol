@@ -23,7 +23,7 @@ contract TokenOidTest is Test {
         bob = makeAddr("tokenOidBob");
 
         vm.startPrank(deployer);
-        setup = IdentityHelper.deployFactory(deployer, address(new CreateX()));
+        setup = IdentityHelper.deployFactory(deployer, address(new CreateX()), address(this));
         vm.stopPrank();
     }
 
@@ -36,22 +36,18 @@ contract TokenOidTest is Test {
     }
 
     function test_addTokenFactory_revertZeroAddress() public {
-        vm.prank(deployer);
         vm.expectRevert(Errors.ZeroAddress.selector);
         setup.idFactory.addTokenFactory(address(0));
     }
 
     function test_addTokenFactory_shouldAdd() public {
-        vm.prank(deployer);
         setup.idFactory.addTokenFactory(alice);
         assertTrue(setup.idFactory.isTokenFactory(alice));
     }
 
     function test_addTokenFactory_revertAlreadyFactory() public {
-        vm.prank(deployer);
         setup.idFactory.addTokenFactory(alice);
 
-        vm.prank(deployer);
         vm.expectRevert(abi.encodeWithSelector(Errors.AlreadyAFactory.selector, alice));
         setup.idFactory.addTokenFactory(alice);
     }
@@ -65,22 +61,18 @@ contract TokenOidTest is Test {
     }
 
     function test_removeTokenFactory_revertZeroAddress() public {
-        vm.prank(deployer);
         vm.expectRevert(Errors.ZeroAddress.selector);
         setup.idFactory.removeTokenFactory(address(0));
     }
 
     function test_removeTokenFactory_revertNotFactory() public {
-        vm.prank(deployer);
         vm.expectRevert(abi.encodeWithSelector(Errors.NotAFactory.selector, bob));
         setup.idFactory.removeTokenFactory(bob);
     }
 
     function test_removeTokenFactory_shouldRemove() public {
-        vm.prank(deployer);
         setup.idFactory.addTokenFactory(alice);
 
-        vm.prank(deployer);
         setup.idFactory.removeTokenFactory(alice);
         assertFalse(setup.idFactory.isTokenFactory(alice));
     }
@@ -94,19 +86,16 @@ contract TokenOidTest is Test {
     }
 
     function test_createTokenIdentity_revertTokenZeroAddress() public {
-        vm.prank(deployer);
         vm.expectRevert(Errors.ZeroAddress.selector);
         setup.idFactory.createTokenIdentity(address(0), alice, "TST");
     }
 
     function test_createTokenIdentity_revertOwnerZeroAddress() public {
-        vm.prank(deployer);
         vm.expectRevert(Errors.ZeroAddress.selector);
         setup.idFactory.createTokenIdentity(alice, address(0), "TST");
     }
 
     function test_createTokenIdentity_revertEmptySalt() public {
-        vm.prank(deployer);
         vm.expectRevert(Errors.EmptyString.selector);
         setup.idFactory.createTokenIdentity(alice, alice, "");
     }
@@ -114,7 +103,6 @@ contract TokenOidTest is Test {
     /// @notice Token factory should be able to create token identity
     function test_createTokenIdentity_viaTokenFactory_shouldCreate() public {
         // Register alice as a token factory
-        vm.prank(deployer);
         setup.idFactory.addTokenFactory(alice);
 
         // alice (as token factory) creates a token identity
@@ -130,7 +118,6 @@ contract TokenOidTest is Test {
     function test_createTokenIdentity_shouldCreateAndRevertDuplicate() public {
         assertFalse(setup.idFactory.isSaltTaken("Tokensalt1"));
 
-        vm.prank(deployer);
         setup.idFactory.createTokenIdentity(alice, bob, "salt1");
 
         address tokenIdentityAddr = setup.idFactory.getIdentity(alice);
@@ -140,12 +127,10 @@ contract TokenOidTest is Test {
         assertEq(setup.idFactory.getToken(tokenIdentityAddr), alice);
 
         // Same salt should revert
-        vm.prank(deployer);
         vm.expectRevert(abi.encodeWithSelector(Errors.SaltTaken.selector, "Tokensalt1"));
         setup.idFactory.createTokenIdentity(alice, alice, "salt1");
 
         // Same token address should revert
-        vm.prank(deployer);
         vm.expectRevert(abi.encodeWithSelector(Errors.TokenAlreadyLinked.selector, alice));
         setup.idFactory.createTokenIdentity(alice, alice, "salt2");
     }
