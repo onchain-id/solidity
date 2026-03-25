@@ -22,7 +22,7 @@ contract ClaimIssuerFactory is Ownable {
     /// @notice Event emitted when the implementation is updated
     event ImplementationUpdated(address indexed oldImplementation, address indexed newImplementation);
 
-    constructor(address implementationAddress) Ownable(msg.sender) {
+    constructor(address implementationAddress, address owner) Ownable(owner) {
         _implementation = implementationAddress;
     }
 

@@ -22,7 +22,7 @@ contract ProxyTest is OnchainIDSetup {
 
     function test_revertBecauseImplementationIsNotIdentity() public {
         TestContract testContract = new TestContract();
-        ImplementationAuthority authority = new ImplementationAuthority(address(testContract));
+        ImplementationAuthority authority = new ImplementationAuthority(address(testContract), address(this));
 
         vm.expectRevert(OZErrors.FailedCall.selector);
         new IdentityProxy(address(authority), alice);
@@ -30,7 +30,7 @@ contract ProxyTest is OnchainIDSetup {
 
     function test_revertBecauseInitialKeyIsZeroAddress() public {
         Identity impl = new Identity(deployer, true);
-        ImplementationAuthority authority = new ImplementationAuthority(address(impl));
+        ImplementationAuthority authority = new ImplementationAuthority(address(impl), address(this));
 
         vm.expectRevert(Errors.ZeroAddress.selector);
         new IdentityProxy(address(authority), address(0));
@@ -38,7 +38,7 @@ contract ProxyTest is OnchainIDSetup {
 
     function test_preventCreatingAuthorityWithZeroAddress() public {
         vm.expectRevert(abi.encode(UpgradeableBeacon.BeaconInvalidImplementation.selector, address(0)));
-        new ImplementationAuthority(address(0));
+        new ImplementationAuthority(address(0), address(this));
     }
 
     function test_preventUpdatingToZeroAddress() public {
@@ -55,7 +55,7 @@ contract ProxyTest is OnchainIDSetup {
 
     function test_implementationAuthority_shouldReturnCorrectAddress() public {
         Identity impl = new Identity(deployer, false);
-        ImplementationAuthority authority = new ImplementationAuthority(address(impl));
+        ImplementationAuthority authority = new ImplementationAuthority(address(impl), address(this));
         IdentityProxy proxy = new IdentityProxy(address(authority), deployer);
 
         // ERC-1967 beacon slot: bytes32(uint256(keccak256('eip1967.proxy.beacon')) - 1)
@@ -67,7 +67,7 @@ contract ProxyTest is OnchainIDSetup {
     function test_updateImplementationAddress() public {
         // Deploy identity with its own proxy and authority
         Identity impl = new Identity(deployer, false);
-        ImplementationAuthority authority = new ImplementationAuthority(address(impl));
+        ImplementationAuthority authority = new ImplementationAuthority(address(impl), address(this));
         new IdentityProxy(address(authority), deployer);
 
         // Deploy new implementation

@@ -20,7 +20,7 @@ contract ProxyPatternTest is Test {
 
     function test_deployIdentityThroughProxyAndWorkCorrectly() public {
         vm.prank(deployer);
-        Identity identityProxy = IdentityHelper.deployIdentityWithProxy(deployer);
+        Identity identityProxy = IdentityHelper.deployIdentityWithProxy(deployer, address(this));
 
         assertEq(identityProxy.version(), "3.0.0");
 

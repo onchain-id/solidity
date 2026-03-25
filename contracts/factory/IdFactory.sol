@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
+import { ICreateX } from "@createx/ICreateX.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 import { IERC734 } from "../interface/IERC734.sol";
@@ -14,6 +15,8 @@ contract IdFactory is IIdFactory, Ownable {
 
     // address of the _implementationAuthority contract making the link to the implementation contract
     address public immutable implementationAuthority;
+
+    address public immutable deployer;
 
     mapping(address => bool) private _tokenFactories;
 
@@ -34,9 +37,12 @@ contract IdFactory is IIdFactory, Ownable {
     mapping(address => address) private _tokenAddress;
 
     // setting
-    constructor(address implementationAuthorityAddress) Ownable(msg.sender) {
+    constructor(address implementationAuthorityAddress, address deployerAddress, address owner) Ownable(owner) {
         require(implementationAuthorityAddress != address(0), Errors.ZeroAddress());
+        require(deployerAddress != address(0), Errors.ZeroAddress());
+
         implementationAuthority = implementationAuthorityAddress;
+        deployer = deployerAddress;
     }
 
     /**
@@ -208,30 +214,13 @@ contract IdFactory is IIdFactory, Ownable {
         return _tokenFactories[_factory];
     }
 
-    // deploy function with create2 opcode call
-    // returns the address of the contract created
-    function _deploy(string memory salt, bytes memory bytecode) private returns (address) {
-        bytes32 saltBytes = bytes32(keccak256(abi.encodePacked(salt)));
-        address addr;
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            let encoded_data := add(0x20, bytecode) // load initialization code.
-            let encoded_size := mload(bytecode) // load init code's length.
-            addr := create2(0, encoded_data, encoded_size, saltBytes)
-            if iszero(extcodesize(addr)) {
-                revert(0, 0)
-            }
-        }
-        emit Deployed(addr);
-        return addr;
-    }
-
     // function used to deploy an identity using CREATE2
     function _deployIdentity(string memory _salt, address _wallet) private returns (address) {
         bytes memory _code = type(IdentityProxy).creationCode;
         bytes memory _constructData = abi.encode(implementationAuthority, _wallet);
         bytes memory bytecode = abi.encodePacked(_code, _constructData);
-        return _deploy(_salt, bytecode);
+
+        return ICreateX(deployer).deployCreate3(keccak256(abi.encodePacked(_salt)), bytecode);
     }
 
 }

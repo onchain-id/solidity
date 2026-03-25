@@ -879,7 +879,7 @@ contract IdentityUtilitiesTest is Test {
         (address claimSigner,) = makeAddrAndKey("claimSigner");
 
         ClaimIssuer ci = ClaimIssuerHelper.deployWithProxy(claimIssuerOwner);
-        Identity identity = IdentityHelper.deployIdentityWithProxy(identityOwner);
+        Identity identity = IdentityHelper.deployIdentityWithProxy(identityOwner, address(this));
 
         // Add CLAIM_SIGNER key to claim issuer for the claimIssuerOwner
         vm.prank(claimIssuerOwner);
@@ -942,7 +942,7 @@ contract IdentityUtilitiesTest is Test {
         _addDefaultTopic(3004, "Test Topic", _singleStringArray("name"), _singleStringArray("string"));
 
         // Deploy Identity
-        Identity identity = IdentityHelper.deployIdentityWithProxy(admin);
+        Identity identity = IdentityHelper.deployIdentityWithProxy(admin, address(this));
 
         // Add CLAIM_SIGNER key for admin on the identity
         vm.prank(admin);
@@ -971,7 +971,7 @@ contract IdentityUtilitiesTest is Test {
 
     function test_isClaimValid_zeroAddressIssuer() public {
         TestIdentityUtilities testUtil = new TestIdentityUtilities();
-        Identity identity = IdentityHelper.deployIdentityWithProxy(admin);
+        Identity identity = IdentityHelper.deployIdentityWithProxy(admin, address(this));
 
         bool result = testUtil.checkIsClaimValid(address(identity), 3007, address(0), hex"", hex"");
         assertFalse(result);
@@ -979,7 +979,7 @@ contract IdentityUtilitiesTest is Test {
 
     function test_isClaimValid_invalidContractIssuer() public {
         TestIdentityUtilities testUtil = new TestIdentityUtilities();
-        Identity identity = IdentityHelper.deployIdentityWithProxy(admin);
+        Identity identity = IdentityHelper.deployIdentityWithProxy(admin, address(this));
 
         // Deploy a contract that does not implement isClaimValid (catches and returns false)
         TestContract invalidContract = new TestContract();

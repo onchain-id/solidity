@@ -45,6 +45,16 @@
   "commitlint": {
     "extends": [
       "@ballcat/commitlint-config-gitmoji"
-    ]
+    ],
+    "parserPreset": {
+      "parserOpts": {
+        "headerPattern": "^(:\\w*:|(?:[\\u2700-\\u27BF]|[\\uD83C-\\uDBFF][\\uDC00-\\uDFFF]|[\\u2600-\\u26FF]|[\\u2700-\\u27BF]|[\\u00A9\\u00AE]|[\\u203C\\u2049]|[\\u2139]|[\\u2194-\\u21AA]|[\\u231A-\\u25FC]|[\\u25FB-\\u25FE]|[\\u2934-\\u2935]|[\\u2B05-\\u2B55]|[\\u3030\\u303D]|[\\u3297\\u3299]|\\uFE0F)+) (?:\\((.*)\\) )?(.*)$",
+        "headerCorrespondence": ["type", "scope", "subject"]
+      }
+    },
+    "rules": {
+      "type-enum": [0],
+      "type-case": [0]
+    }
   }
 }
