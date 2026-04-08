@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { ClaimIssuer } from "contracts/ClaimIssuer.sol";
+import { IdentityTypes } from "contracts/libraries/IdentityTypes.sol";
 
 /// @notice Helper library for deploying ClaimIssuer contracts with proxy
 library ClaimIssuerHelper {
@@ -12,8 +13,9 @@ library ClaimIssuerHelper {
     /// @return claimIssuer The ClaimIssuer contract at the proxy address
     function deployWithProxy(address initialManagementKey) internal returns (ClaimIssuer) {
         ClaimIssuer impl = new ClaimIssuer(initialManagementKey);
-        ERC1967Proxy proxy =
-            new ERC1967Proxy(address(impl), abi.encodeCall(ClaimIssuer.initialize, (initialManagementKey)));
+        ERC1967Proxy proxy = new ERC1967Proxy(
+            address(impl), abi.encodeCall(ClaimIssuer.initialize, (initialManagementKey, IdentityTypes.CLAIM_ISSUER))
+        );
         return ClaimIssuer(address(proxy));
     }
 

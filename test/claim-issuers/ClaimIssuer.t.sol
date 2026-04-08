@@ -7,7 +7,9 @@ import { ClaimIssuer } from "contracts/ClaimIssuer.sol";
 import { IClaimIssuer } from "contracts/interface/IClaimIssuer.sol";
 import { IIdentity } from "contracts/interface/IIdentity.sol";
 import { Errors } from "contracts/libraries/Errors.sol";
+import { IdentityTypes } from "contracts/libraries/IdentityTypes.sol";
 import { KeyPurposes } from "contracts/libraries/KeyPurposes.sol";
+import { KeyTypes } from "contracts/libraries/KeyTypes.sol";
 import { ClaimIssuerProxy } from "contracts/proxy/ClaimIssuerProxy.sol";
 
 contract ClaimIssuerTest is OnchainIDSetup {
@@ -127,6 +129,27 @@ contract ClaimIssuerTest is OnchainIDSetup {
         );
     }
 
+    /// @notice CLAIM_ADDER key should NOT validate claim signatures (only CLAIM_SIGNER can)
+    function test_isClaimValid_claimAdderKey_shouldReturnFalse() public {
+        // Create a signer that will be added as CLAIM_ADDER (not CLAIM_SIGNER)
+        (address claimAdderAddr, uint256 claimAdderPk) = makeAddrAndKey("claimAdderSigner");
+
+        // Add claimAdderAddr as CLAIM_ADDER on the claimIssuer (not CLAIM_SIGNER)
+        vm.prank(claimIssuerOwner);
+        claimIssuer.addKey(ClaimSignerHelper.addressToKey(claimAdderAddr), KeyPurposes.CLAIM_ADDER, KeyTypes.ECDSA);
+
+        // Sign a claim with the CLAIM_ADDER key
+        uint256 topic = 999;
+        bytes memory data = hex"0099";
+        bytes memory signature = ClaimSignerHelper.signClaim(claimAdderPk, address(aliceIdentity), topic, data);
+
+        // isClaimValid should return false because CLAIM_ADDER cannot sign claims
+        assertFalse(
+            claimIssuer.isClaimValid(IIdentity(address(aliceIdentity)), topic, signature, data),
+            "CLAIM_ADDER key should not validate claim signatures"
+        );
+    }
+
     // ---- upgrade ----
 
     function test_upgrade_revertIfNotOwner() public {
@@ -134,8 +157,9 @@ contract ClaimIssuerTest is OnchainIDSetup {
         address nonOwner = makeAddr("nonOwner");
 
         ClaimIssuer impl = new ClaimIssuer(freshDeployer);
-        ClaimIssuerProxy proxyContract =
-            new ClaimIssuerProxy(address(impl), abi.encodeCall(ClaimIssuer.initialize, (freshDeployer)));
+        ClaimIssuerProxy proxyContract = new ClaimIssuerProxy(
+            address(impl), abi.encodeCall(ClaimIssuer.initialize, (freshDeployer, IdentityTypes.CLAIM_ISSUER))
+        );
         ClaimIssuer proxy = ClaimIssuer(address(proxyContract));
 
         ClaimIssuer newImpl = new ClaimIssuer(nonOwner);
@@ -149,8 +173,9 @@ contract ClaimIssuerTest is OnchainIDSetup {
         address freshDeployer = makeAddr("freshClaimDeployer2");
 
         ClaimIssuer impl = new ClaimIssuer(freshDeployer);
-        ClaimIssuerProxy proxyContract =
-            new ClaimIssuerProxy(address(impl), abi.encodeCall(ClaimIssuer.initialize, (freshDeployer)));
+        ClaimIssuerProxy proxyContract = new ClaimIssuerProxy(
+            address(impl), abi.encodeCall(ClaimIssuer.initialize, (freshDeployer, IdentityTypes.CLAIM_ISSUER))
+        );
         ClaimIssuer proxy = ClaimIssuer(address(proxyContract));
 
         ClaimIssuer newImpl = new ClaimIssuer(freshDeployer);

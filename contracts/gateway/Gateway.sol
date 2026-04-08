@@ -70,25 +70,32 @@ contract Gateway is Ownable {
      *  an approved public key. This method allow to deploy an ONCHAINID using a custom salt.
      *  @param identityOwner the address to set as a management key.
      *  @param salt to use for the deployment.
+     *  @param identityType the type of the identity (see IdentityTypes library).
+     *  @param claimAdders the list of addresses to add as CLAIM_ADDER keys on the identity.
      *  @param signatureExpiry the block timestamp where the signature will expire.
      *  @param signature the approval containing the salt and the identityOwner address.
      */
     function deployIdentityWithSalt(
         address identityOwner,
         string memory salt,
+        uint256 identityType,
+        address[] calldata claimAdders,
         uint256 signatureExpiry,
         bytes calldata signature
     ) external returns (address) {
         require(identityOwner != address(0), Errors.ZeroAddress());
         require(signatureExpiry == 0 || block.timestamp <= signatureExpiry, Errors.ExpiredSignature(signature));
 
-        address signer = keccak256(abi.encode("Authorize ONCHAINID deployment", identityOwner, salt, signatureExpiry))
-            .toEthSignedMessageHash().recover(signature);
+        address signer = keccak256(
+                abi.encode(
+                    "Authorize ONCHAINID deployment", identityOwner, salt, identityType, claimAdders, signatureExpiry
+                )
+            ).toEthSignedMessageHash().recover(signature);
 
         require(approvedSigners[signer], Errors.UnapprovedSigner(signer));
         require(!revokedSignatures[signature], Errors.RevokedSignature(signature));
 
-        return idFactory.createIdentity(identityOwner, salt);
+        return idFactory.createIdentity(identityOwner, salt, identityType, claimAdders);
     }
 
     /**
@@ -99,6 +106,8 @@ contract Gateway is Ownable {
      *  @param identityOwner the address to set as a management key.
      *  @param salt to use for the deployment.
      *  @param managementKeys the list of management keys to add to the ONCHAINID.
+     *  @param identityType the type of the identity (see IdentityTypes library).
+     *  @param claimAdders the list of addresses to add as CLAIM_ADDER keys on the identity.
      *  @param signatureExpiry the block timestamp where the signature will expire.
      *  @param signature the approval containing the salt and the identityOwner address.
      */
@@ -106,6 +115,8 @@ contract Gateway is Ownable {
         address identityOwner,
         string memory salt,
         bytes32[] calldata managementKeys,
+        uint256 identityType,
+        address[] calldata claimAdders,
         uint256 signatureExpiry,
         bytes calldata signature
     ) external returns (address) {
@@ -113,23 +124,37 @@ contract Gateway is Ownable {
         require(signatureExpiry == 0 || block.timestamp <= signatureExpiry, Errors.ExpiredSignature(signature));
 
         address signer = keccak256(
-                abi.encode("Authorize ONCHAINID deployment", identityOwner, salt, managementKeys, signatureExpiry)
+                abi.encode(
+                    "Authorize ONCHAINID deployment",
+                    identityOwner,
+                    salt,
+                    managementKeys,
+                    identityType,
+                    claimAdders,
+                    signatureExpiry
+                )
             ).toEthSignedMessageHash().recover(signature);
 
         require(approvedSigners[signer], Errors.UnapprovedSigner(signer));
         require(!revokedSignatures[signature], Errors.RevokedSignature(signature));
 
-        return idFactory.createIdentityWithManagementKeys(identityOwner, salt, managementKeys);
+        return
+            idFactory.createIdentityWithManagementKeys(identityOwner, salt, managementKeys, identityType, claimAdders);
     }
 
     /**
      *  @dev Deploy an ONCHAINID using a factory using the identityOwner address as salt.
      *  @param identityOwner the address to set as a management key.
+     *  @param identityType the type of the identity (see IdentityTypes library).
+     *  @param claimAdders the list of addresses to add as CLAIM_ADDER keys on the identity.
      */
-    function deployIdentityForWallet(address identityOwner) external returns (address) {
+    function deployIdentityForWallet(address identityOwner, uint256 identityType, address[] calldata claimAdders)
+        external
+        returns (address)
+    {
         require(identityOwner != address(0), Errors.ZeroAddress());
 
-        return idFactory.createIdentity(identityOwner, Strings.toHexString(identityOwner));
+        return idFactory.createIdentity(identityOwner, Strings.toHexString(identityOwner), identityType, claimAdders);
     }
 
     /**

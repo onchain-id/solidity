@@ -8,6 +8,7 @@ import { IdentityHelper } from "./IdentityHelper.sol";
 import { ClaimIssuer } from "contracts/ClaimIssuer.sol";
 import { Identity } from "contracts/Identity.sol";
 import { IdFactory } from "contracts/factory/IdFactory.sol";
+import { IdentityTypes } from "contracts/libraries/IdentityTypes.sol";
 import { KeyPurposes } from "contracts/libraries/KeyPurposes.sol";
 import { KeyTypes } from "contracts/libraries/KeyTypes.sol";
 import { ImplementationAuthority } from "contracts/proxy/ImplementationAuthority.sol";
@@ -73,7 +74,8 @@ contract OnchainIDSetup is Test {
 
         // Create alice identity via factory
         vm.prank(deployer);
-        address aliceIdentityAddr = onchainidSetup.idFactory.createIdentity(alice, "alice");
+        address aliceIdentityAddr =
+            onchainidSetup.idFactory.createIdentity(alice, "alice", IdentityTypes.INDIVIDUAL, new address[](0));
         aliceIdentity = Identity(aliceIdentityAddr);
 
         // Add carol as CLAIM_SIGNER and david as ACTION key on alice's identity
@@ -104,12 +106,14 @@ contract OnchainIDSetup is Test {
 
         // Create bob identity via factory
         vm.prank(deployer);
-        address bobIdentityAddr = onchainidSetup.idFactory.createIdentity(bob, "bob");
+        address bobIdentityAddr =
+            onchainidSetup.idFactory.createIdentity(bob, "bob", IdentityTypes.INDIVIDUAL, new address[](0));
         bobIdentity = Identity(bobIdentityAddr);
 
         // Create token identity
         vm.prank(deployer);
-        onchainidSetup.idFactory.createTokenIdentity(Constants.TOKEN_ADDRESS, tokenOwner, "tokenOwner");
+        onchainidSetup.idFactory
+            .createTokenIdentity(Constants.TOKEN_ADDRESS, tokenOwner, "tokenOwner", new address[](0));
     }
 
     // ---- Convenience getters ----

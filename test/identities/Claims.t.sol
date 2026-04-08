@@ -401,6 +401,61 @@ contract ClaimsTest is OnchainIDSetup {
         assertEq(claimIdsAfter.length, 0, "Should have 0 claims");
     }
 
+    // ============ CLAIM_ADDER key behavior ============
+
+    /// @notice Identity.isClaimValid should reject CLAIM_ADDER signatures (only CLAIM_SIGNER)
+    function test_isClaimValid_claimAdderKey_shouldReturnFalse() public {
+        // Add bob as CLAIM_ADDER (not CLAIM_SIGNER) on alice's identity
+        vm.prank(alice);
+        aliceIdentity.addKey(ClaimSignerHelper.addressToKey(bob), KeyPurposes.CLAIM_ADDER, KeyTypes.ECDSA);
+
+        // Sign a claim with bob's private key
+        uint256 topic = Constants.CLAIM_TOPIC_42;
+        bytes memory data = hex"0042";
+        bytes memory signature = ClaimSignerHelper.signClaim(bobPk, address(aliceIdentity), topic, data);
+
+        // isClaimValid should return false because CLAIM_ADDER cannot sign claims
+        assertFalse(
+            aliceIdentity.isClaimValid(IIdentity(address(aliceIdentity)), topic, signature, data),
+            "CLAIM_ADDER key should not validate claim signatures"
+        );
+    }
+
+    /// @notice CLAIM_ADDER key should be able to add claims (onlyClaimKey allows CLAIM_ADDER)
+    function test_addClaim_withClaimAdderKey_shouldSucceed() public {
+        // Add bob as CLAIM_ADDER on alice's identity
+        vm.prank(alice);
+        aliceIdentity.addKey(ClaimSignerHelper.addressToKey(bob), KeyPurposes.CLAIM_ADDER, KeyTypes.ECDSA);
+
+        // Build claim signed by claimIssuerOwner (who has CLAIM_SIGNER on claimIssuer)
+        uint256 topic = Constants.CLAIM_TOPIC_42;
+        bytes memory data = hex"0042";
+        string memory uri = "https://example.com";
+        bytes memory signature = ClaimSignerHelper.signClaim(claimIssuerOwnerPk, address(aliceIdentity), topic, data);
+
+        // Bob (CLAIM_ADDER) should be able to add the claim
+        vm.prank(bob);
+        aliceIdentity.addClaim(topic, Constants.CLAIM_SCHEME, address(claimIssuer), signature, data, uri);
+
+        // Verify claim was added
+        bytes32 claimId = ClaimSignerHelper.computeClaimId(address(claimIssuer), topic);
+        (uint256 retTopic,, address retIssuer,,,) = aliceIdentity.getClaim(claimId);
+        assertEq(retTopic, topic, "Claim topic should match");
+        assertEq(retIssuer, address(claimIssuer), "Claim issuer should match");
+    }
+
+    /// @notice CLAIM_ADDER key should NOT be able to remove claims (onlyClaimSignerKey blocks it)
+    function test_removeClaim_withClaimAdderKey_shouldRevert() public {
+        // Add bob as CLAIM_ADDER on alice's identity
+        vm.prank(alice);
+        aliceIdentity.addKey(ClaimSignerHelper.addressToKey(bob), KeyPurposes.CLAIM_ADDER, KeyTypes.ECDSA);
+
+        // Bob (CLAIM_ADDER) tries to remove aliceClaim666 — should revert
+        vm.prank(bob);
+        vm.expectRevert(Errors.SenderDoesNotHaveClaimSignerKey.selector);
+        aliceIdentity.removeClaim(aliceClaim666.id);
+    }
+
     // ============ getClaimIdsByTopic ============
 
     /// @notice When no claims exist for topic, should return empty array

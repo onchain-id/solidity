@@ -360,6 +360,58 @@ contract ExecutionsTest is OnchainIDSetup {
         assertEq(claimIds[0], claimId);
     }
 
+    /// @notice CLAIM_ADDER key calling execute() with addClaim data should auto-approve
+    function test_autoApprovalForAddClaimWithClaimAdderKey() public {
+        // Add bob as CLAIM_ADDER (not CLAIM_SIGNER)
+        bytes32 bobKeyHash = keccak256(abi.encode(bob));
+        vm.prank(alice);
+        aliceIdentity.addKey(bobKeyHash, KeyPurposes.CLAIM_ADDER, KeyTypes.ECDSA);
+
+        // Build claim with claimIssuer as issuer
+        ClaimSignerHelper.Claim memory claim = ClaimSignerHelper.buildClaim(
+            claimIssuerOwnerPk, address(aliceIdentity), address(claimIssuer), 42, hex"0042", "https://example.com"
+        );
+
+        // Encode addClaim data
+        bytes memory addClaimData = abi.encodeCall(
+            Identity.addClaim, (claim.topic, claim.scheme, claim.issuer, claim.signature, claim.data, claim.uri)
+        );
+
+        // Bob (CLAIM_ADDER) executes addClaim through execute — should auto-approve
+        vm.prank(bob);
+        aliceIdentity.execute(address(aliceIdentity), 0, addClaimData);
+
+        // Verify claim was added (auto-approved and executed)
+        bytes32 claimId = keccak256(abi.encode(claim.issuer, claim.topic));
+        bytes32[] memory claimIds = aliceIdentity.getClaimIdsByTopic(42);
+        assertEq(claimIds.length, 1);
+        assertEq(claimIds[0], claimId);
+    }
+
+    /// @notice CLAIM_ADDER key calling execute() with removeClaim data should NOT auto-approve
+    function test_claimAdderExecuteRemoveClaim_shouldNotAutoApprove() public {
+        // Add bob as CLAIM_ADDER
+        bytes32 bobKeyHash = keccak256(abi.encode(bob));
+        vm.prank(alice);
+        aliceIdentity.addKey(bobKeyHash, KeyPurposes.CLAIM_ADDER, KeyTypes.ECDSA);
+
+        // Encode removeClaim call for the existing aliceClaim666
+        bytes memory removeClaimData = abi.encodeCall(Identity.removeClaim, (aliceClaim666.id));
+
+        // Bob (CLAIM_ADDER) executes removeClaim — should NOT auto-approve
+        vm.prank(bob);
+        aliceIdentity.execute(address(aliceIdentity), 0, removeClaimData);
+
+        // Verify execution is pending (not auto-approved)
+        Structs.Execution memory exec = aliceIdentity.getExecutionData(0);
+        assertFalse(exec.approved);
+        assertFalse(exec.executed);
+
+        // Verify claim still exists
+        (uint256 retTopic,,,,,) = aliceIdentity.getClaim(aliceClaim666.id);
+        assertEq(retTopic, aliceClaim666.topic, "Claim should still exist");
+    }
+
     function test_multicallWithMixedApproveReject() public {
         // Add bob as ACTION key
         bytes32 bobKeyHash = keccak256(abi.encode(bob));

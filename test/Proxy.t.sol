@@ -7,6 +7,7 @@ import { Errors as OZErrors } from "@openzeppelin/contracts/utils/Errors.sol";
 
 import { Identity } from "contracts/Identity.sol";
 import { Errors } from "contracts/libraries/Errors.sol";
+import { IdentityTypes } from "contracts/libraries/IdentityTypes.sol";
 import { IdentityProxy } from "contracts/proxy/IdentityProxy.sol";
 import { ImplementationAuthority } from "contracts/proxy/ImplementationAuthority.sol";
 
@@ -17,7 +18,7 @@ contract ProxyTest is OnchainIDSetup {
 
     function test_revertBecauseImplementationIsZeroAddress() public {
         vm.expectRevert(abi.encode(ERC1967Utils.ERC1967InvalidBeacon.selector, address(0)));
-        new IdentityProxy(address(0), alice);
+        new IdentityProxy(address(0), alice, IdentityTypes.INDIVIDUAL);
     }
 
     function test_revertBecauseImplementationIsNotIdentity() public {
@@ -25,7 +26,7 @@ contract ProxyTest is OnchainIDSetup {
         ImplementationAuthority authority = new ImplementationAuthority(address(testContract));
 
         vm.expectRevert(OZErrors.FailedCall.selector);
-        new IdentityProxy(address(authority), alice);
+        new IdentityProxy(address(authority), alice, IdentityTypes.INDIVIDUAL);
     }
 
     function test_revertBecauseInitialKeyIsZeroAddress() public {
@@ -33,7 +34,7 @@ contract ProxyTest is OnchainIDSetup {
         ImplementationAuthority authority = new ImplementationAuthority(address(impl));
 
         vm.expectRevert(Errors.ZeroAddress.selector);
-        new IdentityProxy(address(authority), address(0));
+        new IdentityProxy(address(authority), address(0), IdentityTypes.INDIVIDUAL);
     }
 
     function test_preventCreatingAuthorityWithZeroAddress() public {
@@ -56,7 +57,7 @@ contract ProxyTest is OnchainIDSetup {
     function test_implementationAuthority_shouldReturnCorrectAddress() public {
         Identity impl = new Identity(deployer, false);
         ImplementationAuthority authority = new ImplementationAuthority(address(impl));
-        IdentityProxy proxy = new IdentityProxy(address(authority), deployer);
+        IdentityProxy proxy = new IdentityProxy(address(authority), deployer, IdentityTypes.INDIVIDUAL);
 
         // ERC-1967 beacon slot: bytes32(uint256(keccak256('eip1967.proxy.beacon')) - 1)
         bytes32 beaconSlot = 0xa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d50;
@@ -68,7 +69,7 @@ contract ProxyTest is OnchainIDSetup {
         // Deploy identity with its own proxy and authority
         Identity impl = new Identity(deployer, false);
         ImplementationAuthority authority = new ImplementationAuthority(address(impl));
-        new IdentityProxy(address(authority), deployer);
+        new IdentityProxy(address(authority), deployer, IdentityTypes.INDIVIDUAL);
 
         // Deploy new implementation
         Identity newImpl = new Identity(deployer, false);

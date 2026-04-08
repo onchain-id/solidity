@@ -45,6 +45,8 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
     struct ClaimStorage {
         /// @dev Mapping of claim ID to Claim struct as defined by IERC735
         mapping(bytes32 => Structs.Claim) claims;
+        /// @dev Identity type as defined in IdentityTypes library
+        uint256 identityType;
         /// @dev Mapping of topic to set of claim IDs (EnumerableSet for O(1) add/remove/contains)
         mapping(uint256 => EnumerableSet.Bytes32Set) claimsByTopic;
     }
@@ -64,8 +66,19 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
 
     // ========= Modifiers =========
 
-    /// @notice requires claim key to call this function, or internal call
+    /// @notice requires claim key (CLAIM_SIGNER or CLAIM_ADDER) to call this function, or internal call
     modifier onlyClaimKey() {
+        require(
+            msg.sender == address(this) || keyHasPurpose(keccak256(abi.encode(msg.sender)), KeyPurposes.CLAIM_SIGNER)
+                || keyHasPurpose(keccak256(abi.encode(msg.sender)), KeyPurposes.CLAIM_ADDER),
+            Errors.SenderDoesNotHaveClaimSignerKey()
+        );
+        _;
+    }
+
+    /// @notice requires CLAIM_SIGNER key to call this function, or internal call
+    /// @dev CLAIM_ADDER keys are excluded — they can add but not remove claims
+    modifier onlyClaimSignerKey() {
         require(
             msg.sender == address(this) || keyHasPurpose(keccak256(abi.encode(msg.sender)), KeyPurposes.CLAIM_SIGNER),
             Errors.SenderDoesNotHaveClaimSignerKey()
@@ -82,8 +95,6 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
      * calls __Identity_init if contract is not library
      */
     constructor(address initialManagementKey, bool _isLibrary) {
-        require(initialManagementKey != address(0), Errors.ZeroAddress());
-
         if (!_isLibrary) {
             __Identity_init(initialManagementKey);
         } else {
@@ -93,11 +104,12 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
 
     /**
      * @notice When using this contract as an implementation for a proxy, call this initializer with a delegatecall.
-     * @dev This function initializes the contract and sets up the initial management key.
+     * @dev This function initializes the contract and sets up the initial management key and identity type.
      * @param initialManagementKey The ethereum address to be set as the management key of the ONCHAINID.
+     * @param _identityType The type of the identity.
      */
-    function initialize(address initialManagementKey) external virtual initializer {
-        require(initialManagementKey != address(0), Errors.ZeroAddress());
+    function initialize(address initialManagementKey, uint256 _identityType) external virtual initializer {
+        _getClaimStorage().identityType = _identityType;
         __Identity_init(initialManagementKey);
     }
 
@@ -110,6 +122,14 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
      */
     function getClaimIdsByTopic(uint256 _topic) external view override(IERC735) returns (bytes32[] memory claimIds) {
         return _getClaimStorage().claimsByTopic[_topic].values();
+    }
+
+    /**
+     * @dev Returns the identity type set at initialization.
+     * @return The identity type as defined in IdentityTypes library
+     */
+    function getIdentityType() external view returns (uint256) {
+        return _getClaimStorage().identityType;
     }
 
     /**
@@ -194,7 +214,13 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
      * @return success True if the claim was successfully removed
      *
      */
-    function removeClaim(bytes32 _claimId) public override(IERC735) delegatedOnly onlyClaimKey returns (bool success) {
+    function removeClaim(bytes32 _claimId)
+        public
+        override(IERC735)
+        delegatedOnly
+        onlyClaimSignerKey
+        returns (bool success)
+    {
         ClaimStorage storage cs = _getClaimStorage();
 
         // 1. Validate claim exists and get topic
@@ -284,7 +310,7 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
         // Step 4: Hash the recovered address for key lookup
         bytes32 hashedAddr = keccak256(abi.encode(recovered));
 
-        // Step 5: Check if the recovered address has CLAIM_SIGNER purpose
+        // Step 5: Check if the recovered address has CLAIM_SIGNER purpose (CLAIM_ADDER cannot sign claims)
         return keyHasPurpose(hashedAddr, KeyPurposes.CLAIM_SIGNER);
     }
 
@@ -297,6 +323,7 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
      */
     // solhint-disable-next-line func-name-mixedcase
     function __Identity_init(address initialManagementKey) internal {
+        require(initialManagementKey != address(0), Errors.ZeroAddress());
         KeyStorage storage ks = _getKeyStorage();
         require(!ks.initialized, Errors.InitialKeyAlreadySetup());
         ks.initialized = true;

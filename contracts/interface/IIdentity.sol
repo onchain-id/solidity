@@ -20,4 +20,10 @@ interface IIdentity is IERC734, IERC735 {
         view
         returns (bool);
 
+    /**
+     * @dev Returns the identity type set at initialization.
+     * @return The identity type (see IdentityTypes library)
+     */
+    function getIdentityType() external view returns (uint256);
+
 }
