@@ -3,12 +3,14 @@ pragma solidity ^0.8.27;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
+import { KeyManager } from "../KeyManager.sol";
 import { IERC734 } from "../interface/IERC734.sol";
 import { Errors } from "../libraries/Errors.sol";
 import { IdentityTypes } from "../libraries/IdentityTypes.sol";
 import { KeyPurposes } from "../libraries/KeyPurposes.sol";
 import { KeyTypes } from "../libraries/KeyTypes.sol";
 import { IdentityProxy } from "../proxy/IdentityProxy.sol";
+import { Structs } from "../storage/Structs.sol";
 import { IIdFactory } from "./IIdFactory.sol";
 
 contract IdFactory is IIdFactory, Ownable {
@@ -61,69 +63,43 @@ contract IdFactory is IIdFactory, Ownable {
     }
 
     /**
-     *  @dev See {IdFactory-createIdentity}.
+     *  @dev See {IIdFactory-createIdentity}.
      */
-    function createIdentity(address _wallet, string memory _salt, uint256 _identityType, address[] memory _claimAdders)
-        external
-        override
-        onlyOwner
-        returns (address)
-    {
-        require(_wallet != address(0), Errors.ZeroAddress());
-        require(keccak256(abi.encode(_salt)) != keccak256(abi.encode("")), Errors.EmptyString());
-        string memory oidSalt = string.concat("OID", _salt);
-        require(!_saltTaken[oidSalt], Errors.SaltTaken(oidSalt));
-        require(_userIdentity[_wallet] == address(0), Errors.WalletAlreadyLinkedToIdentity(_wallet));
-
-        address identity = _deployIdentity(oidSalt, address(this), _identityType);
-        bytes32[] memory keys = new bytes32[](1);
-        keys[0] = keccak256(abi.encode(_wallet));
-        _setupIdentityKeys(identity, keys, _claimAdders);
-
-        _saltTaken[oidSalt] = true;
-        _userIdentity[_wallet] = identity;
-        _wallets[identity].push(_wallet);
-        emit WalletLinked(_wallet, identity);
-        return identity;
-    }
-
-    /**
-     *  @dev See {IdFactory-createIdentityWithManagementKeys}.
-     */
-    function createIdentityWithManagementKeys(
+    function createIdentity(
         address _wallet,
         string memory _salt,
-        bytes32[] memory _managementKeys,
-        uint256 _identityType,
-        address[] memory _claimAdders
+        Structs.KeyParam[] memory _keys,
+        uint256 _identityType
     ) external override onlyOwner returns (address) {
         require(_wallet != address(0), Errors.ZeroAddress());
         require(keccak256(abi.encode(_salt)) != keccak256(abi.encode("")), Errors.EmptyString());
         string memory oidSalt = string.concat("OID", _salt);
         require(!_saltTaken[oidSalt], Errors.SaltTaken(oidSalt));
         require(_userIdentity[_wallet] == address(0), Errors.WalletAlreadyLinkedToIdentity(_wallet));
-        require(_managementKeys.length > 0, Errors.EmptyListOfKeys());
+        require(_keys.length > 0, Errors.EmptyListOfKeys());
+
+        // Validate at least one management key exists
+        bool hasManagementKey = false;
+        for (uint256 i = 0; i < _keys.length; i++) {
+            if (_keys[i].purpose == KeyPurposes.MANAGEMENT) {
+                hasManagementKey = true;
+                break;
+            }
+        }
+        require(hasManagementKey, Errors.NoManagementKeyInKeys());
 
         address identity = _deployIdentity(oidSalt, address(this), _identityType);
-
-        for (uint256 i = 0; i < _managementKeys.length; i++) {
-            require(
-                _managementKeys[i] != keccak256(abi.encode(_wallet)), Errors.WalletAlsoListedInManagementKeys(_wallet)
-            );
-        }
-
-        _setupIdentityKeys(identity, _managementKeys, _claimAdders);
+        _setupIdentityKeys(identity, _keys);
 
         _saltTaken[oidSalt] = true;
         _userIdentity[_wallet] = identity;
         _wallets[identity].push(_wallet);
         emit WalletLinked(_wallet, identity);
-
         return identity;
     }
 
     /**
-     *  @dev See {IdFactory-createTokenIdentity}.
+     *  @dev See {IIdFactory-createTokenIdentity}.
      */
     function createTokenIdentity(
         address _token,
@@ -140,9 +116,25 @@ contract IdFactory is IIdFactory, Ownable {
         require(_tokenIdentity[_token] == address(0), Errors.TokenAlreadyLinked(_token));
 
         address identity = _deployIdentity(tokenIdSalt, address(this), IdentityTypes.ASSET);
-        bytes32[] memory keys = new bytes32[](1);
-        keys[0] = keccak256(abi.encode(_tokenOwner));
-        _setupIdentityKeys(identity, keys, _claimAdders);
+
+        // Build KeyParam array: 1 management key + N claim adder keys
+        uint256 totalKeys = 1 + _claimAdders.length;
+        Structs.KeyParam[] memory keyParams = new Structs.KeyParam[](totalKeys);
+        keyParams[0] = Structs.KeyParam({
+            keyHash: keccak256(abi.encodePacked(_tokenOwner)),
+            purpose: KeyPurposes.MANAGEMENT,
+            keyType: KeyTypes.ECDSA,
+            signerData: abi.encodePacked(_tokenOwner)
+        });
+        for (uint256 i = 0; i < _claimAdders.length; i++) {
+            keyParams[1 + i] = Structs.KeyParam({
+                keyHash: keccak256(abi.encodePacked(_claimAdders[i])),
+                purpose: KeyPurposes.CLAIM_ADDER,
+                keyType: KeyTypes.ECDSA,
+                signerData: abi.encodePacked(_claimAdders[i])
+            });
+        }
+        _setupIdentityKeys(identity, keyParams);
 
         _saltTaken[tokenIdSalt] = true;
         _tokenIdentity[_token] = identity;
@@ -225,19 +217,14 @@ contract IdFactory is IIdFactory, Ownable {
         return _tokenFactories[_factory];
     }
 
-    // bootstraps an identity: adds management keys, claim adder keys, then removes factory key
-    function _setupIdentityKeys(address _identity, bytes32[] memory _managementKeys, address[] memory _claimAdders)
-        private
-    {
-        for (uint256 i = 0; i < _managementKeys.length; i++) {
-            IERC734(_identity).addKey(_managementKeys[i], KeyPurposes.MANAGEMENT, KeyTypes.ECDSA);
+    // bootstraps an identity: adds keys with their purposes and signer data, then removes factory key
+    function _setupIdentityKeys(address _identity, Structs.KeyParam[] memory _keys) private {
+        for (uint256 i = 0; i < _keys.length; i++) {
+            IERC734(_identity).addKey(_keys[i].keyHash, _keys[i].purpose, _keys[i].keyType);
+            KeyManager(_identity).setKeyData(_keys[i].keyHash, _keys[i].signerData);
         }
 
-        for (uint256 i = 0; i < _claimAdders.length; i++) {
-            IERC734(_identity).addKey(keccak256(abi.encode(_claimAdders[i])), KeyPurposes.CLAIM_ADDER, KeyTypes.ECDSA);
-        }
-
-        IERC734(_identity).removeKey(keccak256(abi.encode(address(this))), KeyPurposes.MANAGEMENT);
+        IERC734(_identity).removeKey(keccak256(abi.encodePacked(address(this))), KeyPurposes.MANAGEMENT);
     }
 
     // deploy function with create2 opcode call

@@ -28,7 +28,8 @@ contract VersionUpgradeTest is OnchainIDSetup {
         aliceIdentity.addKey(ClaimSignerHelper.addressToKey(alice), KeyPurposes.CLAIM_SIGNER, KeyTypes.ECDSA);
 
         // Sign claim properly
-        bytes memory signature = ClaimSignerHelper.signClaim(alicePk, address(aliceIdentity), claimTopic, claimData);
+        bytes memory signature =
+            ClaimSignerHelper.signClaim(alicePk, alice, address(aliceIdentity), claimTopic, claimData);
 
         // Add self-issued claim with valid signature
         vm.prank(alice);

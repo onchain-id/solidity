@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
+import { Structs } from "../storage/Structs.sol";
+
 interface IIdFactory {
 
     /// events
@@ -30,38 +32,19 @@ interface IIdFactory {
      *  @dev function used to create a new Identity proxy from the factory
      *  @param _wallet the wallet address of the primary owner of this ONCHAINID contract
      *  @param _salt the salt used by create2 to issue the contract
+     *  @param _keys the list of keys to add to the identity (must contain at least one MANAGEMENT key)
      *  @param _identityType the type of the identity (see IdentityTypes library)
-     *  @param _claimAdders the list of addresses to add as CLAIM_ADDER keys on the identity
      *  requires a new salt for each deployment
      *  _wallet cannot be linked to another ONCHAINID
      *  only Owner can call => Owner is supposed to be a smart contract, managing the accessibility
      *  of the function, including calls to oracles for multichain
      *  deployment security (avoid identity theft), defining payment requirements, etc.
      */
-    function createIdentity(address _wallet, string memory _salt, uint256 _identityType, address[] memory _claimAdders)
-        external
-        returns (address);
-
-    /**
-     *  @dev function used to create a new Identity proxy from the factory, setting the wallet and listed keys as
-     * MANAGEMENT keys.
-     *  @param _wallet the wallet address of the primary owner of this ONCHAINID contract
-     *  @param _salt the salt used by create2 to issue the contract
-     *  @param _managementKeys A list of keys hash (keccak256(abiEncoded())) to add as MANAGEMENT keys.
-     *  @param _identityType the type of the identity (see IdentityTypes library)
-     *  @param _claimAdders the list of addresses to add as CLAIM_ADDER keys on the identity
-     *  requires a new salt for each deployment
-     *  _wallet cannot be linked to another ONCHAINID
-     *  only Owner can call => Owner is supposed to be a smart contract, managing the accessibility
-     *  of the function, including calls to oracles for multichain
-     *  deployment security (avoid identity theft), defining payment requirements, etc.
-     */
-    function createIdentityWithManagementKeys(
+    function createIdentity(
         address _wallet,
         string memory _salt,
-        bytes32[] memory _managementKeys,
-        uint256 _identityType,
-        address[] memory _claimAdders
+        Structs.KeyParam[] memory _keys,
+        uint256 _identityType
     ) external returns (address);
 
     /**

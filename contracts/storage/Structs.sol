@@ -75,4 +75,19 @@ contract Structs {
         string uri;
     }
 
+    /**
+     *  @dev Definition of the structure of a KeyParam, used by the factory to set up keys on a new identity.
+     *
+     *  keyHash: keccak256(signerData) for the key
+     *  purpose: Key purpose (MANAGEMENT=1, ACTION=2, CLAIM_SIGNER=3, ENCRYPTION=4, CLAIM_ADDER=5)
+     *  keyType: Key type (ECDSA=1, RSA=2, WEBAUTHN=3, P256=4, ERC1271=5)
+     *  signerData: ERC-7913 signer bytes (abi.encodePacked(address) for ECDSA, etc.)
+     */
+    struct KeyParam {
+        bytes32 keyHash;
+        uint256 purpose;
+        uint256 keyType;
+        bytes signerData;
+    }
+
 }

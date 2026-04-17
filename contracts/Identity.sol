@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import { KeyManager } from "./KeyManager.sol";
+import { SmartAccount } from "./SmartAccount.sol";
 import { IClaimIssuer } from "./interface/IClaimIssuer.sol";
 import { IERC734 } from "./interface/IERC734.sol";
 import { IERC735 } from "./interface/IERC735.sol";
@@ -11,7 +11,8 @@ import { KeyPurposes } from "./libraries/KeyPurposes.sol";
 import { Structs } from "./storage/Structs.sol";
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { MulticallUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/MulticallUpgradeable.sol";
-import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
+import { SignatureChecker } from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
@@ -34,7 +35,7 @@ import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableS
  * @custom:security This contract uses ERC-7201 storage slots to prevent storage collision attacks
  * in upgradeable contracts.
  */
-contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable {
+contract Identity is Initializable, IIdentity, SmartAccount, MulticallUpgradeable {
 
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
@@ -69,8 +70,9 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
     /// @notice requires claim key (CLAIM_SIGNER or CLAIM_ADDER) to call this function, or internal call
     modifier onlyClaimKey() {
         require(
-            msg.sender == address(this) || keyHasPurpose(keccak256(abi.encode(msg.sender)), KeyPurposes.CLAIM_SIGNER)
-                || keyHasPurpose(keccak256(abi.encode(msg.sender)), KeyPurposes.CLAIM_ADDER),
+            msg.sender == address(this)
+                || keyHasPurpose(keccak256(abi.encodePacked(msg.sender)), KeyPurposes.CLAIM_SIGNER)
+                || keyHasPurpose(keccak256(abi.encodePacked(msg.sender)), KeyPurposes.CLAIM_ADDER),
             Errors.SenderDoesNotHaveClaimSignerKey()
         );
         _;
@@ -80,7 +82,8 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
     /// @dev CLAIM_ADDER keys are excluded — they can add but not remove claims
     modifier onlyClaimSignerKey() {
         require(
-            msg.sender == address(this) || keyHasPurpose(keccak256(abi.encode(msg.sender)), KeyPurposes.CLAIM_SIGNER),
+            msg.sender == address(this)
+                || keyHasPurpose(keccak256(abi.encodePacked(msg.sender)), KeyPurposes.CLAIM_SIGNER),
             Errors.SenderDoesNotHaveClaimSignerKey()
         );
         _;
@@ -94,7 +97,7 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
      * @param _isLibrary boolean value stating if the contract is library or not
      * calls __Identity_init if contract is not library
      */
-    constructor(address initialManagementKey, bool _isLibrary) {
+    constructor(address initialManagementKey, bool _isLibrary) EIP712("OnchainID", "1") {
         if (!_isLibrary) {
             __Identity_init(initialManagementKey);
         } else {
@@ -182,7 +185,7 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
     ) public delegatedOnly onlyClaimKey returns (bytes32 claimRequestId) {
         // 1. Validate claim if issuer is not self
         require(
-            IClaimIssuer(_issuer).isClaimValid(IIdentity(address(this)), _topic, _signature, _data),
+            IClaimIssuer(_issuer).isClaimValid(IIdentity(address(this)), _topic, _scheme, _signature, _data),
             Errors.InvalidClaim()
         );
 
@@ -277,41 +280,39 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
     }
 
     /**
-     * @dev Checks if a claim is valid. Claims issued by the identity are self-attested claims. They do not have a
-     * built-in revocation mechanism and are considered valid as long as their signature is valid and they are still
-     * stored by the identity contract.
+     * @dev Checks if a claim is valid via unified ERC-7913 signature verification.
+     *
+     * All signature schemes (ECDSA, WebAuthn, RSA, etc.) use the same format:
+     * `sig = abi.encode(signer, actualSignature)`
+     *
+     * SignatureChecker dispatches based on signer length:
+     * - 20 bytes (address): ECDSA ecrecover or ERC-1271
+     * - >20 bytes (verifier || key): ERC-7913 verifier
+     *
+     * The claim issuer signs `keccak256(abi.encode(identity, topic, data))` directly.
+     *
      * @param _identity the identity contract related to the claim
      * @param claimTopic the claim topic of the claim
-     * @param sig the signature of the claim
+     * @param _scheme the verification scheme (unused for routing — kept for interface compat)
+     * @param sig the signature: abi.encode(signer, actualSignature)
      * @param data the data field of the claim
      * @return claimValid true if the claim is valid, false otherwise
      */
-    function isClaimValid(IIdentity _identity, uint256 claimTopic, bytes memory sig, bytes memory data)
+    function isClaimValid(IIdentity _identity, uint256 claimTopic, uint256 _scheme, bytes memory sig, bytes memory data)
         public
         view
         virtual
         override
         returns (bool claimValid)
     {
-        // Step 1: Create the data hash that was signed
         bytes32 dataHash = keccak256(abi.encode(_identity, claimTopic, data));
 
-        // Step 2: Add Ethereum signature prefix for EIP-191 compliance
-        bytes32 prefixedHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash));
+        (bytes memory signer, bytes memory actualSig) = abi.decode(sig, (bytes, bytes));
+        bytes32 keyHash = keccak256(signer);
 
-        // Step 3: Recover the signer's address from the signature using OpenZeppelin's ECDSA
-        (address recovered, ECDSA.RecoverError error,) = ECDSA.tryRecover(prefixedHash, sig);
+        if (!keyHasPurpose(keyHash, KeyPurposes.CLAIM_SIGNER)) return false;
 
-        // If recovery failed, return false
-        if (error != ECDSA.RecoverError.NoError) {
-            return false;
-        }
-
-        // Step 4: Hash the recovered address for key lookup
-        bytes32 hashedAddr = keccak256(abi.encode(recovered));
-
-        // Step 5: Check if the recovered address has CLAIM_SIGNER purpose (CLAIM_ADDER cannot sign claims)
-        return keyHasPurpose(hashedAddr, KeyPurposes.CLAIM_SIGNER);
+        return SignatureChecker.isValidSignatureNow(signer, dataHash, actualSig);
     }
 
     /**

@@ -160,7 +160,7 @@ contract TokenOidTest is Test {
         vm.prank(deployer);
         address identityAddr = setup.idFactory.createTokenIdentity(token, bob, "saltAdders", claimAdders);
 
-        Identity identity = Identity(identityAddr);
+        Identity identity = Identity(payable(identityAddr));
 
         // Verify CLAIM_ADDER key is set
         assertTrue(

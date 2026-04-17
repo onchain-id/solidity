@@ -41,7 +41,7 @@ contract InitTest is OnchainIDSetup {
 
         vm.prank(deployer);
         vm.expectRevert(Errors.InteractingWithLibraryContractForbidden.selector);
-        libraryImpl.addKey(keccak256(abi.encode(alice)), 1, 1);
+        libraryImpl.addKey(keccak256(abi.encodePacked(alice)), 1, 1);
     }
 
     function test_supportsERC165InterfaceDetection() public {

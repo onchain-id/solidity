@@ -34,7 +34,7 @@ contract ClaimIssuerTest is OnchainIDSetup {
     function test_revokeClaim_shouldRevoke() public {
         assertTrue(
             claimIssuer.isClaimValid(
-                IIdentity(address(aliceIdentity)), aliceClaim666.topic, aliceClaim666.signature, aliceClaim666.data
+                IIdentity(address(aliceIdentity)), aliceClaim666.topic, 1, aliceClaim666.signature, aliceClaim666.data
             )
         );
 
@@ -46,7 +46,7 @@ contract ClaimIssuerTest is OnchainIDSetup {
         assertTrue(claimIssuer.isClaimRevoked(aliceClaim666.signature));
         assertFalse(
             claimIssuer.isClaimValid(
-                IIdentity(address(aliceIdentity)), aliceClaim666.topic, aliceClaim666.signature, aliceClaim666.data
+                IIdentity(address(aliceIdentity)), aliceClaim666.topic, 1, aliceClaim666.signature, aliceClaim666.data
             )
         );
     }
@@ -71,7 +71,7 @@ contract ClaimIssuerTest is OnchainIDSetup {
     function test_revokeClaimBySignature_shouldRevoke() public {
         assertTrue(
             claimIssuer.isClaimValid(
-                IIdentity(address(aliceIdentity)), aliceClaim666.topic, aliceClaim666.signature, aliceClaim666.data
+                IIdentity(address(aliceIdentity)), aliceClaim666.topic, 1, aliceClaim666.signature, aliceClaim666.data
             )
         );
 
@@ -83,7 +83,7 @@ contract ClaimIssuerTest is OnchainIDSetup {
         assertTrue(claimIssuer.isClaimRevoked(aliceClaim666.signature));
         assertFalse(
             claimIssuer.isClaimValid(
-                IIdentity(address(aliceIdentity)), aliceClaim666.topic, aliceClaim666.signature, aliceClaim666.data
+                IIdentity(address(aliceIdentity)), aliceClaim666.topic, 1, aliceClaim666.signature, aliceClaim666.data
             )
         );
     }
@@ -91,32 +91,35 @@ contract ClaimIssuerTest is OnchainIDSetup {
     // ---- signature validation ----
 
     function test_signatureValidation_invalidLength() public view {
-        // Create 66-byte signature (one byte too long)
-        bytes memory invalidSig = abi.encodePacked(aliceClaim666.signature, hex"00");
+        // Wrap a 66-byte inner signature (one byte too long) in the unified format
+        bytes memory badInnerSig = abi.encodePacked(new bytes(65), hex"00");
+        bytes memory invalidSig = abi.encode(abi.encodePacked(claimIssuerOwner), badInnerSig);
 
         assertFalse(
             claimIssuer.isClaimValid(
-                IIdentity(address(aliceIdentity)), aliceClaim666.topic, invalidSig, aliceClaim666.data
+                IIdentity(address(aliceIdentity)), aliceClaim666.topic, 1, invalidSig, aliceClaim666.data
             )
         );
     }
 
     function test_signatureValidation_malformed() public view {
-        bytes memory invalidSig = hex"1234567890abcdef";
+        // Wrap a malformed inner signature in the unified format
+        bytes memory invalidSig = abi.encode(abi.encodePacked(claimIssuerOwner), hex"1234567890abcdef");
 
         assertFalse(
             claimIssuer.isClaimValid(
-                IIdentity(address(aliceIdentity)), aliceClaim666.topic, invalidSig, aliceClaim666.data
+                IIdentity(address(aliceIdentity)), aliceClaim666.topic, 1, invalidSig, aliceClaim666.data
             )
         );
     }
 
     function test_signatureValidation_wrongSigner() public view {
-        bytes memory invalidSig = new bytes(65);
+        // Wrap a zero-filled inner signature with a valid signer in the unified format
+        bytes memory invalidSig = abi.encode(abi.encodePacked(claimIssuerOwner), new bytes(65));
 
         assertFalse(
             claimIssuer.isClaimValid(
-                IIdentity(address(aliceIdentity)), aliceClaim666.topic, invalidSig, aliceClaim666.data
+                IIdentity(address(aliceIdentity)), aliceClaim666.topic, 1, invalidSig, aliceClaim666.data
             )
         );
     }
@@ -124,7 +127,7 @@ contract ClaimIssuerTest is OnchainIDSetup {
     function test_signatureValidation_validSignature() public view {
         assertTrue(
             claimIssuer.isClaimValid(
-                IIdentity(address(aliceIdentity)), aliceClaim666.topic, aliceClaim666.signature, aliceClaim666.data
+                IIdentity(address(aliceIdentity)), aliceClaim666.topic, 1, aliceClaim666.signature, aliceClaim666.data
             )
         );
     }
@@ -141,11 +144,12 @@ contract ClaimIssuerTest is OnchainIDSetup {
         // Sign a claim with the CLAIM_ADDER key
         uint256 topic = 999;
         bytes memory data = hex"0099";
-        bytes memory signature = ClaimSignerHelper.signClaim(claimAdderPk, address(aliceIdentity), topic, data);
+        bytes memory signature =
+            ClaimSignerHelper.signClaim(claimAdderPk, claimAdderAddr, address(aliceIdentity), topic, data);
 
         // isClaimValid should return false because CLAIM_ADDER cannot sign claims
         assertFalse(
-            claimIssuer.isClaimValid(IIdentity(address(aliceIdentity)), topic, signature, data),
+            claimIssuer.isClaimValid(IIdentity(address(aliceIdentity)), topic, 1, signature, data),
             "CLAIM_ADDER key should not validate claim signatures"
         );
     }
@@ -160,7 +164,7 @@ contract ClaimIssuerTest is OnchainIDSetup {
         ClaimIssuerProxy proxyContract = new ClaimIssuerProxy(
             address(impl), abi.encodeCall(ClaimIssuer.initialize, (freshDeployer, IdentityTypes.CLAIM_ISSUER))
         );
-        ClaimIssuer proxy = ClaimIssuer(address(proxyContract));
+        ClaimIssuer proxy = ClaimIssuer(payable(address(proxyContract)));
 
         ClaimIssuer newImpl = new ClaimIssuer(nonOwner);
 
@@ -176,7 +180,7 @@ contract ClaimIssuerTest is OnchainIDSetup {
         ClaimIssuerProxy proxyContract = new ClaimIssuerProxy(
             address(impl), abi.encodeCall(ClaimIssuer.initialize, (freshDeployer, IdentityTypes.CLAIM_ISSUER))
         );
-        ClaimIssuer proxy = ClaimIssuer(address(proxyContract));
+        ClaimIssuer proxy = ClaimIssuer(payable(address(proxyContract)));
 
         ClaimIssuer newImpl = new ClaimIssuer(freshDeployer);
 

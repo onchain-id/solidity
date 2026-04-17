@@ -27,6 +27,7 @@ contract ClaimsTest is OnchainIDSetup {
         // Sign with wrong data (0x101010 instead of 0x0042)
         bytes memory wrongSignature = ClaimSignerHelper.signClaim(
             alicePk,
+            alice,
             address(aliceIdentity),
             topic,
             hex"101010" // wrong signature because this data is not the hex"0042" as data variable above
@@ -44,8 +45,12 @@ contract ClaimsTest is OnchainIDSetup {
         bytes memory data = hex"0042";
         string memory uri = "https://example.com";
 
+        // Add CLAIM_SIGNER key for alice (ERC-7913 key hash) so isClaimValid can verify self-attested claims
+        vm.prank(alice);
+        aliceIdentity.addKey(ClaimSignerHelper.addressToKey(alice), KeyPurposes.CLAIM_SIGNER, KeyTypes.ECDSA);
+
         // Sign claim correctly
-        bytes memory signature = ClaimSignerHelper.signClaim(alicePk, address(aliceIdentity), topic, data);
+        bytes memory signature = ClaimSignerHelper.signClaim(alicePk, alice, address(aliceIdentity), topic, data);
 
         bytes32 claimId = ClaimSignerHelper.computeClaimId(address(aliceIdentity), topic);
 
@@ -71,7 +76,7 @@ contract ClaimsTest is OnchainIDSetup {
         aliceIdentity.approve(executionId, true);
 
         // Verify claim is valid
-        bool isValid = aliceIdentity.isClaimValid(IIdentity(address(aliceIdentity)), topic, signature, data);
+        bool isValid = aliceIdentity.isClaimValid(IIdentity(address(aliceIdentity)), topic, 1, signature, data);
         assertTrue(isValid, "Claim should be valid");
     }
 
@@ -82,7 +87,7 @@ contract ClaimsTest is OnchainIDSetup {
         string memory uri = "https://example.com";
 
         // Sign claim
-        bytes memory signature = ClaimSignerHelper.signClaim(alicePk, address(aliceIdentity), topic, data);
+        bytes memory signature = ClaimSignerHelper.signClaim(alicePk, alice, address(aliceIdentity), topic, data);
 
         // Bob (no CLAIM_SIGNER key) tries to add claim
         vm.prank(bob);
@@ -101,6 +106,7 @@ contract ClaimsTest is OnchainIDSetup {
         // Sign with wrong data (0x10101010 instead of 0x0042)
         bytes memory wrongSignature = ClaimSignerHelper.signClaim(
             claimIssuerOwnerPk,
+            claimIssuerOwner,
             address(aliceIdentity),
             topic,
             hex"10101010" // wrong signature because this data is not the hex"0042" as data variable above
@@ -119,7 +125,8 @@ contract ClaimsTest is OnchainIDSetup {
         string memory uri = "https://example.com";
 
         // Sign claim correctly
-        bytes memory signature = ClaimSignerHelper.signClaim(claimIssuerOwnerPk, address(aliceIdentity), topic, data);
+        bytes memory signature =
+            ClaimSignerHelper.signClaim(claimIssuerOwnerPk, claimIssuerOwner, address(aliceIdentity), topic, data);
 
         bytes32 claimId = ClaimSignerHelper.computeClaimId(address(claimIssuer), topic);
 
@@ -152,7 +159,8 @@ contract ClaimsTest is OnchainIDSetup {
         string memory uri = "https://example.com";
 
         // Sign claim
-        bytes memory signature = ClaimSignerHelper.signClaim(claimIssuerOwnerPk, address(aliceIdentity), topic, data);
+        bytes memory signature =
+            ClaimSignerHelper.signClaim(claimIssuerOwnerPk, claimIssuerOwner, address(aliceIdentity), topic, data);
 
         // Bob (no CLAIM_SIGNER key) tries to add claim
         vm.prank(bob);
@@ -170,15 +178,17 @@ contract ClaimsTest is OnchainIDSetup {
         string memory uri = "https://example.com";
 
         // Add initial claim
-        bytes memory initialSignature =
-            ClaimSignerHelper.signClaim(claimIssuerOwnerPk, address(aliceIdentity), topic, initialData);
+        bytes memory initialSignature = ClaimSignerHelper.signClaim(
+            claimIssuerOwnerPk, claimIssuerOwner, address(aliceIdentity), topic, initialData
+        );
 
         vm.prank(alice);
         aliceIdentity.addClaim(topic, Constants.CLAIM_SCHEME, address(claimIssuer), initialSignature, initialData, uri);
 
         // Update claim with different data
-        bytes memory updatedSignature =
-            ClaimSignerHelper.signClaim(claimIssuerOwnerPk, address(aliceIdentity), topic, updatedData);
+        bytes memory updatedSignature = ClaimSignerHelper.signClaim(
+            claimIssuerOwnerPk, claimIssuerOwner, address(aliceIdentity), topic, updatedData
+        );
 
         bytes32 claimId = ClaimSignerHelper.computeClaimId(address(claimIssuer), topic);
 
@@ -201,7 +211,8 @@ contract ClaimsTest is OnchainIDSetup {
         string memory uri = "https://example.com";
 
         // Add claim first
-        bytes memory signature = ClaimSignerHelper.signClaim(claimIssuerOwnerPk, address(aliceIdentity), topic, data);
+        bytes memory signature =
+            ClaimSignerHelper.signClaim(claimIssuerOwnerPk, claimIssuerOwner, address(aliceIdentity), topic, data);
 
         bytes32 claimId = ClaimSignerHelper.computeClaimId(address(claimIssuer), topic);
 
@@ -251,7 +262,8 @@ contract ClaimsTest is OnchainIDSetup {
         string memory uri = "https://example.com";
 
         // Add claim first
-        bytes memory signature = ClaimSignerHelper.signClaim(claimIssuerOwnerPk, address(aliceIdentity), topic, data);
+        bytes memory signature =
+            ClaimSignerHelper.signClaim(claimIssuerOwnerPk, claimIssuerOwner, address(aliceIdentity), topic, data);
 
         bytes32 claimId = ClaimSignerHelper.computeClaimId(address(claimIssuer), topic);
 
@@ -273,6 +285,10 @@ contract ClaimsTest is OnchainIDSetup {
     function test_removeClaim_middleClaim_shouldRemoveCorrectly() public {
         uint256 topic = Constants.CLAIM_TOPIC_42;
 
+        // Add CLAIM_SIGNER key for alice (ERC-7913 key hash) on aliceIdentity for self-attested claims
+        vm.prank(alice);
+        aliceIdentity.addKey(ClaimSignerHelper.addressToKey(alice), KeyPurposes.CLAIM_SIGNER, KeyTypes.ECDSA);
+
         // Create second claim issuer
         ClaimIssuer claimIssuer2 = new ClaimIssuer(alice);
         vm.prank(alice);
@@ -292,9 +308,11 @@ contract ClaimsTest is OnchainIDSetup {
 
             bytes memory signature;
             if (i == 0) {
-                signature = ClaimSignerHelper.signClaim(claimIssuerOwnerPk, address(aliceIdentity), topic, data);
+                signature = ClaimSignerHelper.signClaim(
+                    claimIssuerOwnerPk, claimIssuerOwner, address(aliceIdentity), topic, data
+                );
             } else {
-                signature = ClaimSignerHelper.signClaim(alicePk, address(aliceIdentity), topic, data);
+                signature = ClaimSignerHelper.signClaim(alicePk, alice, address(aliceIdentity), topic, data);
             }
 
             claimIds[i] = ClaimSignerHelper.computeClaimId(issuers[i], topic);
@@ -366,10 +384,11 @@ contract ClaimsTest is OnchainIDSetup {
 
     /// @notice When signature causes ECDSA recovery error, isClaimValid should return false
     function test_isClaimValid_ecdsaRecoveryError_shouldReturnFalse() public view {
-        // Use a zero-length signature which causes ECDSA.RecoverError
-        bytes memory invalidSignature = hex"";
+        // Wrap a zero-length inner signature in the unified format (causes ECDSA.RecoverError)
+        // Use carol as signer since she has CLAIM_SIGNER key on aliceIdentity (registered via signerToKey)
+        bytes memory invalidSignature = abi.encode(abi.encodePacked(carol), hex"");
         bool isValid = aliceIdentity.isClaimValid(
-            IIdentity(address(aliceIdentity)), Constants.CLAIM_TOPIC_666, invalidSignature, hex"0042"
+            IIdentity(address(aliceIdentity)), Constants.CLAIM_TOPIC_666, 1, invalidSignature, hex"0042"
         );
         assertFalse(isValid, "Claim with recovery error should be invalid");
     }
@@ -382,7 +401,8 @@ contract ClaimsTest is OnchainIDSetup {
         bytes memory data = hex"0042";
         string memory uri = "https://example.com";
 
-        bytes memory signature = ClaimSignerHelper.signClaim(claimIssuerOwnerPk, address(aliceIdentity), topic, data);
+        bytes memory signature =
+            ClaimSignerHelper.signClaim(claimIssuerOwnerPk, claimIssuerOwner, address(aliceIdentity), topic, data);
         bytes32 claimId = ClaimSignerHelper.computeClaimId(address(claimIssuer), topic);
 
         // Add a single claim for this topic
@@ -412,11 +432,11 @@ contract ClaimsTest is OnchainIDSetup {
         // Sign a claim with bob's private key
         uint256 topic = Constants.CLAIM_TOPIC_42;
         bytes memory data = hex"0042";
-        bytes memory signature = ClaimSignerHelper.signClaim(bobPk, address(aliceIdentity), topic, data);
+        bytes memory signature = ClaimSignerHelper.signClaim(bobPk, bob, address(aliceIdentity), topic, data);
 
         // isClaimValid should return false because CLAIM_ADDER cannot sign claims
         assertFalse(
-            aliceIdentity.isClaimValid(IIdentity(address(aliceIdentity)), topic, signature, data),
+            aliceIdentity.isClaimValid(IIdentity(address(aliceIdentity)), topic, 1, signature, data),
             "CLAIM_ADDER key should not validate claim signatures"
         );
     }
@@ -431,7 +451,8 @@ contract ClaimsTest is OnchainIDSetup {
         uint256 topic = Constants.CLAIM_TOPIC_42;
         bytes memory data = hex"0042";
         string memory uri = "https://example.com";
-        bytes memory signature = ClaimSignerHelper.signClaim(claimIssuerOwnerPk, address(aliceIdentity), topic, data);
+        bytes memory signature =
+            ClaimSignerHelper.signClaim(claimIssuerOwnerPk, claimIssuerOwner, address(aliceIdentity), topic, data);
 
         // Bob (CLAIM_ADDER) should be able to add the claim
         vm.prank(bob);

@@ -36,7 +36,7 @@ library IdentityHelper {
         Identity impl = new Identity(initialManagementKey, false);
         ImplementationAuthority ia = new ImplementationAuthority(address(impl));
         IdentityProxy proxy = new IdentityProxy(address(ia), initialManagementKey, identityType);
-        return Identity(address(proxy));
+        return Identity(payable(address(proxy)));
     }
 
 }

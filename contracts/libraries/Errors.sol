@@ -51,6 +51,9 @@ library Errors {
     /// @notice Reverts if the wallet is not linked to an identity
     error WalletNotLinkedToIdentity(address wallet);
 
+    /// @notice Reverts if no key with MANAGEMENT purpose is provided
+    error NoManagementKeyInKeys();
+
     /* ----- Gateway ----- */
 
     /// @notice The maximum number of signers was reached at deployment.
@@ -142,6 +145,17 @@ library Errors {
 
     /// @notice The claim is invalid.
     error InvalidClaim();
+
+    /* ----- SmartAccount ----- */
+
+    /// @notice The signature is invalid.
+    error InvalidSignature();
+
+    /// @notice The signer data is invalid or too short.
+    error InvalidSignerData();
+
+    /// @notice The caller is not the ERC-4337 EntryPoint.
+    error NotEntryPoint();
 
     /* ----- IdentityUtilities ----- */
 

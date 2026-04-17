@@ -12,6 +12,7 @@ import { IdentityTypes } from "contracts/libraries/IdentityTypes.sol";
 import { KeyPurposes } from "contracts/libraries/KeyPurposes.sol";
 import { KeyTypes } from "contracts/libraries/KeyTypes.sol";
 import { ImplementationAuthority } from "contracts/proxy/ImplementationAuthority.sol";
+import { Structs } from "contracts/storage/Structs.sol";
 import { Test } from "forge-std/Test.sol";
 
 /// @notice Base test contract providing full OnchainID infrastructure
@@ -68,15 +69,22 @@ contract OnchainIDSetup is Test {
         // Deploy ClaimIssuer with proxy
         claimIssuer = ClaimIssuerHelper.deployWithProxy(claimIssuerOwner);
 
-        // Add CLAIM_SIGNER key to ClaimIssuer
+        // Add CLAIM_SIGNER key to ClaimIssuer (register under unified key hash)
         vm.prank(claimIssuerOwner);
         claimIssuer.addKey(ClaimSignerHelper.addressToKey(claimIssuerOwner), KeyPurposes.CLAIM_SIGNER, KeyTypes.ECDSA);
 
         // Create alice identity via factory
         vm.prank(deployer);
+        Structs.KeyParam[] memory aliceKeys = new Structs.KeyParam[](1);
+        aliceKeys[0] = Structs.KeyParam({
+            keyHash: keccak256(abi.encodePacked(alice)),
+            purpose: KeyPurposes.MANAGEMENT,
+            keyType: KeyTypes.ECDSA,
+            signerData: abi.encodePacked(alice)
+        });
         address aliceIdentityAddr =
-            onchainidSetup.idFactory.createIdentity(alice, "alice", IdentityTypes.INDIVIDUAL, new address[](0));
-        aliceIdentity = Identity(aliceIdentityAddr);
+            onchainidSetup.idFactory.createIdentity(alice, "alice", aliceKeys, IdentityTypes.INDIVIDUAL);
+        aliceIdentity = Identity(payable(aliceIdentityAddr));
 
         // Add carol as CLAIM_SIGNER and david as ACTION key on alice's identity
         vm.startPrank(alice);
@@ -87,6 +95,7 @@ contract OnchainIDSetup is Test {
         // Build and add alice's claim 666
         aliceClaim666 = ClaimSignerHelper.buildClaim(
             claimIssuerOwnerPk,
+            claimIssuerOwner,
             address(aliceIdentity),
             address(claimIssuer),
             Constants.CLAIM_TOPIC_666,
@@ -106,9 +115,15 @@ contract OnchainIDSetup is Test {
 
         // Create bob identity via factory
         vm.prank(deployer);
-        address bobIdentityAddr =
-            onchainidSetup.idFactory.createIdentity(bob, "bob", IdentityTypes.INDIVIDUAL, new address[](0));
-        bobIdentity = Identity(bobIdentityAddr);
+        Structs.KeyParam[] memory bobKeys = new Structs.KeyParam[](1);
+        bobKeys[0] = Structs.KeyParam({
+            keyHash: keccak256(abi.encodePacked(bob)),
+            purpose: KeyPurposes.MANAGEMENT,
+            keyType: KeyTypes.ECDSA,
+            signerData: abi.encodePacked(bob)
+        });
+        address bobIdentityAddr = onchainidSetup.idFactory.createIdentity(bob, "bob", bobKeys, IdentityTypes.INDIVIDUAL);
+        bobIdentity = Identity(payable(bobIdentityAddr));
 
         // Create token identity
         vm.prank(deployer);

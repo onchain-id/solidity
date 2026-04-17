@@ -30,6 +30,11 @@ contract KeyManager is IERC734 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
     /**
+     * @dev Emitted when key data (ERC-7913 signer bytes) is set for a key.
+     */
+    event KeyDataSet(bytes32 indexed key);
+
+    /**
      * @dev Storage struct for key management and execution data
      * @custom:storage-location erc7201:onchainid.keymanager.storage
      */
@@ -46,6 +51,8 @@ contract KeyManager is IERC734 {
         bool initialized;
         /// @dev Flag indicating if the contract can be interacted with (prevents direct calls to implementation)
         bool canInteract;
+        /// @dev Mapping of key hash to raw signer bytes (ERC-7913 format: verifier || keyMaterial)
+        mapping(bytes32 => bytes) keyData;
     }
 
     /**
@@ -72,7 +79,8 @@ contract KeyManager is IERC734 {
      */
     modifier onlyManager() {
         require(
-            msg.sender == address(this) || keyHasPurpose(keccak256(abi.encode(msg.sender)), KeyPurposes.MANAGEMENT),
+            msg.sender == address(this)
+                || keyHasPurpose(keccak256(abi.encodePacked(msg.sender)), KeyPurposes.MANAGEMENT),
             Errors.SenderDoesNotHaveManagementKey()
         );
         _;
@@ -99,21 +107,7 @@ contract KeyManager is IERC734 {
         virtual
         returns (uint256 executionId)
     {
-        KeyStorage storage ks = _getKeyStorage();
-        uint256 _executionId = ks.executionNonce;
-        ks.executions[_executionId].to = _to;
-        ks.executions[_executionId].value = _value;
-        ks.executions[_executionId].data = _data;
-        ks.executionNonce++;
-
-        emit ExecutionRequested(_executionId, _to, _value, _data);
-
-        // Check if execution can be auto-approved
-        if (_canAutoApproveExecution(_to, _data)) {
-            _approve(_executionId, true);
-        }
-
-        return _executionId;
+        return _execute(keccak256(abi.encodePacked(msg.sender)), _to, _value, _data);
     }
 
     /**
@@ -240,6 +234,7 @@ contract KeyManager is IERC734 {
         // If key has no more purposes, delete the entire key struct to save gas
         if (k.purposes.length() == 0) {
             delete ks.keys[_key];
+            delete ks.keyData[_key];
         }
 
         return true;
@@ -254,24 +249,29 @@ contract KeyManager is IERC734 {
      *  if the sender is a MANAGEMENT key.
      */
     function approve(uint256 _id, bool _shouldApprove) public virtual delegatedOnly returns (bool success) {
+        return _approveExecution(keccak256(abi.encodePacked(msg.sender)), _id, _shouldApprove);
+    }
+
+    /**
+     * @notice Store the raw signer bytes (ERC-7913 format) for a registered key.
+     * @dev For ECDSA keys: abi.encodePacked(address). For WebAuthn: abi.encodePacked(verifier, qx, qy).
+     * @param _keyHash The key hash to store data for
+     * @param _data The raw signer bytes
+     */
+    function setKeyData(bytes32 _keyHash, bytes memory _data) public virtual delegatedOnly onlyManager {
         KeyStorage storage ks = _getKeyStorage();
-        require(_id < ks.executionNonce, Errors.InvalidRequestId());
-        require(!ks.executions[_id].executed, Errors.RequestAlreadyExecuted());
+        require(ks.keys[_keyHash].key == _keyHash, Errors.KeyNotRegistered(_keyHash));
+        ks.keyData[_keyHash] = _data;
+        emit KeyDataSet(_keyHash);
+    }
 
-        // Validate that the sender has the appropriate key purpose
-        if (ks.executions[_id].to == address(this)) {
-            require(
-                keyHasPurpose(keccak256(abi.encode(msg.sender)), KeyPurposes.MANAGEMENT),
-                Errors.SenderDoesNotHaveManagementKey()
-            );
-        } else {
-            require(
-                keyHasPurpose(keccak256(abi.encode(msg.sender)), KeyPurposes.ACTION),
-                Errors.SenderDoesNotHaveActionKey()
-            );
-        }
-
-        return _approve(_id, _shouldApprove);
+    /**
+     * @notice Get the raw signer bytes for a key.
+     * @param _keyHash The key hash to get data for
+     * @return The raw signer bytes (ERC-7913 format)
+     */
+    function getKeyData(bytes32 _keyHash) external view virtual returns (bytes memory) {
+        return _getKeyStorage().keyData[_keyHash];
     }
 
     /**
@@ -300,6 +300,62 @@ contract KeyManager is IERC734 {
     }
 
     /**
+     * @dev Internal method to execute a request, parameterized by key hash.
+     * @param _keyHash The key hash authorizing this execution
+     * @param _to The destination address
+     * @param _value The ETH value
+     * @param _data The calldata
+     * @return executionId The execution ID
+     */
+    function _execute(bytes32 _keyHash, address _to, uint256 _value, bytes memory _data)
+        internal
+        virtual
+        returns (uint256 executionId)
+    {
+        KeyStorage storage ks = _getKeyStorage();
+        uint256 _executionId = ks.executionNonce;
+        ks.executions[_executionId].to = _to;
+        ks.executions[_executionId].value = _value;
+        ks.executions[_executionId].data = _data;
+        ks.executionNonce++;
+
+        emit ExecutionRequested(_executionId, _to, _value, _data);
+
+        // Check if execution can be auto-approved
+        if (_canAutoApproveExecution(_keyHash, _to, _data)) {
+            _approve(_executionId, true);
+        }
+
+        return _executionId;
+    }
+
+    /**
+     * @dev Internal method to approve an execution, parameterized by key hash.
+     * @param _keyHash The key hash authorizing this approval
+     * @param _id The execution ID to approve
+     * @param _shouldApprove Whether to approve or reject
+     * @return success Whether the execution was successful
+     */
+    function _approveExecution(bytes32 _keyHash, uint256 _id, bool _shouldApprove)
+        internal
+        virtual
+        returns (bool success)
+    {
+        KeyStorage storage ks = _getKeyStorage();
+        require(_id < ks.executionNonce, Errors.InvalidRequestId());
+        require(!ks.executions[_id].executed, Errors.RequestAlreadyExecuted());
+
+        // Validate that the key has the appropriate purpose
+        if (ks.executions[_id].to == address(this)) {
+            require(keyHasPurpose(_keyHash, KeyPurposes.MANAGEMENT), Errors.SenderDoesNotHaveManagementKey());
+        } else {
+            require(keyHasPurpose(_keyHash, KeyPurposes.ACTION), Errors.SenderDoesNotHaveActionKey());
+        }
+
+        return _approve(_id, _shouldApprove);
+    }
+
+    /**
      * @dev Internal method to handle the actual approval logic
      * @param _id The execution ID to approve
      * @param _shouldApprove Whether to approve or reject the execution
@@ -308,6 +364,9 @@ contract KeyManager is IERC734 {
     function _approve(uint256 _id, bool _shouldApprove) internal virtual returns (bool success) {
         KeyStorage storage ks = _getKeyStorage();
         emit Approved(_id, _shouldApprove);
+
+        // Mark as executed BEFORE external call to prevent reentrancy (checks-effects-interactions)
+        ks.executions[_id].executed = true;
 
         if (_shouldApprove) {
             ks.executions[_id].approved = true;
@@ -324,8 +383,6 @@ contract KeyManager is IERC734 {
             ks.executions[_id].approved = false;
         }
 
-        ks.executions[_id].executed = true;
-
         return success;
     }
 
@@ -336,11 +393,12 @@ contract KeyManager is IERC734 {
     function _setupInitialManagementKey(address initialManagementKey) internal {
         KeyStorage storage ks = _getKeyStorage();
 
-        bytes32 _key = keccak256(abi.encode(initialManagementKey));
+        bytes32 _key = keccak256(abi.encodePacked(initialManagementKey));
         ks.keys[_key].key = _key;
         ks.keys[_key].keyType = KeyTypes.ECDSA;
         ks.keys[_key].purposes.add(KeyPurposes.MANAGEMENT);
         ks.keysByPurpose[KeyPurposes.MANAGEMENT].add(_key);
+        ks.keyData[_key] = abi.encodePacked(initialManagementKey);
 
         emit KeyAdded(_key, KeyPurposes.MANAGEMENT, KeyTypes.ECDSA);
     }
@@ -357,35 +415,34 @@ contract KeyManager is IERC734 {
      * 3. ACTION keys can auto-approve external calls (not to the identity itself)
      * Note: CLAIM_ADDER auto-approval is handled by Identity via override
      *
+     * @param _keyHash The key hash to check purposes for
      * @param _to The target address of the execution
+     * @param _data The calldata of the execution
      * @return canAutoApprove Whether the execution can be auto-approved
      */
-    function _canAutoApproveExecution(address _to, bytes memory _data)
+    function _canAutoApproveExecution(bytes32 _keyHash, address _to, bytes memory _data)
         internal
         view
         virtual
         returns (bool canAutoApprove)
     {
         // MANAGEMENT keys can auto-approve any execution
-        if (keyHasPurpose(keccak256(abi.encode(msg.sender)), KeyPurposes.MANAGEMENT)) {
+        if (keyHasPurpose(_keyHash, KeyPurposes.MANAGEMENT)) {
             return true;
         }
 
         // CLAIM_SIGNER keys can auto-approve any self-call (addClaim + removeClaim, etc...)
-        if (_to == address(this) && keyHasPurpose(keccak256(abi.encode(msg.sender)), KeyPurposes.CLAIM_SIGNER)) {
+        if (_to == address(this) && keyHasPurpose(_keyHash, KeyPurposes.CLAIM_SIGNER)) {
             return true;
         }
 
         // CLAIM_ADDER keys can only auto-approve addClaim on self
-        if (
-            _to == address(this) && keyHasPurpose(keccak256(abi.encode(msg.sender)), KeyPurposes.CLAIM_ADDER)
-                && _data.length >= 4
-        ) {
+        if (_to == address(this) && keyHasPurpose(_keyHash, KeyPurposes.CLAIM_ADDER) && _data.length >= 4) {
             return bytes4(_data) == IERC735.addClaim.selector;
         }
 
         // ACTION keys can auto-approve external calls
-        if (_to != address(this) && keyHasPurpose(keccak256(abi.encode(msg.sender)), KeyPurposes.ACTION)) {
+        if (_to != address(this) && keyHasPurpose(_keyHash, KeyPurposes.ACTION)) {
             return true;
         }
 

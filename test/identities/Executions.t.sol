@@ -74,13 +74,19 @@ contract ExecutionsTest is OnchainIDSetup {
 
     function test_nestedExecute_claimIssuerAsManagementKey_immediateExecution() public {
         // Add claimIssuer as MANAGEMENT key on alice's identity
-        bytes32 claimIssuerKeyHash = keccak256(abi.encode(address(claimIssuer)));
+        bytes32 claimIssuerKeyHash = keccak256(abi.encodePacked(address(claimIssuer)));
         vm.prank(alice);
         aliceIdentity.addKey(claimIssuerKeyHash, KeyPurposes.MANAGEMENT, KeyTypes.ECDSA);
 
         // Build claim
         ClaimSignerHelper.Claim memory claim = ClaimSignerHelper.buildClaim(
-            claimIssuerOwnerPk, address(aliceIdentity), address(claimIssuer), 42, hex"0042", "https://example.com"
+            claimIssuerOwnerPk,
+            claimIssuerOwner,
+            address(aliceIdentity),
+            address(claimIssuer),
+            42,
+            hex"0042",
+            "https://example.com"
         );
 
         // Encode inner action: addClaim on aliceIdentity
@@ -107,7 +113,13 @@ contract ExecutionsTest is OnchainIDSetup {
 
         // Build claim
         ClaimSignerHelper.Claim memory claim = ClaimSignerHelper.buildClaim(
-            claimIssuerOwnerPk, address(aliceIdentity), address(claimIssuer), 42, hex"0042", "https://example.com"
+            claimIssuerOwnerPk,
+            claimIssuerOwner,
+            address(aliceIdentity),
+            address(claimIssuer),
+            42,
+            hex"0042",
+            "https://example.com"
         );
 
         // Encode inner action: addClaim on aliceIdentity
@@ -148,7 +160,7 @@ contract ExecutionsTest is OnchainIDSetup {
     }
 
     function test_executeAsManagement_successfulCall() public {
-        bytes32 aliceKeyHash = keccak256(abi.encode(alice));
+        bytes32 aliceKeyHash = keccak256(abi.encodePacked(alice));
 
         bytes memory addKeyData =
             abi.encodeCall(KeyManager.addKey, (aliceKeyHash, KeyPurposes.CLAIM_SIGNER, KeyTypes.ECDSA));
@@ -166,7 +178,7 @@ contract ExecutionsTest is OnchainIDSetup {
     }
 
     function test_executeAsManagement_failingCall() public {
-        bytes32 aliceKeyHash = keccak256(abi.encode(alice));
+        bytes32 aliceKeyHash = keccak256(abi.encodePacked(alice));
 
         // Try to add MANAGEMENT purpose again (duplicate — will fail)
         bytes memory addKeyData =
@@ -184,12 +196,12 @@ contract ExecutionsTest is OnchainIDSetup {
     function test_executeAsAction_targetIsIdentity_createsRequest() public {
         // Use a fresh address that has ONLY ACTION key (not CLAIM_SIGNER)
         address actionOnly = makeAddr("actionOnly");
-        bytes32 actionOnlyKeyHash = keccak256(abi.encode(actionOnly));
+        bytes32 actionOnlyKeyHash = keccak256(abi.encodePacked(actionOnly));
         vm.prank(alice);
         aliceIdentity.addKey(actionOnlyKeyHash, KeyPurposes.ACTION, KeyTypes.ECDSA);
 
         // actionOnly executes addKey on aliceIdentity (ACTION key targeting self → pending request)
-        bytes32 aliceKeyHash = keccak256(abi.encode(alice));
+        bytes32 aliceKeyHash = keccak256(abi.encodePacked(alice));
         bytes memory addKeyData = abi.encodeCall(KeyManager.addKey, (aliceKeyHash, KeyPurposes.ACTION, KeyTypes.ECDSA));
 
         vm.prank(actionOnly);
@@ -203,11 +215,11 @@ contract ExecutionsTest is OnchainIDSetup {
 
     function test_executeAsAction_targetIsAnotherAddress_executionFailed() public {
         // Add carol as ACTION key
-        bytes32 carolKeyHash = keccak256(abi.encode(carol));
+        bytes32 carolKeyHash = keccak256(abi.encodePacked(carol));
         vm.prank(alice);
         aliceIdentity.addKey(carolKeyHash, KeyPurposes.ACTION, KeyTypes.ECDSA);
 
-        bytes32 aliceKeyHash = keccak256(abi.encode(alice));
+        bytes32 aliceKeyHash = keccak256(abi.encodePacked(alice));
         bytes memory addKeyData =
             abi.encodeCall(KeyManager.addKey, (aliceKeyHash, KeyPurposes.CLAIM_SIGNER, KeyTypes.ECDSA));
 
@@ -224,7 +236,7 @@ contract ExecutionsTest is OnchainIDSetup {
 
     function test_executeAsAction_targetIsAnotherAddress_success() public {
         // Add carol as ACTION key
-        bytes32 carolKeyHash = keccak256(abi.encode(carol));
+        bytes32 carolKeyHash = keccak256(abi.encodePacked(carol));
         vm.prank(alice);
         aliceIdentity.addKey(carolKeyHash, KeyPurposes.ACTION, KeyTypes.ECDSA);
 
@@ -285,7 +297,7 @@ contract ExecutionsTest is OnchainIDSetup {
     function test_approveAsNonManagementKey_forIdentityTarget() public {
         // bob creates pending execution targeting the identity itself
         bytes memory addKeyData = abi.encodeCall(
-            KeyManager.addKey, (keccak256(abi.encode(makeAddr("newKey"))), KeyPurposes.ACTION, KeyTypes.ECDSA)
+            KeyManager.addKey, (keccak256(abi.encodePacked(makeAddr("newKey"))), KeyPurposes.ACTION, KeyTypes.ECDSA)
         );
 
         vm.deal(bob, 1 ether);
@@ -335,13 +347,19 @@ contract ExecutionsTest is OnchainIDSetup {
 
     function test_autoApprovalForAddClaimWithClaimSignerKey() public {
         // Add bob as CLAIM_SIGNER
-        bytes32 bobKeyHash = keccak256(abi.encode(bob));
+        bytes32 bobKeyHash = keccak256(abi.encodePacked(bob));
         vm.prank(alice);
         aliceIdentity.addKey(bobKeyHash, KeyPurposes.CLAIM_SIGNER, KeyTypes.ECDSA);
 
         // Build claim with claimIssuer as issuer
         ClaimSignerHelper.Claim memory claim = ClaimSignerHelper.buildClaim(
-            claimIssuerOwnerPk, address(aliceIdentity), address(claimIssuer), 42, hex"0042", "https://example.com"
+            claimIssuerOwnerPk,
+            claimIssuerOwner,
+            address(aliceIdentity),
+            address(claimIssuer),
+            42,
+            hex"0042",
+            "https://example.com"
         );
 
         // Encode addClaim data
@@ -363,13 +381,19 @@ contract ExecutionsTest is OnchainIDSetup {
     /// @notice CLAIM_ADDER key calling execute() with addClaim data should auto-approve
     function test_autoApprovalForAddClaimWithClaimAdderKey() public {
         // Add bob as CLAIM_ADDER (not CLAIM_SIGNER)
-        bytes32 bobKeyHash = keccak256(abi.encode(bob));
+        bytes32 bobKeyHash = keccak256(abi.encodePacked(bob));
         vm.prank(alice);
         aliceIdentity.addKey(bobKeyHash, KeyPurposes.CLAIM_ADDER, KeyTypes.ECDSA);
 
         // Build claim with claimIssuer as issuer
         ClaimSignerHelper.Claim memory claim = ClaimSignerHelper.buildClaim(
-            claimIssuerOwnerPk, address(aliceIdentity), address(claimIssuer), 42, hex"0042", "https://example.com"
+            claimIssuerOwnerPk,
+            claimIssuerOwner,
+            address(aliceIdentity),
+            address(claimIssuer),
+            42,
+            hex"0042",
+            "https://example.com"
         );
 
         // Encode addClaim data
@@ -391,7 +415,7 @@ contract ExecutionsTest is OnchainIDSetup {
     /// @notice CLAIM_ADDER key calling execute() with removeClaim data should NOT auto-approve
     function test_claimAdderExecuteRemoveClaim_shouldNotAutoApprove() public {
         // Add bob as CLAIM_ADDER
-        bytes32 bobKeyHash = keccak256(abi.encode(bob));
+        bytes32 bobKeyHash = keccak256(abi.encodePacked(bob));
         vm.prank(alice);
         aliceIdentity.addKey(bobKeyHash, KeyPurposes.CLAIM_ADDER, KeyTypes.ECDSA);
 
@@ -414,7 +438,7 @@ contract ExecutionsTest is OnchainIDSetup {
 
     function test_multicallWithMixedApproveReject() public {
         // Add bob as ACTION key
-        bytes32 bobKeyHash = keccak256(abi.encode(bob));
+        bytes32 bobKeyHash = keccak256(abi.encodePacked(bob));
         vm.prank(alice);
         aliceIdentity.addKey(bobKeyHash, KeyPurposes.ACTION, KeyTypes.ECDSA);
 
@@ -422,9 +446,9 @@ contract ExecutionsTest is OnchainIDSetup {
         uint256 startNonce = aliceIdentity.getCurrentNonce();
 
         // Create 3 execute calls (each adding a different key)
-        bytes32 key1 = keccak256(abi.encode(makeAddr("key1")));
-        bytes32 key2 = keccak256(abi.encode(makeAddr("key2")));
-        bytes32 key3 = keccak256(abi.encode(makeAddr("key3")));
+        bytes32 key1 = keccak256(abi.encodePacked(makeAddr("key1")));
+        bytes32 key2 = keccak256(abi.encodePacked(makeAddr("key2")));
+        bytes32 key3 = keccak256(abi.encodePacked(makeAddr("key3")));
 
         bytes memory addKey1Data = abi.encodeCall(KeyManager.addKey, (key1, KeyPurposes.ACTION, KeyTypes.ECDSA));
         bytes memory addKey2Data = abi.encodeCall(KeyManager.addKey, (key2, KeyPurposes.ACTION, KeyTypes.ECDSA));

@@ -25,31 +25,36 @@ library ClaimSignerHelper {
         return keccak256(abi.encode(issuer, topic));
     }
 
-    /// @notice Computes the key hash for an address (used in addKey / keyHasPurpose)
+    /// @notice Computes the key hash for an address using abi.encodePacked (unified hashing)
     function addressToKey(address addr) internal pure returns (bytes32) {
-        return keccak256(abi.encode(addr));
+        return keccak256(abi.encodePacked(addr));
     }
 
-    /// @notice Signs a claim using EIP-191 format matching the Identity contract
+    /// @notice Signs a claim and wraps the signature in the ERC-7913 unified format
+    /// @dev The signer signs `keccak256(abi.encode(identity, topic, data))` directly (no EIP-191 prefix).
+    ///      The returned signature is `abi.encode(signer, rawSig)` where signer = abi.encodePacked(signerAddr).
     /// @param signerPk The private key of the signer
+    /// @param signerAddr The address of the signer (used as the ERC-7913 signer bytes)
     /// @param identity The identity address the claim is for
     /// @param topic The claim topic
     /// @param data The claim data
-    /// @return signature The EIP-191 signature (r, s, v packed)
-    function signClaim(uint256 signerPk, address identity, uint256 topic, bytes memory data)
+    /// @return signature The wrapped signature: abi.encode(signer, rawSig)
+    function signClaim(uint256 signerPk, address signerAddr, address identity, uint256 topic, bytes memory data)
         internal
         pure
         returns (bytes memory)
     {
         bytes32 dataHash = keccak256(abi.encode(identity, topic, data));
-        bytes32 ethSignedHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash));
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPk, ethSignedHash);
-        return abi.encodePacked(r, s, v);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPk, dataHash);
+        bytes memory rawSig = abi.encodePacked(r, s, v);
+        bytes memory signer = abi.encodePacked(signerAddr);
+        return abi.encode(signer, rawSig);
     }
 
     /// @notice Builds a complete Claim struct with computed id and signature
     function buildClaim(
         uint256 signerPk,
+        address signerAddr,
         address identityAddr,
         address issuerAddr,
         uint256 topic,
@@ -63,7 +68,7 @@ library ClaimSignerHelper {
         claim.data = data;
         claim.uri = uri;
         claim.id = computeClaimId(issuerAddr, topic);
-        claim.signature = signClaim(signerPk, identityAddr, topic, data);
+        claim.signature = signClaim(signerPk, signerAddr, identityAddr, topic, data);
     }
 
 }

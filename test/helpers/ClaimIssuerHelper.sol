@@ -16,7 +16,7 @@ library ClaimIssuerHelper {
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(impl), abi.encodeCall(ClaimIssuer.initialize, (initialManagementKey, IdentityTypes.CLAIM_ISSUER))
         );
-        return ClaimIssuer(address(proxy));
+        return ClaimIssuer(payable(address(proxy)));
     }
 
 }

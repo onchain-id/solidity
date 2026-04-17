@@ -60,7 +60,7 @@ contract GatewayTest is Test {
         uint256 signerPk,
         address owner,
         string memory salt,
-        bytes32[] memory keys,
+        address[] memory keys,
         uint256 identityType,
         address[] memory claimAdders,
         uint256 expiry
@@ -139,7 +139,9 @@ contract GatewayTest is Test {
 
         address identityAddr = setup.idFactory.getIdentity(alice);
         assertTrue(identityAddr != address(0));
-        assertTrue(Identity(identityAddr).keyHasPurpose(ClaimSignerHelper.addressToKey(alice), KeyPurposes.MANAGEMENT));
+        assertTrue(
+            Identity(payable(identityAddr)).keyHasPurpose(ClaimSignerHelper.addressToKey(alice), KeyPurposes.MANAGEMENT)
+        );
     }
 
     /// @notice deployIdentityWithSalt with claimAdders should set CLAIM_ADDER keys
@@ -159,7 +161,7 @@ contract GatewayTest is Test {
         address identityAddr = setup.idFactory.getIdentity(alice);
         assertTrue(identityAddr != address(0), "Identity should be deployed");
 
-        Identity identity = Identity(identityAddr);
+        Identity identity = Identity(payable(identityAddr));
         assertTrue(
             identity.keyHasPurpose(ClaimSignerHelper.addressToKey(alice), KeyPurposes.MANAGEMENT),
             "alice should have MANAGEMENT key"
@@ -212,7 +214,7 @@ contract GatewayTest is Test {
 
     function test_deployWithKeys_revertZeroAddress() public {
         Gateway gateway = _deployGatewayWithCarol();
-        bytes32[] memory keys = new bytes32[](0);
+        address[] memory keys = new address[](0);
         bytes memory sig = new bytes(65);
 
         vm.expectRevert(Errors.ZeroAddress.selector);
@@ -224,8 +226,8 @@ contract GatewayTest is Test {
     function test_deployWithKeys_revertUnapprovedSigner() public {
         Gateway gateway = _deployGatewayWithCarol();
         uint256 expiry = block.timestamp + 365 days;
-        bytes32[] memory keys = new bytes32[](1);
-        keys[0] = ClaimSignerHelper.addressToKey(bob);
+        address[] memory keys = new address[](1);
+        keys[0] = bob;
         bytes memory sig =
             _signDeployWithKeys(bobPk, alice, "saltToUse", keys, IdentityTypes.INDIVIDUAL, new address[](0), expiry);
 
@@ -241,8 +243,8 @@ contract GatewayTest is Test {
         setup.idFactory.transferOwnership(address(gateway));
 
         uint256 expiry = block.timestamp + 365 days;
-        bytes32[] memory keys = new bytes32[](1);
-        keys[0] = ClaimSignerHelper.addressToKey(bob);
+        address[] memory keys = new address[](1);
+        keys[0] = bob;
         bytes memory sig = _signDeployWithKeys(
             carolPk, alice, "saltToUse", keys, IdentityTypes.INDIVIDUAL, new address[](0), expiry
         );
@@ -253,7 +255,7 @@ contract GatewayTest is Test {
 
         address identityAddr = setup.idFactory.getIdentity(alice);
         assertTrue(identityAddr != address(0));
-        Identity identity = Identity(identityAddr);
+        Identity identity = Identity(payable(identityAddr));
         // alice should NOT have management key (managed by bob's key only)
         assertFalse(identity.keyHasPurpose(ClaimSignerHelper.addressToKey(alice), KeyPurposes.MANAGEMENT));
         // bob should have management key
@@ -265,8 +267,8 @@ contract GatewayTest is Test {
         vm.prank(deployer);
         setup.idFactory.transferOwnership(address(gateway));
 
-        bytes32[] memory keys = new bytes32[](1);
-        keys[0] = ClaimSignerHelper.addressToKey(bob);
+        address[] memory keys = new address[](1);
+        keys[0] = bob;
         bytes memory sig =
             _signDeployWithKeys(carolPk, alice, "saltToUse", keys, IdentityTypes.INDIVIDUAL, new address[](0), 0);
 
@@ -275,7 +277,7 @@ contract GatewayTest is Test {
         );
 
         address identityAddr = setup.idFactory.getIdentity(alice);
-        Identity identity = Identity(identityAddr);
+        Identity identity = Identity(payable(identityAddr));
         assertFalse(identity.keyHasPurpose(ClaimSignerHelper.addressToKey(alice), KeyPurposes.MANAGEMENT));
         assertTrue(identity.keyHasPurpose(ClaimSignerHelper.addressToKey(bob), KeyPurposes.MANAGEMENT));
     }
@@ -286,8 +288,8 @@ contract GatewayTest is Test {
         setup.idFactory.transferOwnership(address(gateway));
 
         uint256 expiry = block.timestamp + 365 days;
-        bytes32[] memory keys = new bytes32[](1);
-        keys[0] = ClaimSignerHelper.addressToKey(bob);
+        address[] memory keys = new address[](1);
+        keys[0] = bob;
         bytes memory sig = _signDeployWithKeys(
             carolPk, alice, "saltToUse", keys, IdentityTypes.INDIVIDUAL, new address[](0), expiry
         );
@@ -306,8 +308,8 @@ contract GatewayTest is Test {
         setup.idFactory.transferOwnership(address(gateway));
 
         uint256 expiry = block.timestamp - 2 days;
-        bytes32[] memory keys = new bytes32[](1);
-        keys[0] = ClaimSignerHelper.addressToKey(bob);
+        address[] memory keys = new address[](1);
+        keys[0] = bob;
         bytes memory sig = _signDeployWithKeys(
             carolPk, alice, "saltToUse", keys, IdentityTypes.INDIVIDUAL, new address[](0), expiry
         );
@@ -339,7 +341,9 @@ contract GatewayTest is Test {
 
         address identityAddr = setup.idFactory.getIdentity(alice);
         assertTrue(identityAddr != address(0));
-        assertTrue(Identity(identityAddr).keyHasPurpose(ClaimSignerHelper.addressToKey(alice), KeyPurposes.MANAGEMENT));
+        assertTrue(
+            Identity(payable(identityAddr)).keyHasPurpose(ClaimSignerHelper.addressToKey(alice), KeyPurposes.MANAGEMENT)
+        );
     }
 
     function test_deployForWallet_shouldDeploy() public {
