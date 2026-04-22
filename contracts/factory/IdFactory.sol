@@ -88,7 +88,7 @@ contract IdFactory is IIdFactory, Ownable {
         }
         require(hasManagementKey, Errors.NoManagementKeyInKeys());
 
-        address identity = _deployIdentity(oidSalt, address(this), _identityType);
+        address identity = _deployIdentity(oidSalt, _identityType);
         _setupIdentityKeys(identity, _keys);
 
         _saltTaken[oidSalt] = true;
@@ -115,7 +115,7 @@ contract IdFactory is IIdFactory, Ownable {
         require(!_saltTaken[tokenIdSalt], Errors.SaltTaken(tokenIdSalt));
         require(_tokenIdentity[_token] == address(0), Errors.TokenAlreadyLinked(_token));
 
-        address identity = _deployIdentity(tokenIdSalt, address(this), IdentityTypes.ASSET);
+        address identity = _deployIdentity(tokenIdSalt, IdentityTypes.ASSET);
 
         // Build KeyParam array: 1 management key + N claim adder keys
         uint256 totalKeys = 1 + _claimAdders.length;
@@ -246,9 +246,9 @@ contract IdFactory is IIdFactory, Ownable {
     }
 
     // function used to deploy an identity using CREATE2
-    function _deployIdentity(string memory _salt, address _wallet, uint256 _identityType) private returns (address) {
+    function _deployIdentity(string memory _salt, uint256 _identityType) private returns (address) {
         bytes memory _code = type(IdentityProxy).creationCode;
-        bytes memory _constructData = abi.encode(implementationAuthority, _wallet, _identityType);
+        bytes memory _constructData = abi.encode(implementationAuthority, address(this), _identityType);
         bytes memory bytecode = abi.encodePacked(_code, _constructData);
         return _deploy(_salt, bytecode);
     }

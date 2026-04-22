@@ -5,7 +5,7 @@ test = "test"
 script = "scripts"
 libs = ["dependencies"]
 
-solc_version = "0.8.27"
+solc_version = "0.8.28"
 optimizer = true
 optimizer_runs = 200
 evm_version = "cancun"

@@ -51,8 +51,6 @@ contract KeyManager is IERC734 {
         bool initialized;
         /// @dev Flag indicating if the contract can be interacted with (prevents direct calls to implementation)
         bool canInteract;
-        /// @dev Mapping of key hash to raw signer bytes (ERC-7913 format: verifier || keyMaterial)
-        mapping(bytes32 => bytes) keyData;
     }
 
     /**
@@ -234,7 +232,6 @@ contract KeyManager is IERC734 {
         // If key has no more purposes, delete the entire key struct to save gas
         if (k.purposes.length() == 0) {
             delete ks.keys[_key];
-            delete ks.keyData[_key];
         }
 
         return true;
@@ -261,7 +258,7 @@ contract KeyManager is IERC734 {
     function setKeyData(bytes32 _keyHash, bytes memory _data) public virtual delegatedOnly onlyManager {
         KeyStorage storage ks = _getKeyStorage();
         require(ks.keys[_keyHash].key == _keyHash, Errors.KeyNotRegistered(_keyHash));
-        ks.keyData[_keyHash] = _data;
+        ks.keys[_keyHash].signerData = _data;
         emit KeyDataSet(_keyHash);
     }
 
@@ -271,7 +268,7 @@ contract KeyManager is IERC734 {
      * @return The raw signer bytes (ERC-7913 format)
      */
     function getKeyData(bytes32 _keyHash) external view virtual returns (bytes memory) {
-        return _getKeyStorage().keyData[_keyHash];
+        return _getKeyStorage().keys[_keyHash].signerData;
     }
 
     /**
@@ -398,7 +395,7 @@ contract KeyManager is IERC734 {
         ks.keys[_key].keyType = KeyTypes.ECDSA;
         ks.keys[_key].purposes.add(KeyPurposes.MANAGEMENT);
         ks.keysByPurpose[KeyPurposes.MANAGEMENT].add(_key);
-        ks.keyData[_key] = abi.encodePacked(initialManagementKey);
+        ks.keys[_key].signerData = abi.encodePacked(initialManagementKey);
 
         emit KeyAdded(_key, KeyPurposes.MANAGEMENT, KeyTypes.ECDSA);
     }

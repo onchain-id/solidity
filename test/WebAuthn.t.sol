@@ -54,7 +54,7 @@ contract WebAuthnTest is OnchainIDSetup {
 
         // Register P-256 key on alice's identity with ACTION purpose
         vm.startPrank(alice);
-        aliceIdentity.addKey(p256KeyHash, KeyPurposes.ACTION, KeyTypes.P256);
+        aliceIdentity.addKey(p256KeyHash, KeyPurposes.ACTION, KeyTypes.WEBAUTHN);
         aliceIdentity.setKeyData(p256KeyHash, p256Signer);
         vm.stopPrank();
     }
@@ -84,7 +84,7 @@ contract WebAuthnTest is OnchainIDSetup {
         bytes32 mgmtKeyHash = keccak256(mgmtSigner);
 
         vm.startPrank(alice);
-        aliceIdentity.addKey(mgmtKeyHash, KeyPurposes.MANAGEMENT, KeyTypes.P256);
+        aliceIdentity.addKey(mgmtKeyHash, KeyPurposes.MANAGEMENT, KeyTypes.WEBAUTHN);
         aliceIdentity.setKeyData(mgmtKeyHash, mgmtSigner);
         vm.stopPrank();
 
@@ -162,7 +162,7 @@ contract WebAuthnTest is OnchainIDSetup {
 
         // Register P-256 key as CLAIM_SIGNER on claimIssuer
         vm.startPrank(claimIssuerOwner);
-        claimIssuer.addKey(issuerKeyHash, KeyPurposes.CLAIM_SIGNER, KeyTypes.P256);
+        claimIssuer.addKey(issuerKeyHash, KeyPurposes.CLAIM_SIGNER, KeyTypes.WEBAUTHN);
         claimIssuer.setKeyData(issuerKeyHash, issuerSigner);
         vm.stopPrank();
 
@@ -180,7 +180,7 @@ contract WebAuthnTest is OnchainIDSetup {
 
         // Validate claim
         bool valid =
-            claimIssuer.isClaimValid(IIdentity(address(aliceIdentity)), topic, KeyTypes.P256, claimSig, claimData);
+            claimIssuer.isClaimValid(IIdentity(address(aliceIdentity)), topic, KeyTypes.WEBAUTHN, claimSig, claimData);
         assertTrue(valid, "P-256 signed claim should be valid");
     }
 
@@ -192,7 +192,7 @@ contract WebAuthnTest is OnchainIDSetup {
         bytes32 issuerKeyHash = keccak256(issuerSigner);
 
         vm.startPrank(claimIssuerOwner);
-        claimIssuer.addKey(issuerKeyHash, KeyPurposes.CLAIM_SIGNER, KeyTypes.P256);
+        claimIssuer.addKey(issuerKeyHash, KeyPurposes.CLAIM_SIGNER, KeyTypes.WEBAUTHN);
         claimIssuer.setKeyData(issuerKeyHash, issuerSigner);
         vm.stopPrank();
 
@@ -207,7 +207,7 @@ contract WebAuthnTest is OnchainIDSetup {
         bytes memory claimSig = abi.encode(issuerSigner, rawSig);
 
         bool valid =
-            claimIssuer.isClaimValid(IIdentity(address(aliceIdentity)), topic, KeyTypes.P256, claimSig, claimData);
+            claimIssuer.isClaimValid(IIdentity(address(aliceIdentity)), topic, KeyTypes.WEBAUTHN, claimSig, claimData);
         assertFalse(valid, "Claim signed with wrong P-256 key should be invalid");
     }
 
@@ -219,7 +219,7 @@ contract WebAuthnTest is OnchainIDSetup {
         bytes32 issuerKeyHash = keccak256(issuerSigner);
 
         vm.startPrank(claimIssuerOwner);
-        claimIssuer.addKey(issuerKeyHash, KeyPurposes.CLAIM_SIGNER, KeyTypes.P256);
+        claimIssuer.addKey(issuerKeyHash, KeyPurposes.CLAIM_SIGNER, KeyTypes.WEBAUTHN);
         claimIssuer.setKeyData(issuerKeyHash, issuerSigner);
         vm.stopPrank();
 
@@ -235,7 +235,7 @@ contract WebAuthnTest is OnchainIDSetup {
 
         // Add claim to identity (alice has CLAIM_SIGNER key via carol, but alice is MANAGEMENT so she can use execute)
         vm.prank(alice);
-        aliceIdentity.addClaim(topic, KeyTypes.P256, address(claimIssuer), claimSig, claimData, uri);
+        aliceIdentity.addClaim(topic, KeyTypes.WEBAUTHN, address(claimIssuer), claimSig, claimData, uri);
 
         // Verify claim was added
         bytes32 claimId = keccak256(abi.encode(address(claimIssuer), topic));
@@ -315,7 +315,7 @@ contract WebAuthnTest is OnchainIDSetup {
         bytes32 claimKeyHash = keccak256(claimSigner);
 
         vm.startPrank(alice);
-        aliceIdentity.addKey(claimKeyHash, KeyPurposes.CLAIM_SIGNER, KeyTypes.P256);
+        aliceIdentity.addKey(claimKeyHash, KeyPurposes.CLAIM_SIGNER, KeyTypes.WEBAUTHN);
         aliceIdentity.setKeyData(claimKeyHash, claimSigner);
         vm.stopPrank();
 
@@ -336,7 +336,7 @@ contract WebAuthnTest is OnchainIDSetup {
         (uint256[] memory purposes, uint256 keyType, bytes32 key) = aliceIdentity.getKey(p256KeyHash);
 
         assertEq(key, p256KeyHash, "Key hash should match");
-        assertEq(keyType, KeyTypes.P256, "Key type should be P256");
+        assertEq(keyType, KeyTypes.WEBAUTHN, "Key type should be WEBAUTHN");
         assertEq(purposes.length, 1, "Should have exactly one purpose");
         assertEq(purposes[0], KeyPurposes.ACTION, "Purpose should be ACTION");
 
@@ -349,7 +349,7 @@ contract WebAuthnTest is OnchainIDSetup {
     function test_p256Key_multiPurpose() public {
         // Add MANAGEMENT purpose to the same P-256 key
         vm.prank(alice);
-        aliceIdentity.addKey(p256KeyHash, KeyPurposes.MANAGEMENT, KeyTypes.P256);
+        aliceIdentity.addKey(p256KeyHash, KeyPurposes.MANAGEMENT, KeyTypes.WEBAUTHN);
 
         assertTrue(aliceIdentity.keyHasPurpose(p256KeyHash, KeyPurposes.ACTION), "Should still have ACTION");
         assertTrue(aliceIdentity.keyHasPurpose(p256KeyHash, KeyPurposes.MANAGEMENT), "Should also have MANAGEMENT");

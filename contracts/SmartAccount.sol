@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
+import { Account } from "@openzeppelin/contracts/account/Account.sol";
+import { ERC4337Utils } from "@openzeppelin/contracts/account/utils/draft-ERC4337Utils.sol";
 import { IERC1271 } from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import { IAccount, PackedUserOperation } from "@openzeppelin/contracts/interfaces/draft-IERC4337.sol";
 import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
@@ -26,23 +28,8 @@ import { KeyPurposes } from "./libraries/KeyPurposes.sol";
  * - ECDSA (20-byte signer → ecrecover)
  * - ERC-1271 (20-byte contract signer → isValidSignature)
  * - ERC-7913 (>20-byte signer → verifier.verify(key, hash, sig))
- *
- * @custom:security Uses ERC-7913 for algorithm-agnostic key verification.
- * All key types (including future ones) are supported by deploying new ERC-7913 verifiers.
  */
 abstract contract SmartAccount is IAccount, IERC1271, KeyManager, EIP712 {
-
-    /// @dev ERC-4337 v0.7 canonical EntryPoint address
-    address internal constant _ENTRY_POINT = 0x0000000071727De22E5E9d8BAf0edAc6f37da032;
-
-    /// @dev ERC-4337 SIG_VALIDATION_FAILED return value
-    uint256 internal constant _SIG_VALIDATION_FAILED = 1;
-
-    /// @dev Transient storage slot for the validated keyHash from validateUserOp.
-    ///      Binds the key validated in validateUserOp to the execution in executeFromEntryPoint,
-    ///      preventing privilege escalation (e.g., ACTION key using a MANAGEMENT keyHash in callData).
-    ///      Uses EIP-1153 transient storage (TSTORE/TLOAD) via assembly since Solidity < 0.8.28.
-    bytes32 private constant _VALIDATED_KEY_HASH_SLOT = keccak256("onchainid.smartaccount.validatedKeyHash");
 
     /// @dev EIP-712 typehash for execute operations
     bytes32 internal constant _EXECUTE_TYPEHASH =
@@ -50,6 +37,11 @@ abstract contract SmartAccount is IAccount, IERC1271, KeyManager, EIP712 {
 
     /// @dev EIP-712 typehash for approve operations
     bytes32 internal constant _APPROVE_TYPEHASH = keccak256("Approve(uint256 id,bool shouldApprove)");
+
+    /// @dev Transient storage for the validated keyHash from validateUserOp.
+    ///      Binds the key validated in validateUserOp to the execution in executeFromEntryPoint,
+    ///      preventing privilege escalation (e.g., ACTION key using a MANAGEMENT keyHash in callData).
+    bytes32 transient _validatedKeyHash;
 
     /// @notice Allow receiving ETH (required for ERC-4337 prefunding and general use)
     receive() external payable virtual { }
@@ -72,7 +64,7 @@ abstract contract SmartAccount is IAccount, IERC1271, KeyManager, EIP712 {
         returns (uint256 executionId)
     {
         bytes32 opHash = getOperationHash(_to, _value, _callData, _getKeyStorage().executionNonce);
-        _verifySignature(_keyHash, opHash, _signature);
+        _checkSignature(_keyHash, opHash, _signature);
         return _execute(_keyHash, _to, _value, _callData);
     }
 
@@ -102,10 +94,12 @@ abstract contract SmartAccount is IAccount, IERC1271, KeyManager, EIP712 {
         delegatedOnly
         returns (uint256 executionId)
     {
-        require(msg.sender == _ENTRY_POINT, Errors.NotEntryPoint());
+        require(msg.sender == address(ERC4337Utils.ENTRYPOINT_V09), Account.AccountUnauthorized(msg.sender));
 
         // Read and consume the validated keyHash (set by validateUserOp).
-        bytes32 keyHash = _getAndClearValidatedKeyHash();
+        bytes32 keyHash = _validatedKeyHash;
+        _validatedKeyHash = bytes32(0);
+        require(keyHash != bytes32(0), Errors.InvalidSignature());
 
         emit EntryPointExecuted(_to, _value, _data);
 
@@ -127,7 +121,7 @@ abstract contract SmartAccount is IAccount, IERC1271, KeyManager, EIP712 {
         returns (bool success)
     {
         bytes32 opHash = _hashTypedDataV4(keccak256(abi.encode(_APPROVE_TYPEHASH, _id, _shouldApprove)));
-        _verifySignature(_keyHash, opHash, _signature);
+        _checkSignature(_keyHash, opHash, _signature);
         return _approveExecution(_keyHash, _id, _shouldApprove);
     }
 
@@ -169,7 +163,7 @@ abstract contract SmartAccount is IAccount, IERC1271, KeyManager, EIP712 {
         virtual
         returns (uint256 validationData)
     {
-        require(msg.sender == _ENTRY_POINT, Errors.NotEntryPoint());
+        require(msg.sender == address(ERC4337Utils.ENTRYPOINT_V09), Account.AccountUnauthorized(msg.sender));
 
         // Prefund payment to EntryPoint. Failure is silently discarded —
         // this is the standard ERC-4337 pattern. The EntryPoint handles
@@ -185,10 +179,10 @@ abstract contract SmartAccount is IAccount, IERC1271, KeyManager, EIP712 {
 
         // Verify the signature is valid for a registered key (any purpose).
         // Purpose-based routing happens in executeFromEntryPoint via _execute/_canAutoApproveExecution.
-        if (!_tryVerifySignature(keyHash, userOpHash, sig)) return _SIG_VALIDATION_FAILED;
+        if (!_isValidSignature(keyHash, userOpHash, sig)) return ERC4337Utils.SIG_VALIDATION_FAILED;
 
         // Store the validated keyHash so executeFromEntryPoint uses the same key for purpose routing.
-        _setValidatedKeyHash(keyHash);
+        _validatedKeyHash = keyHash;
 
         return 0;
     }
@@ -216,7 +210,7 @@ abstract contract SmartAccount is IAccount, IERC1271, KeyManager, EIP712 {
         KeyStorage storage ks = _getKeyStorage();
         if (ks.keys[keyHash].key == bytes32(0)) return bytes4(0xffffffff);
 
-        bytes memory signer = ks.keyData[keyHash];
+        bytes memory signer = ks.keys[keyHash].signerData;
         if (signer.length < 20) return bytes4(0xffffffff);
 
         if (!SignatureChecker.isValidSignatureNow(signer, _hash, sig)) return bytes4(0xffffffff);
@@ -230,24 +224,24 @@ abstract contract SmartAccount is IAccount, IERC1271, KeyManager, EIP712 {
      * @param _hash The hash that was signed
      * @param _signature The signature to verify
      */
-    function _verifySignature(bytes32 _keyHash, bytes32 _hash, bytes memory _signature) internal view virtual {
+    function _checkSignature(bytes32 _keyHash, bytes32 _hash, bytes memory _signature) internal view virtual {
         KeyStorage storage ks = _getKeyStorage();
         require(ks.keys[_keyHash].key != bytes32(0), Errors.KeyNotRegistered(_keyHash));
 
-        bytes memory signer = ks.keyData[_keyHash];
+        bytes memory signer = ks.keys[_keyHash].signerData;
         require(signer.length >= 20, Errors.InvalidSignerData());
         require(SignatureChecker.isValidSignatureNow(signer, _hash, _signature), Errors.InvalidSignature());
     }
 
     /**
-     * @dev Try to verify a signature. Returns false instead of reverting on failure.
+     * @dev Check if a signature is valid. Returns false instead of reverting on failure.
      *      Used by validateUserOp per ERC-4337 spec (SHOULD return failure, not revert).
      * @param _keyHash The key hash to verify against
      * @param _hash The hash that was signed
      * @param _signature The signature to verify
      * @return valid True if the signature is valid
      */
-    function _tryVerifySignature(bytes32 _keyHash, bytes32 _hash, bytes memory _signature)
+    function _isValidSignature(bytes32 _keyHash, bytes32 _hash, bytes memory _signature)
         internal
         view
         virtual
@@ -256,37 +250,10 @@ abstract contract SmartAccount is IAccount, IERC1271, KeyManager, EIP712 {
         KeyStorage storage ks = _getKeyStorage();
         if (ks.keys[_keyHash].key == bytes32(0)) return false;
 
-        bytes memory signer = ks.keyData[_keyHash];
+        bytes memory signer = ks.keys[_keyHash].signerData;
         if (signer.length < 20) return false;
 
         return SignatureChecker.isValidSignatureNow(signer, _hash, _signature);
-    }
-
-    /**
-     * @dev Store the validated keyHash in EIP-1153 transient storage.
-     *      Called by validateUserOp after successful signature verification.
-     * @param _keyHash The validated key hash
-     */
-    function _setValidatedKeyHash(bytes32 _keyHash) private {
-        bytes32 slot = _VALIDATED_KEY_HASH_SLOT;
-        assembly {
-            tstore(slot, _keyHash)
-        }
-    }
-
-    /**
-     * @dev Read and clear the validated keyHash from EIP-1153 transient storage.
-     *      Called by executeFromEntryPoint to get the key that was validated.
-     *      Reverts if no keyHash was set (i.e., validateUserOp was not called first).
-     * @return keyHash The validated key hash
-     */
-    function _getAndClearValidatedKeyHash() private returns (bytes32 keyHash) {
-        bytes32 slot = _VALIDATED_KEY_HASH_SLOT;
-        assembly {
-            keyHash := tload(slot)
-            tstore(slot, 0)
-        }
-        require(keyHash != bytes32(0), Errors.InvalidSignature());
     }
 
 }

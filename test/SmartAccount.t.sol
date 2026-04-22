@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
+import { Account as OZAccount } from "@openzeppelin/contracts/account/Account.sol";
 import { PackedUserOperation } from "@openzeppelin/contracts/interfaces/draft-IERC4337.sol";
 
 import { Identity } from "contracts/Identity.sol";
@@ -392,7 +393,7 @@ contract SmartAccountTest is OnchainIDSetup {
 
     // ========= validateUserOp (ERC-4337) =========
 
-    address internal constant ENTRY_POINT = 0x0000000071727De22E5E9d8BAf0edAc6f37da032;
+    address internal constant ENTRY_POINT = 0x433709009B8330FDa32311DF1C2AFA402eD8D009;
 
     function _buildUserOp(address sender, bytes memory signature) internal pure returns (PackedUserOperation memory) {
         return PackedUserOperation({
@@ -431,7 +432,7 @@ contract SmartAccountTest is OnchainIDSetup {
 
         PackedUserOperation memory userOp = _buildUserOp(address(aliceIdentity), abi.encode(keyHash, ecdsaSig));
 
-        vm.expectRevert(Errors.NotEntryPoint.selector);
+        vm.expectRevert(abi.encodeWithSelector(OZAccount.AccountUnauthorized.selector, address(this)));
         aliceIdentity.validateUserOp(userOp, userOpHash, 0);
     }
 
@@ -554,7 +555,7 @@ contract SmartAccountTest is OnchainIDSetup {
     }
 
     function test_executeFromEntryPoint_notEntryPoint_shouldRevert() public {
-        vm.expectRevert(Errors.NotEntryPoint.selector);
+        vm.expectRevert(abi.encodeWithSelector(OZAccount.AccountUnauthorized.selector, address(this)));
         aliceIdentity.executeFromEntryPoint(makeAddr("target"), 0, "");
     }
 
@@ -586,7 +587,7 @@ contract SmartAccountTest is OnchainIDSetup {
         bytes32 keyHash = keccak256(abi.encodePacked(address(mockSigner)));
 
         vm.startPrank(alice);
-        aliceIdentity.addKey(keyHash, KeyPurposes.ACTION, KeyTypes.ERC1271);
+        aliceIdentity.addKey(keyHash, KeyPurposes.ACTION, KeyTypes.ECDSA);
         aliceIdentity.setKeyData(keyHash, abi.encodePacked(address(mockSigner)));
         vm.stopPrank();
 

@@ -154,9 +154,6 @@ library Errors {
     /// @notice The signer data is invalid or too short.
     error InvalidSignerData();
 
-    /// @notice The caller is not the ERC-4337 EntryPoint.
-    error NotEntryPoint();
-
     /* ----- IdentityUtilities ----- */
 
     /// @notice 0 is not a valid topic.
