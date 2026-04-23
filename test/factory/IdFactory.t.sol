@@ -19,11 +19,13 @@ contract IdFactoryTest is OnchainIDSetup {
     // ---- helpers ----
 
     function _makeECDSAKey(address addr, uint256 purpose) internal pure returns (Structs.KeyParam memory) {
+        // clientData is empty for ECDSA keys — only needed for non-ECDSA keys (e.g. WebAuthn credentialId)
         return Structs.KeyParam({
             keyHash: keccak256(abi.encodePacked(addr)),
             purpose: purpose,
             keyType: KeyTypes.ECDSA,
-            signerData: abi.encodePacked(addr)
+            signerData: abi.encodePacked(addr),
+            clientData: ""
         });
     }
 

@@ -226,6 +226,7 @@ contract Gateway is Ownable {
         pure
         returns (Structs.KeyParam[] memory keys)
     {
+        // clientData is empty for ECDSA keys — only needed for non-ECDSA keys (e.g. WebAuthn credentialId)
         uint256 totalKeys = managementKeys.length + claimAdders.length;
         keys = new Structs.KeyParam[](totalKeys);
         for (uint256 i = 0; i < managementKeys.length; i++) {
@@ -233,7 +234,8 @@ contract Gateway is Ownable {
                 keyHash: keccak256(abi.encodePacked(managementKeys[i])),
                 purpose: KeyPurposes.MANAGEMENT,
                 keyType: KeyTypes.ECDSA,
-                signerData: abi.encodePacked(managementKeys[i])
+                signerData: abi.encodePacked(managementKeys[i]),
+                clientData: ""
             });
         }
         for (uint256 i = 0; i < claimAdders.length; i++) {
@@ -241,7 +243,8 @@ contract Gateway is Ownable {
                 keyHash: keccak256(abi.encodePacked(claimAdders[i])),
                 purpose: KeyPurposes.CLAIM_ADDER,
                 keyType: KeyTypes.ECDSA,
-                signerData: abi.encodePacked(claimAdders[i])
+                signerData: abi.encodePacked(claimAdders[i]),
+                clientData: ""
             });
         }
     }

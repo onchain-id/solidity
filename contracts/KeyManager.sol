@@ -35,6 +35,11 @@ contract KeyManager is IERC734 {
     event KeyDataSet(bytes32 indexed key);
 
     /**
+     * @dev Emitted when client data (non-cryptographic metadata) is set for a key.
+     */
+    event ClientDataSet(bytes32 indexed key);
+
+    /**
      * @dev Storage struct for key management and execution data
      * @custom:storage-location erc7201:onchainid.keymanager.storage
      */
@@ -250,25 +255,65 @@ contract KeyManager is IERC734 {
     }
 
     /**
-     * @notice Store the raw signer bytes (ERC-7913 format) for a registered key.
-     * @dev For ECDSA keys: abi.encodePacked(address). For WebAuthn: abi.encodePacked(verifier, qx, qy).
+     * @dev Internal helper to store the raw signer bytes (ERC-7913 format) for a registered key.
+     * For ECDSA keys: abi.encodePacked(address). For WebAuthn: abi.encodePacked(verifier, qx, qy).
      * @param _keyHash The key hash to store data for
      * @param _data The raw signer bytes
      */
-    function setKeyData(bytes32 _keyHash, bytes memory _data) public virtual delegatedOnly onlyManager {
-        KeyStorage storage ks = _getKeyStorage();
-        require(ks.keys[_keyHash].key == _keyHash, Errors.KeyNotRegistered(_keyHash));
-        ks.keys[_keyHash].signerData = _data;
+    function _setKeyData(bytes32 _keyHash, bytes memory _data) internal {
+        _getKeyStorage().keys[_keyHash].signerData = _data;
         emit KeyDataSet(_keyHash);
     }
 
     /**
-     * @notice Get the raw signer bytes for a key.
+     * @notice Get all data for a key including signer and client data.
      * @param _keyHash The key hash to get data for
-     * @return The raw signer bytes (ERC-7913 format)
+     * @return signerData The raw signer bytes (ERC-7913 format) used for on-chain signature verification
+     * @return clientData The client metadata bytes (e.g. WebAuthn credentialId) — not used for verification
      */
-    function getKeyData(bytes32 _keyHash) external view virtual returns (bytes memory) {
-        return _getKeyStorage().keys[_keyHash].signerData;
+    function getKeyData(bytes32 _keyHash)
+        external
+        view
+        virtual
+        returns (bytes memory signerData, bytes memory clientData)
+    {
+        KeyStorage storage ks = _getKeyStorage();
+        return (ks.keys[_keyHash].signerData, ks.keys[_keyHash].clientData);
+    }
+
+    /**
+     * @notice Register a key with signer data and client data in a single transaction.
+     * @dev Combines addKey + setKeyData + setClientData. Useful for WebAuthn keys where
+     * signerData (verifier + pubkey) and clientData (credentialId) must both be set.
+     * @param _key The key hash (keccak256 of signerData)
+     * @param _purpose The key purpose
+     * @param _type The key type (ECDSA=1, RSA=2, WEBAUTHN=3)
+     * @param _signerData ERC-7913 signer bytes for on-chain signature verification
+     * @param _clientData Non-cryptographic metadata (e.g. WebAuthn credentialId)
+     * @return success True if the key was successfully added
+     */
+    function addKeyWithData(
+        bytes32 _key,
+        uint256 _purpose,
+        uint256 _type,
+        bytes memory _signerData,
+        bytes memory _clientData
+    ) external virtual delegatedOnly onlyManager returns (bool success) {
+        addKey(_key, _purpose, _type);
+        _setKeyData(_key, _signerData);
+        _setClientData(_key, _clientData);
+        return true;
+    }
+
+    /**
+     * @dev Internal helper to store non-cryptographic client metadata for a key.
+     * This data is NOT used for on-chain signature verification.
+     * @param _keyHash The key hash to store client data for
+     * @param _data The client metadata bytes (e.g. WebAuthn credentialId)
+     */
+    function _setClientData(bytes32 _keyHash, bytes memory _data) internal {
+        _getKeyStorage().keys[_keyHash].clientData = _data;
+        emit ClientDataSet(_keyHash);
     }
 
     /**
@@ -395,6 +440,8 @@ contract KeyManager is IERC734 {
         ks.keys[_key].keyType = KeyTypes.ECDSA;
         ks.keys[_key].purposes.add(KeyPurposes.MANAGEMENT);
         ks.keysByPurpose[KeyPurposes.MANAGEMENT].add(_key);
+        // ECDSA keys only need signerData for on-chain verification.
+        // clientData is left empty — it is only useful for non-ECDSA keys (e.g. WebAuthn credentialId).
         ks.keys[_key].signerData = abi.encodePacked(initialManagementKey);
 
         emit KeyAdded(_key, KeyPurposes.MANAGEMENT, KeyTypes.ECDSA);

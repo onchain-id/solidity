@@ -51,12 +51,11 @@ contract SmartAccountTest is OnchainIDSetup {
         super.setUp();
         counter = new Counter();
 
-        // Set keyData for alice (management key) — already registered via factory
-        // The factory sets keyData in _setupInitialManagementKey, but let's also set keyData for david (ACTION)
+        // Add ACTION key for alice so we can test management key executing external calls
         vm.startPrank(alice);
-        aliceIdentity.setKeyData(ClaimSignerHelper.addressToKey(david), abi.encodePacked(david));
-        // Also add ACTION key for alice so we can test management key executing external calls
-        aliceIdentity.addKey(ClaimSignerHelper.addressToKey(alice), KeyPurposes.ACTION, KeyTypes.ECDSA);
+        aliceIdentity.addKeyWithData(
+            ClaimSignerHelper.addressToKey(alice), KeyPurposes.ACTION, KeyTypes.ECDSA, abi.encodePacked(alice), ""
+        );
         vm.stopPrank();
     }
 
@@ -118,11 +117,7 @@ contract SmartAccountTest is OnchainIDSetup {
         uint256 nonce = aliceIdentity.getCurrentNonce();
         bytes32 opHash = aliceIdentity.getOperationHash(address(counter), 0, callData, nonce);
 
-        // carol has CLAIM_SIGNER on aliceIdentity
-        // Set keyData for carol's addressToKey
-        vm.prank(alice);
-        aliceIdentity.setKeyData(ClaimSignerHelper.addressToKey(carol), abi.encodePacked(carol));
-
+        // carol has CLAIM_SIGNER on aliceIdentity (signerData set via OnchainIDSetup)
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(carolPk, opHash);
         bytes memory sig = abi.encodePacked(r, s, v);
 
@@ -214,9 +209,7 @@ contract SmartAccountTest is OnchainIDSetup {
     function test_approveWithSignature() public {
         // First create an unapproved execution request
         // Use carol (CLAIM_SIGNER) to create an external execution that won't auto-approve
-        vm.prank(alice);
-        aliceIdentity.setKeyData(ClaimSignerHelper.addressToKey(carol), abi.encodePacked(carol));
-
+        // carol's signerData is already set via OnchainIDSetup
         bytes memory callData = abi.encodeCall(Counter.increment, ());
         uint256 nonce = aliceIdentity.getCurrentNonce();
         bytes32 opHash = aliceIdentity.getOperationHash(address(counter), 0, callData, nonce);
@@ -316,10 +309,7 @@ contract SmartAccountTest is OnchainIDSetup {
     }
 
     function test_isValidSignature_claimSignerKeyFails_withKeyData() public {
-        // Set keyData for carol, then verify CLAIM_SIGNER still fails ACTION check
-        vm.prank(alice);
-        aliceIdentity.setKeyData(ClaimSignerHelper.addressToKey(carol), abi.encodePacked(carol));
-
+        // carol's signerData is already set via OnchainIDSetup, verify CLAIM_SIGNER still fails ACTION check
         bytes32 hash = keccak256("test message");
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(carolPk, hash);
         bytes memory rawSig = abi.encodePacked(r, s, v);
@@ -366,29 +356,20 @@ contract SmartAccountTest is OnchainIDSetup {
         bytes32 newKeyHash = keccak256(abi.encodePacked(newAddr));
         bytes memory signerData = abi.encodePacked(newAddr);
 
-        vm.startPrank(alice);
-        aliceIdentity.addKey(newKeyHash, KeyPurposes.ACTION, KeyTypes.ECDSA);
-        aliceIdentity.setKeyData(newKeyHash, signerData);
-        vm.stopPrank();
+        vm.prank(alice);
+        aliceIdentity.addKeyWithData(newKeyHash, KeyPurposes.ACTION, KeyTypes.ECDSA, signerData, "");
 
-        bytes memory stored = aliceIdentity.getKeyData(newKeyHash);
-        assertEq(stored, signerData, "KeyData should be stored correctly");
+        (bytes memory storedSigner, bytes memory storedClient) = aliceIdentity.getKeyData(newKeyHash);
+        assertEq(storedSigner, signerData, "SignerData should be stored correctly");
+        assertEq(storedClient, "", "ClientData should be empty for ECDSA keys");
     }
 
-    function test_setKeyData_revertNonManager() public {
+    function test_addKeyWithData_revertNonManager() public {
         bytes32 keyHash = ClaimSignerHelper.addressToKey(david);
 
         vm.prank(david); // david has ACTION, not MANAGEMENT
         vm.expectRevert(Errors.SenderDoesNotHaveManagementKey.selector);
-        aliceIdentity.setKeyData(keyHash, abi.encodePacked(david));
-    }
-
-    function test_setKeyData_revertUnregisteredKey() public {
-        bytes32 fakeKey = keccak256("fake");
-
-        vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(Errors.KeyNotRegistered.selector, fakeKey));
-        aliceIdentity.setKeyData(fakeKey, abi.encodePacked(alice));
+        aliceIdentity.addKeyWithData(keyHash, KeyPurposes.ACTION, KeyTypes.ECDSA, abi.encodePacked(david), "");
     }
 
     // ========= validateUserOp (ERC-4337) =========
@@ -455,9 +436,7 @@ contract SmartAccountTest is OnchainIDSetup {
     function test_validateUserOp_anyRegisteredKey_succeeds() public {
         // Carol has CLAIM_SIGNER purpose — validateUserOp accepts any registered key
         // Purpose routing happens in executeFromEntryPoint, not validateUserOp
-        vm.prank(alice);
-        aliceIdentity.setKeyData(ClaimSignerHelper.addressToKey(carol), abi.encodePacked(carol));
-
+        // carol's signerData is already set via OnchainIDSetup
         bytes32 keyHash = ClaimSignerHelper.addressToKey(carol);
         bytes32 userOpHash = keccak256("test user op hash");
 
@@ -587,8 +566,9 @@ contract SmartAccountTest is OnchainIDSetup {
         bytes32 keyHash = keccak256(abi.encodePacked(address(mockSigner)));
 
         vm.startPrank(alice);
-        aliceIdentity.addKey(keyHash, KeyPurposes.ACTION, KeyTypes.ECDSA);
-        aliceIdentity.setKeyData(keyHash, abi.encodePacked(address(mockSigner)));
+        aliceIdentity.addKeyWithData(
+            keyHash, KeyPurposes.ACTION, KeyTypes.ECDSA, abi.encodePacked(address(mockSigner)), ""
+        );
         vm.stopPrank();
 
         // Call isValidSignature — should delegate to MockERC1271Signer

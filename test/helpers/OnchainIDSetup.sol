@@ -80,7 +80,8 @@ contract OnchainIDSetup is Test {
             keyHash: keccak256(abi.encodePacked(alice)),
             purpose: KeyPurposes.MANAGEMENT,
             keyType: KeyTypes.ECDSA,
-            signerData: abi.encodePacked(alice)
+            signerData: abi.encodePacked(alice),
+            clientData: ""
         });
         address aliceIdentityAddr =
             onchainidSetup.idFactory.createIdentity(alice, "alice", aliceKeys, IdentityTypes.INDIVIDUAL);
@@ -88,8 +89,12 @@ contract OnchainIDSetup is Test {
 
         // Add carol as CLAIM_SIGNER and david as ACTION key on alice's identity
         vm.startPrank(alice);
-        aliceIdentity.addKey(ClaimSignerHelper.addressToKey(carol), KeyPurposes.CLAIM_SIGNER, KeyTypes.ECDSA);
-        aliceIdentity.addKey(ClaimSignerHelper.addressToKey(david), KeyPurposes.ACTION, KeyTypes.ECDSA);
+        aliceIdentity.addKeyWithData(
+            ClaimSignerHelper.addressToKey(carol), KeyPurposes.CLAIM_SIGNER, KeyTypes.ECDSA, abi.encodePacked(carol), ""
+        );
+        aliceIdentity.addKeyWithData(
+            ClaimSignerHelper.addressToKey(david), KeyPurposes.ACTION, KeyTypes.ECDSA, abi.encodePacked(david), ""
+        );
         vm.stopPrank();
 
         // Build and add alice's claim 666
@@ -120,7 +125,8 @@ contract OnchainIDSetup is Test {
             keyHash: keccak256(abi.encodePacked(bob)),
             purpose: KeyPurposes.MANAGEMENT,
             keyType: KeyTypes.ECDSA,
-            signerData: abi.encodePacked(bob)
+            signerData: abi.encodePacked(bob),
+            clientData: ""
         });
         address bobIdentityAddr = onchainidSetup.idFactory.createIdentity(bob, "bob", bobKeys, IdentityTypes.INDIVIDUAL);
         bobIdentity = Identity(payable(bobIdentityAddr));

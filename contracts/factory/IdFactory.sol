@@ -120,18 +120,21 @@ contract IdFactory is IIdFactory, Ownable {
         // Build KeyParam array: 1 management key + N claim adder keys
         uint256 totalKeys = 1 + _claimAdders.length;
         Structs.KeyParam[] memory keyParams = new Structs.KeyParam[](totalKeys);
+        // clientData is empty for ECDSA keys — only needed for non-ECDSA keys (e.g. WebAuthn credentialId)
         keyParams[0] = Structs.KeyParam({
             keyHash: keccak256(abi.encodePacked(_tokenOwner)),
             purpose: KeyPurposes.MANAGEMENT,
             keyType: KeyTypes.ECDSA,
-            signerData: abi.encodePacked(_tokenOwner)
+            signerData: abi.encodePacked(_tokenOwner),
+            clientData: ""
         });
         for (uint256 i = 0; i < _claimAdders.length; i++) {
             keyParams[1 + i] = Structs.KeyParam({
                 keyHash: keccak256(abi.encodePacked(_claimAdders[i])),
                 purpose: KeyPurposes.CLAIM_ADDER,
                 keyType: KeyTypes.ECDSA,
-                signerData: abi.encodePacked(_claimAdders[i])
+                signerData: abi.encodePacked(_claimAdders[i]),
+                clientData: ""
             });
         }
         _setupIdentityKeys(identity, keyParams);
@@ -217,11 +220,13 @@ contract IdFactory is IIdFactory, Ownable {
         return _tokenFactories[_factory];
     }
 
-    // bootstraps an identity: adds keys with their purposes and signer data, then removes factory key
+    // bootstraps an identity: adds keys with their purposes, signer data, and client data, then removes factory key
     function _setupIdentityKeys(address _identity, Structs.KeyParam[] memory _keys) private {
         for (uint256 i = 0; i < _keys.length; i++) {
-            IERC734(_identity).addKey(_keys[i].keyHash, _keys[i].purpose, _keys[i].keyType);
-            KeyManager(_identity).setKeyData(_keys[i].keyHash, _keys[i].signerData);
+            KeyManager(_identity)
+                .addKeyWithData(
+                    _keys[i].keyHash, _keys[i].purpose, _keys[i].keyType, _keys[i].signerData, _keys[i].clientData
+                );
         }
 
         IERC734(_identity).removeKey(keccak256(abi.encodePacked(address(this))), KeyPurposes.MANAGEMENT);

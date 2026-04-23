@@ -53,10 +53,8 @@ contract WebAuthnTest is OnchainIDSetup {
         p256KeyHash = keccak256(p256Signer);
 
         // Register P-256 key on alice's identity with ACTION purpose
-        vm.startPrank(alice);
-        aliceIdentity.addKey(p256KeyHash, KeyPurposes.ACTION, KeyTypes.WEBAUTHN);
-        aliceIdentity.setKeyData(p256KeyHash, p256Signer);
-        vm.stopPrank();
+        vm.prank(alice);
+        aliceIdentity.addKeyWithData(p256KeyHash, KeyPurposes.ACTION, KeyTypes.WEBAUTHN, p256Signer, "");
     }
 
     // ========= execute() with P-256 signature =========
@@ -83,10 +81,8 @@ contract WebAuthnTest is OnchainIDSetup {
         bytes memory mgmtSigner = abi.encodePacked(address(p256Verifier), bytes32(mqx), bytes32(mqy));
         bytes32 mgmtKeyHash = keccak256(mgmtSigner);
 
-        vm.startPrank(alice);
-        aliceIdentity.addKey(mgmtKeyHash, KeyPurposes.MANAGEMENT, KeyTypes.WEBAUTHN);
-        aliceIdentity.setKeyData(mgmtKeyHash, mgmtSigner);
-        vm.stopPrank();
+        vm.prank(alice);
+        aliceIdentity.addKeyWithData(mgmtKeyHash, KeyPurposes.MANAGEMENT, KeyTypes.WEBAUTHN, mgmtSigner, "");
 
         // Management P-256 key can execute self-calls
         address newAddr = makeAddr("newP256Key");
@@ -161,10 +157,8 @@ contract WebAuthnTest is OnchainIDSetup {
         bytes32 issuerKeyHash = keccak256(issuerSigner);
 
         // Register P-256 key as CLAIM_SIGNER on claimIssuer
-        vm.startPrank(claimIssuerOwner);
-        claimIssuer.addKey(issuerKeyHash, KeyPurposes.CLAIM_SIGNER, KeyTypes.WEBAUTHN);
-        claimIssuer.setKeyData(issuerKeyHash, issuerSigner);
-        vm.stopPrank();
+        vm.prank(claimIssuerOwner);
+        claimIssuer.addKeyWithData(issuerKeyHash, KeyPurposes.CLAIM_SIGNER, KeyTypes.WEBAUTHN, issuerSigner, "");
 
         // Build claim data
         uint256 topic = 42;
@@ -191,10 +185,8 @@ contract WebAuthnTest is OnchainIDSetup {
         bytes memory issuerSigner = abi.encodePacked(address(p256Verifier), bytes32(iqx), bytes32(iqy));
         bytes32 issuerKeyHash = keccak256(issuerSigner);
 
-        vm.startPrank(claimIssuerOwner);
-        claimIssuer.addKey(issuerKeyHash, KeyPurposes.CLAIM_SIGNER, KeyTypes.WEBAUTHN);
-        claimIssuer.setKeyData(issuerKeyHash, issuerSigner);
-        vm.stopPrank();
+        vm.prank(claimIssuerOwner);
+        claimIssuer.addKeyWithData(issuerKeyHash, KeyPurposes.CLAIM_SIGNER, KeyTypes.WEBAUTHN, issuerSigner, "");
 
         uint256 topic = 42;
         bytes memory claimData = hex"0042";
@@ -218,10 +210,8 @@ contract WebAuthnTest is OnchainIDSetup {
         bytes memory issuerSigner = abi.encodePacked(address(p256Verifier), bytes32(iqx), bytes32(iqy));
         bytes32 issuerKeyHash = keccak256(issuerSigner);
 
-        vm.startPrank(claimIssuerOwner);
-        claimIssuer.addKey(issuerKeyHash, KeyPurposes.CLAIM_SIGNER, KeyTypes.WEBAUTHN);
-        claimIssuer.setKeyData(issuerKeyHash, issuerSigner);
-        vm.stopPrank();
+        vm.prank(claimIssuerOwner);
+        claimIssuer.addKeyWithData(issuerKeyHash, KeyPurposes.CLAIM_SIGNER, KeyTypes.WEBAUTHN, issuerSigner, "");
 
         uint256 topic = 999;
         bytes memory claimData = hex"deadbeef";
@@ -252,10 +242,8 @@ contract WebAuthnTest is OnchainIDSetup {
         // - david: ACTION (ECDSA, from OnchainIDSetup)
         // - p256KeyHash: ACTION (P-256, from this test's setUp)
 
-        // Set keyData for david (ACTION ECDSA key) — OnchainIDSetup doesn't set it
+        // david's signerData is already set via OnchainIDSetup
         bytes32 davidKeyHash = ClaimSignerHelper.addressToKey(david);
-        vm.prank(alice);
-        aliceIdentity.setKeyData(davidKeyHash, abi.encodePacked(david));
 
         // Execute with ECDSA key (david)
         bytes memory callData = abi.encodeCall(P256Counter.increment, ());
@@ -314,10 +302,8 @@ contract WebAuthnTest is OnchainIDSetup {
         bytes memory claimSigner = abi.encodePacked(address(p256Verifier), bytes32(cqx), bytes32(cqy));
         bytes32 claimKeyHash = keccak256(claimSigner);
 
-        vm.startPrank(alice);
-        aliceIdentity.addKey(claimKeyHash, KeyPurposes.CLAIM_SIGNER, KeyTypes.WEBAUTHN);
-        aliceIdentity.setKeyData(claimKeyHash, claimSigner);
-        vm.stopPrank();
+        vm.prank(alice);
+        aliceIdentity.addKeyWithData(claimKeyHash, KeyPurposes.CLAIM_SIGNER, KeyTypes.WEBAUTHN, claimSigner, "");
 
         bytes32 hash = keccak256("test message");
         (bytes32 r, bytes32 s) = vm.signP256(claimP256Pk, hash);
@@ -341,7 +327,7 @@ contract WebAuthnTest is OnchainIDSetup {
         assertEq(purposes[0], KeyPurposes.ACTION, "Purpose should be ACTION");
 
         // Verify keyData
-        bytes memory storedSigner = aliceIdentity.getKeyData(p256KeyHash);
+        (bytes memory storedSigner,) = aliceIdentity.getKeyData(p256KeyHash);
         assertEq(storedSigner, p256Signer, "Signer bytes should match");
         assertEq(storedSigner.length, 84, "ERC-7913 signer should be 84 bytes (20 + 32 + 32)");
     }
