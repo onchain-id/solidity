@@ -41,7 +41,6 @@ contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
         override
         initializer
     {
-        __UUPSUpgradeable_init();
         _getClaimStorage().identityType = IdentityTypes.CLAIM_ISSUER;
         __Identity_init(initialManagementKey);
     }
@@ -93,7 +92,7 @@ contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
         string calldata _uri,
         IIdentity _identity
     ) external delegatedOnly onlyManager {
-        require(isClaimValid(_identity, _topic, _scheme, _signature, _data), Errors.InvalidClaim());
+        require(isClaimValid(_identity, _topic, _signature, _data), Errors.InvalidClaim());
 
         bytes memory addClaimData = abi.encodeWithSelector(
             _identity.addClaim.selector, _topic, _scheme, address(this), _signature, _data, _uri
@@ -110,14 +109,17 @@ contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
      *  @dev See {IClaimIssuer-isClaimValid}.
      *  @notice Extends Identity's isClaimValid with claim revocation check.
      */
-    function isClaimValid(IIdentity _identity, uint256 claimTopic, uint256 _scheme, bytes memory sig, bytes memory data)
+    function isClaimValid(IIdentity _identity, uint256 claimTopic, bytes memory sig, bytes memory data)
         public
         view
         override(Identity, IClaimIssuer)
         returns (bool claimValid)
     {
+        // 1. Check if the claim signature has been revoked by this issuer.
         if (isClaimRevoked(sig)) return false;
-        return super.isClaimValid(_identity, claimTopic, _scheme, sig, data);
+
+        // 2. Delegate to Identity.isClaimValid for EIP-712 digest + SignatureChecker verification.
+        return super.isClaimValid(_identity, claimTopic, sig, data);
     }
 
     /**

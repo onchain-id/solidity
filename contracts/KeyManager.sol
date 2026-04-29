@@ -255,17 +255,6 @@ contract KeyManager is IERC734 {
     }
 
     /**
-     * @dev Internal helper to store the raw signer bytes (ERC-7913 format) for a registered key.
-     * For ECDSA keys: abi.encodePacked(address). For WebAuthn: abi.encodePacked(verifier, qx, qy).
-     * @param _keyHash The key hash to store data for
-     * @param _data The raw signer bytes
-     */
-    function _setKeyData(bytes32 _keyHash, bytes memory _data) internal {
-        _getKeyStorage().keys[_keyHash].signerData = _data;
-        emit KeyDataSet(_keyHash);
-    }
-
-    /**
      * @notice Get all data for a key including signer and client data.
      * @param _keyHash The key hash to get data for
      * @return signerData The raw signer bytes (ERC-7913 format) used for on-chain signature verification
@@ -283,14 +272,13 @@ contract KeyManager is IERC734 {
 
     /**
      * @notice Register a key with signer data and client data in a single transaction.
-     * @dev Combines addKey + setKeyData + setClientData. Useful for WebAuthn keys where
+     * @dev Combines addKey + signerData + clientData setup. Useful for WebAuthn keys where
      * signerData (verifier + pubkey) and clientData (credentialId) must both be set.
      * @param _key The key hash (keccak256 of signerData)
      * @param _purpose The key purpose
      * @param _type The key type (ECDSA=1, RSA=2, WEBAUTHN=3)
      * @param _signerData ERC-7913 signer bytes for on-chain signature verification
      * @param _clientData Non-cryptographic metadata (e.g. WebAuthn credentialId)
-     * @return success True if the key was successfully added
      */
     function addKeyWithData(
         bytes32 _key,
@@ -298,22 +286,15 @@ contract KeyManager is IERC734 {
         uint256 _type,
         bytes memory _signerData,
         bytes memory _clientData
-    ) external virtual delegatedOnly onlyManager returns (bool success) {
+    ) external virtual delegatedOnly onlyManager {
         addKey(_key, _purpose, _type);
-        _setKeyData(_key, _signerData);
-        _setClientData(_key, _clientData);
-        return true;
-    }
 
-    /**
-     * @dev Internal helper to store non-cryptographic client metadata for a key.
-     * This data is NOT used for on-chain signature verification.
-     * @param _keyHash The key hash to store client data for
-     * @param _data The client metadata bytes (e.g. WebAuthn credentialId)
-     */
-    function _setClientData(bytes32 _keyHash, bytes memory _data) internal {
-        _getKeyStorage().keys[_keyHash].clientData = _data;
-        emit ClientDataSet(_keyHash);
+        KeyStorage storage ks = _getKeyStorage();
+        ks.keys[_key].signerData = _signerData;
+        emit KeyDataSet(_key);
+
+        ks.keys[_key].clientData = _clientData;
+        emit ClientDataSet(_key);
     }
 
     /**

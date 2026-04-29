@@ -9,12 +9,11 @@ contract TestIdentityUtilities is IdentityUtilities {
     function checkIsClaimValid(
         address identity,
         uint256 topicId,
-        uint256 scheme,
         address issuer,
         bytes memory signature,
         bytes memory data
     ) external view returns (bool) {
-        return _isClaimValid(identity, topicId, scheme, issuer, signature, data);
+        return _isClaimValid(identity, topicId, issuer, signature, data);
     }
 
 }

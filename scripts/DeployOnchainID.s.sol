@@ -3,6 +3,9 @@ pragma solidity ^0.8.27;
 
 import { Script, console } from "forge-std/Script.sol";
 
+import {
+    ERC7913WebAuthnVerifier
+} from "@openzeppelin/contracts/utils/cryptography/verifiers/ERC7913WebAuthnVerifier.sol";
 import { ClaimIssuer } from "contracts/ClaimIssuer.sol";
 import { Identity } from "contracts/Identity.sol";
 import { IdentityUtilities } from "contracts/IdentityUtilities.sol";
@@ -78,6 +81,10 @@ contract DeployOnchainID is Script {
         Gateway gateway = new Gateway(address(idFactory), gatewaySigners);
         console.log("Gateway:", address(gateway));
 
+        // 8. ERC-7913 WebAuthn Verifier (stateless — verifies P-256 WebAuthn assertions on-chain)
+        ERC7913WebAuthnVerifier webAuthnVerifier = new ERC7913WebAuthnVerifier();
+        console.log("ERC7913WebAuthnVerifier:", address(webAuthnVerifier));
+
         // Transfer IdFactory ownership to Gateway so it can deploy identities
         idFactory.transferOwnership(address(gateway));
         console.log("IdFactory ownership transferred to Gateway");
@@ -95,6 +102,7 @@ contract DeployOnchainID is Script {
         console.log("IdFactory:              ", address(idFactory));
         console.log("ClaimIssuerFactory:     ", address(claimIssuerFactory));
         console.log("Gateway:                ", address(gateway));
+        console.log("ERC7913WebAuthnVerifier:", address(webAuthnVerifier));
         console.log("=========================================");
     }
 

@@ -34,7 +34,7 @@ contract ClaimIssuerTest is OnchainIDSetup {
     function test_revokeClaim_shouldRevoke() public {
         assertTrue(
             claimIssuer.isClaimValid(
-                IIdentity(address(aliceIdentity)), aliceClaim666.topic, 1, aliceClaim666.signature, aliceClaim666.data
+                IIdentity(address(aliceIdentity)), aliceClaim666.topic, aliceClaim666.signature, aliceClaim666.data
             )
         );
 
@@ -46,7 +46,7 @@ contract ClaimIssuerTest is OnchainIDSetup {
         assertTrue(claimIssuer.isClaimRevoked(aliceClaim666.signature));
         assertFalse(
             claimIssuer.isClaimValid(
-                IIdentity(address(aliceIdentity)), aliceClaim666.topic, 1, aliceClaim666.signature, aliceClaim666.data
+                IIdentity(address(aliceIdentity)), aliceClaim666.topic, aliceClaim666.signature, aliceClaim666.data
             )
         );
     }
@@ -71,7 +71,7 @@ contract ClaimIssuerTest is OnchainIDSetup {
     function test_revokeClaimBySignature_shouldRevoke() public {
         assertTrue(
             claimIssuer.isClaimValid(
-                IIdentity(address(aliceIdentity)), aliceClaim666.topic, 1, aliceClaim666.signature, aliceClaim666.data
+                IIdentity(address(aliceIdentity)), aliceClaim666.topic, aliceClaim666.signature, aliceClaim666.data
             )
         );
 
@@ -83,7 +83,7 @@ contract ClaimIssuerTest is OnchainIDSetup {
         assertTrue(claimIssuer.isClaimRevoked(aliceClaim666.signature));
         assertFalse(
             claimIssuer.isClaimValid(
-                IIdentity(address(aliceIdentity)), aliceClaim666.topic, 1, aliceClaim666.signature, aliceClaim666.data
+                IIdentity(address(aliceIdentity)), aliceClaim666.topic, aliceClaim666.signature, aliceClaim666.data
             )
         );
     }
@@ -97,7 +97,7 @@ contract ClaimIssuerTest is OnchainIDSetup {
 
         assertFalse(
             claimIssuer.isClaimValid(
-                IIdentity(address(aliceIdentity)), aliceClaim666.topic, 1, invalidSig, aliceClaim666.data
+                IIdentity(address(aliceIdentity)), aliceClaim666.topic, invalidSig, aliceClaim666.data
             )
         );
     }
@@ -108,7 +108,7 @@ contract ClaimIssuerTest is OnchainIDSetup {
 
         assertFalse(
             claimIssuer.isClaimValid(
-                IIdentity(address(aliceIdentity)), aliceClaim666.topic, 1, invalidSig, aliceClaim666.data
+                IIdentity(address(aliceIdentity)), aliceClaim666.topic, invalidSig, aliceClaim666.data
             )
         );
     }
@@ -119,7 +119,7 @@ contract ClaimIssuerTest is OnchainIDSetup {
 
         assertFalse(
             claimIssuer.isClaimValid(
-                IIdentity(address(aliceIdentity)), aliceClaim666.topic, 1, invalidSig, aliceClaim666.data
+                IIdentity(address(aliceIdentity)), aliceClaim666.topic, invalidSig, aliceClaim666.data
             )
         );
     }
@@ -127,7 +127,7 @@ contract ClaimIssuerTest is OnchainIDSetup {
     function test_signatureValidation_validSignature() public view {
         assertTrue(
             claimIssuer.isClaimValid(
-                IIdentity(address(aliceIdentity)), aliceClaim666.topic, 1, aliceClaim666.signature, aliceClaim666.data
+                IIdentity(address(aliceIdentity)), aliceClaim666.topic, aliceClaim666.signature, aliceClaim666.data
             )
         );
     }
@@ -144,12 +144,13 @@ contract ClaimIssuerTest is OnchainIDSetup {
         // Sign a claim with the CLAIM_ADDER key
         uint256 topic = 999;
         bytes memory data = hex"0099";
-        bytes memory signature =
-            ClaimSignerHelper.signClaim(claimAdderPk, claimAdderAddr, address(aliceIdentity), topic, data);
+        bytes memory signature = ClaimSignerHelper.signClaim(
+            claimAdderPk, claimAdderAddr, address(claimIssuer), address(aliceIdentity), topic, data
+        );
 
         // isClaimValid should return false because CLAIM_ADDER cannot sign claims
         assertFalse(
-            claimIssuer.isClaimValid(IIdentity(address(aliceIdentity)), topic, 1, signature, data),
+            claimIssuer.isClaimValid(IIdentity(address(aliceIdentity)), topic, signature, data),
             "CLAIM_ADDER key should not validate claim signatures"
         );
     }
@@ -170,7 +171,7 @@ contract ClaimIssuerTest is OnchainIDSetup {
 
         vm.prank(nonOwner);
         vm.expectRevert(Errors.SenderDoesNotHaveManagementKey.selector);
-        proxy.upgradeTo(address(newImpl));
+        proxy.upgradeToAndCall(address(newImpl), "");
     }
 
     function test_upgrade_shouldUpgrade() public {
@@ -185,7 +186,7 @@ contract ClaimIssuerTest is OnchainIDSetup {
         ClaimIssuer newImpl = new ClaimIssuer(freshDeployer);
 
         vm.prank(freshDeployer);
-        proxy.upgradeTo(address(newImpl));
+        proxy.upgradeToAndCall(address(newImpl), "");
 
         assertTrue(proxy.keyHasPurpose(ClaimSignerHelper.addressToKey(freshDeployer), KeyPurposes.MANAGEMENT));
     }

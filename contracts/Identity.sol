@@ -63,6 +63,9 @@ contract Identity is Initializable, IIdentity, SmartAccount, MulticallUpgradeabl
         abi.encode(uint256(keccak256(bytes("onchainid.identity.claim.storage"))) - 1)
     ) & ~bytes32(uint256(0xff));
 
+    /// @dev EIP-712 typehash for claim signing: Claim(address identity,uint256 topic,bytes data)
+    bytes32 internal constant _CLAIM_TYPEHASH = keccak256("Claim(address identity,uint256 topic,bytes data)");
+
     // Key management functionality is inherited from KeyManager contract
 
     // ========= Modifiers =========
@@ -163,7 +166,7 @@ contract Identity is Initializable, IIdentity, SmartAccount, MulticallUpgradeabl
      * Claim validation:
      * - If the issuer is not the identity itself, the claim must be validated by the issuer
      * - Self-issued claims are automatically valid
-     * - The signature must follow the structure: keccak256(abi.encode(identityHolder_address, topic, data))
+     * - The signature must be over the EIP-712 typed data hash produced by `getClaimHash(identity, topic, data)`
      *
      * Access control: Only CLAIM_SIGNER keys can add claims.
      *
@@ -185,7 +188,7 @@ contract Identity is Initializable, IIdentity, SmartAccount, MulticallUpgradeabl
     ) public delegatedOnly onlyClaimKey returns (bytes32 claimRequestId) {
         // 1. Validate claim if issuer is not self
         require(
-            IClaimIssuer(_issuer).isClaimValid(IIdentity(address(this)), _topic, _scheme, _signature, _data),
+            IClaimIssuer(_issuer).isClaimValid(IIdentity(address(this)), _topic, _signature, _data),
             Errors.InvalidClaim()
         );
 
@@ -285,34 +288,58 @@ contract Identity is Initializable, IIdentity, SmartAccount, MulticallUpgradeabl
      * All signature schemes (ECDSA, WebAuthn, RSA, etc.) use the same format:
      * `sig = abi.encode(signer, actualSignature)`
      *
-     * SignatureChecker dispatches based on signer length:
-     * - 20 bytes (address): ECDSA ecrecover or ERC-1271
-     * - >20 bytes (verifier || key): ERC-7913 verifier
-     *
-     * The claim issuer signs `keccak256(abi.encode(identity, topic, data))` directly.
+     * The claim digest is an EIP-712 typed data hash, allowing EOA wallets to use
+     * `signTypedData` (readable prompts) and WebAuthn/passkey signers to use the
+     * digest as an opaque challenge — both verify against the same hash.
      *
      * @param _identity the identity contract related to the claim
      * @param claimTopic the claim topic of the claim
-     * @param _scheme the verification scheme (unused for routing — kept for interface compat)
      * @param sig the signature: abi.encode(signer, actualSignature)
      * @param data the data field of the claim
      * @return claimValid true if the claim is valid, false otherwise
      */
-    function isClaimValid(IIdentity _identity, uint256 claimTopic, uint256 _scheme, bytes memory sig, bytes memory data)
+    function isClaimValid(IIdentity _identity, uint256 claimTopic, bytes memory sig, bytes memory data)
         public
         view
         virtual
         override
         returns (bool claimValid)
     {
-        bytes32 dataHash = keccak256(abi.encode(_identity, claimTopic, data));
+        // 1. Build the EIP-712 struct hash. `data` is dynamic, so it must be hashed
+        //    per EIP-712 encodeData rules.
+        bytes32 structHash = keccak256(abi.encode(_CLAIM_TYPEHASH, address(_identity), claimTopic, keccak256(data)));
 
+        // 2. Wrap with this contract's domain separator to produce the digest the
+        //    issuer actually signed (matches eth_signTypedData_v4 output).
+        bytes32 digest = _hashTypedDataV4(structHash);
+
+        // 3. Decode the unified ERC-7913 signature format.
         (bytes memory signer, bytes memory actualSig) = abi.decode(sig, (bytes, bytes));
-        bytes32 keyHash = keccak256(signer);
 
-        if (!keyHasPurpose(keyHash, KeyPurposes.CLAIM_SIGNER)) return false;
+        // 4. Verify the signer is registered as a CLAIM_SIGNER on this identity.
+        if (!keyHasPurpose(keccak256(signer), KeyPurposes.CLAIM_SIGNER)) return false;
 
-        return SignatureChecker.isValidSignatureNow(signer, dataHash, actualSig);
+        // 5. Dispatch through SignatureChecker:
+        //    - 20-byte signer → ECDSA recover (EIP-712 prompt in MetaMask) or ERC-1271
+        //    - >20-byte signer → ERC-7913 verifier (WebAuthn / RSA / etc.)
+        return SignatureChecker.isValidSignatureNow(signer, digest, actualSig);
+    }
+
+    /**
+     * @dev Computes the EIP-712 claim digest for off-chain signing.
+     *
+     * Frontend computes the same hash using `signTypedData` (EOA) or passes it as the
+     * WebAuthn challenge (passkey). Mirrors the pattern of `getOperationHash` in SmartAccount.
+     *
+     * @param _identity The identity address the claim is for
+     * @param _topic The claim topic
+     * @param _data The claim data
+     * @return The EIP-712 typed data hash
+     */
+    function getClaimHash(address _identity, uint256 _topic, bytes memory _data) public view returns (bytes32) {
+        // EIP-712 struct hash: dynamic `_data` is hashed per encodeData rules.
+        bytes32 structHash = keccak256(abi.encode(_CLAIM_TYPEHASH, _identity, _topic, keccak256(_data)));
+        return _hashTypedDataV4(structHash);
     }
 
     /**

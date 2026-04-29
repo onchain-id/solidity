@@ -182,18 +182,13 @@ contract IdentityUtilities is IIdentityUtilities, AccessControlUpgradeable, UUPS
         }
     }
 
-    function _isClaimValid(
-        address identity,
-        uint256 topicId,
-        uint256 scheme,
-        address issuer,
-        bytes memory signature,
-        bytes memory data
-    ) internal view returns (bool) {
+    function _isClaimValid(address identity, uint256 topicId, address issuer, bytes memory signature, bytes memory data)
+        internal
+        view
+        returns (bool)
+    {
         if (issuer == address(0)) return false;
-        try IClaimIssuer(issuer).isClaimValid(IIdentity(identity), topicId, scheme, signature, data) returns (
-            bool valid
-        ) {
+        try IClaimIssuer(issuer).isClaimValid(IIdentity(identity), topicId, signature, data) returns (bool valid) {
             return valid;
         } catch {
             return false;
@@ -214,7 +209,7 @@ contract IdentityUtilities is IIdentityUtilities, AccessControlUpgradeable, UUPS
             string memory uri
         ) = IIdentity(identity).getClaim(claimId);
 
-        bool isValid = _isClaimValid(identity, topicId, scheme, issuer, signature, data);
+        bool isValid = _isClaimValid(identity, topicId, issuer, signature, data);
 
         info = ClaimInfo({
             topic: topicInfo,

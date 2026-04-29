@@ -164,17 +164,16 @@ contract WebAuthnTest is OnchainIDSetup {
         uint256 topic = 42;
         bytes memory claimData = hex"0042";
 
-        // Sign claim with P-256: dataHash = keccak256(abi.encode(identity, topic, data))
-        bytes32 dataHash = keccak256(abi.encode(address(aliceIdentity), topic, claimData));
-        (bytes32 r, bytes32 s) = vm.signP256(issuerP256Pk, dataHash);
+        // Sign claim with P-256: use the EIP-712 digest from the issuer contract
+        bytes32 digest = claimIssuer.getClaimHash(address(aliceIdentity), topic, claimData);
+        (bytes32 r, bytes32 s) = vm.signP256(issuerP256Pk, digest);
         bytes memory rawSig = abi.encodePacked(r, s);
 
         // Wrap in unified format: abi.encode(signer, actualSignature)
         bytes memory claimSig = abi.encode(issuerSigner, rawSig);
 
         // Validate claim
-        bool valid =
-            claimIssuer.isClaimValid(IIdentity(address(aliceIdentity)), topic, KeyTypes.WEBAUTHN, claimSig, claimData);
+        bool valid = claimIssuer.isClaimValid(IIdentity(address(aliceIdentity)), topic, claimSig, claimData);
         assertTrue(valid, "P-256 signed claim should be valid");
     }
 
@@ -190,16 +189,15 @@ contract WebAuthnTest is OnchainIDSetup {
 
         uint256 topic = 42;
         bytes memory claimData = hex"0042";
-        bytes32 dataHash = keccak256(abi.encode(address(aliceIdentity), topic, claimData));
+        bytes32 digest = claimIssuer.getClaimHash(address(aliceIdentity), topic, claimData);
 
         // Sign with wrong key
         uint256 wrongPk = 0x11112222;
-        (bytes32 r, bytes32 s) = vm.signP256(wrongPk, dataHash);
+        (bytes32 r, bytes32 s) = vm.signP256(wrongPk, digest);
         bytes memory rawSig = abi.encodePacked(r, s);
         bytes memory claimSig = abi.encode(issuerSigner, rawSig);
 
-        bool valid =
-            claimIssuer.isClaimValid(IIdentity(address(aliceIdentity)), topic, KeyTypes.WEBAUTHN, claimSig, claimData);
+        bool valid = claimIssuer.isClaimValid(IIdentity(address(aliceIdentity)), topic, claimSig, claimData);
         assertFalse(valid, "Claim signed with wrong P-256 key should be invalid");
     }
 
@@ -217,9 +215,9 @@ contract WebAuthnTest is OnchainIDSetup {
         bytes memory claimData = hex"deadbeef";
         string memory uri = "https://example.com/p256claim";
 
-        // Sign claim
-        bytes32 dataHash = keccak256(abi.encode(address(aliceIdentity), topic, claimData));
-        (bytes32 r, bytes32 s) = vm.signP256(issuerP256Pk, dataHash);
+        // Sign claim using the EIP-712 digest from the issuer contract
+        bytes32 digest = claimIssuer.getClaimHash(address(aliceIdentity), topic, claimData);
+        (bytes32 r, bytes32 s) = vm.signP256(issuerP256Pk, digest);
         bytes memory rawSig = abi.encodePacked(r, s);
         bytes memory claimSig = abi.encode(issuerSigner, rawSig);
 

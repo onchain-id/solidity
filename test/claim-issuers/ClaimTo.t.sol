@@ -23,8 +23,9 @@ contract ClaimToTest is OnchainIDSetup {
         uint256 topic = 999;
         bytes memory data = hex"0099";
         string memory uri = "https://example.com/new-claim";
-        bytes memory signature =
-            ClaimSignerHelper.signClaim(claimIssuerOwnerPk, claimIssuerOwner, address(aliceIdentity), topic, data);
+        bytes memory signature = ClaimSignerHelper.signClaim(
+            claimIssuerOwnerPk, claimIssuerOwner, address(claimIssuer), address(aliceIdentity), topic, data
+        );
 
         // Call addClaimTo (last param is IIdentity, not address)
         vm.prank(claimIssuerOwner);
@@ -92,8 +93,9 @@ contract ClaimToTest is OnchainIDSetup {
         uint256 topic = 999;
         bytes memory data = hex"0099";
         string memory uri = "https://example.com/new-claim";
-        bytes memory signature =
-            ClaimSignerHelper.signClaim(claimIssuerOwnerPk, claimIssuerOwner, address(aliceIdentity), topic, data);
+        bytes memory signature = ClaimSignerHelper.signClaim(
+            claimIssuerOwnerPk, claimIssuerOwner, address(claimIssuer), address(aliceIdentity), topic, data
+        );
 
         vm.prank(claimIssuerOwner);
         claimIssuer.addClaimTo(topic, 1, signature, data, uri, IIdentity(address(aliceIdentity)));
@@ -118,8 +120,9 @@ contract ClaimToTest is OnchainIDSetup {
         uint256 topic = 999;
         bytes memory data = hex"0099";
         string memory uri = "https://example.com/new-claim";
-        bytes memory signature =
-            ClaimSignerHelper.signClaim(claimIssuerOwnerPk, claimIssuerOwner, address(aliceIdentity), topic, data);
+        bytes memory signature = ClaimSignerHelper.signClaim(
+            claimIssuerOwnerPk, claimIssuerOwner, address(claimIssuer), address(aliceIdentity), topic, data
+        );
 
         vm.prank(claimIssuerOwner);
         claimIssuer.addClaimTo(topic, 1, signature, data, uri, IIdentity(address(aliceIdentity)));
@@ -156,8 +159,9 @@ contract ClaimToTest is OnchainIDSetup {
         uint256 topic = 999;
         bytes memory data = hex"0099";
         string memory uri = "https://example.com/new-claim";
-        bytes memory signature =
-            ClaimSignerHelper.signClaim(claimIssuerOwnerPk, claimIssuerOwner, address(aliceIdentity), topic, data);
+        bytes memory signature = ClaimSignerHelper.signClaim(
+            claimIssuerOwnerPk, claimIssuerOwner, address(claimIssuer), address(aliceIdentity), topic, data
+        );
 
         vm.prank(claimIssuerOwner);
         claimIssuer.addClaimTo(topic, 1, signature, data, uri, IIdentity(address(aliceIdentity)));
@@ -187,8 +191,9 @@ contract ClaimToTest is OnchainIDSetup {
 
         uint256 topic = 999;
         bytes memory data = hex"0099";
-        bytes memory signature =
-            ClaimSignerHelper.signClaim(claimIssuerOwnerPk, claimIssuerOwner, address(invalidIdentity), topic, data);
+        bytes memory signature = ClaimSignerHelper.signClaim(
+            claimIssuerOwnerPk, claimIssuerOwner, address(claimIssuer), address(invalidIdentity), topic, data
+        );
 
         vm.prank(claimIssuerOwner);
         vm.expectRevert(Errors.CallFailed.selector);

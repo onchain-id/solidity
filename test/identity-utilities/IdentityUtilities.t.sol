@@ -893,10 +893,12 @@ contract IdentityUtilitiesTest is Test {
         bytes memory claimData1 = abi.encode("verified");
         bytes memory claimData2 = abi.encode(uint8(2));
 
-        bytes memory sig1 =
-            ClaimSignerHelper.signClaim(claimIssuerOwnerPk, claimIssuerOwner, address(identity), 1001, claimData1);
-        bytes memory sig2 =
-            ClaimSignerHelper.signClaim(claimIssuerOwnerPk, claimIssuerOwner, address(identity), 1002, claimData2);
+        bytes memory sig1 = ClaimSignerHelper.signClaim(
+            claimIssuerOwnerPk, claimIssuerOwner, address(ci), address(identity), 1001, claimData1
+        );
+        bytes memory sig2 = ClaimSignerHelper.signClaim(
+            claimIssuerOwnerPk, claimIssuerOwner, address(ci), address(identity), 1002, claimData2
+        );
 
         // Add claims to identity via claimSigner (has CLAIM_SIGNER key)
         vm.startPrank(claimSigner);
@@ -952,7 +954,8 @@ contract IdentityUtilitiesTest is Test {
 
         // Sign claim properly for self-attested claim
         bytes memory claimData = hex"";
-        bytes memory signature = ClaimSignerHelper.signClaim(adminPk, admin, address(identity), 3004, claimData);
+        bytes memory signature =
+            ClaimSignerHelper.signClaim(adminPk, admin, address(identity), address(identity), 3004, claimData);
 
         // Add a self-attested claim with valid signature
         vm.prank(admin);
@@ -975,7 +978,7 @@ contract IdentityUtilitiesTest is Test {
         TestIdentityUtilities testUtil = new TestIdentityUtilities();
         Identity identity = IdentityHelper.deployIdentityWithProxy(admin);
 
-        bool result = testUtil.checkIsClaimValid(address(identity), 3007, 1, address(0), hex"", hex"");
+        bool result = testUtil.checkIsClaimValid(address(identity), 3007, address(0), hex"", hex"");
         assertFalse(result);
     }
 
@@ -986,7 +989,7 @@ contract IdentityUtilitiesTest is Test {
         // Deploy a contract that does not implement isClaimValid (catches and returns false)
         TestContract invalidContract = new TestContract();
 
-        bool result = testUtil.checkIsClaimValid(address(identity), 3008, 1, address(invalidContract), hex"", hex"");
+        bool result = testUtil.checkIsClaimValid(address(identity), 3008, address(invalidContract), hex"", hex"");
         assertFalse(result);
     }
 
