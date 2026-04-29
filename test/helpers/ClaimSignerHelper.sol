@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
+import { Identity } from "contracts/Identity.sol";
 import { Vm } from "forge-std/Vm.sol";
 
 /// @notice Helper library for building and signing claims in tests
-/// @dev Centralizes the EIP-191 signature logic used across many test files
+/// @dev Centralizes the EIP-712 claim signature logic used across many test files
 library ClaimSignerHelper {
 
     struct Claim {
@@ -25,37 +26,46 @@ library ClaimSignerHelper {
         return keccak256(abi.encode(issuer, topic));
     }
 
-    /// @notice Computes the key hash for an address (used in addKey / keyHasPurpose)
+    /// @notice Computes the key hash for an address using abi.encodePacked (unified hashing)
     function addressToKey(address addr) internal pure returns (bytes32) {
-        return keccak256(abi.encode(addr));
+        return keccak256(abi.encodePacked(addr));
     }
 
-    /// @notice Signs a claim using EIP-191 format matching the Identity contract
+    /// @notice Signs a claim using the issuer contract's EIP-712 domain and wraps in ERC-7913 format
+    /// @dev The signer signs the EIP-712 typed data hash from `issuerContract.getClaimHash()`.
+    ///      The returned signature is `abi.encode(signer, rawSig)` where signer = abi.encodePacked(signerAddr).
     /// @param signerPk The private key of the signer
+    /// @param signerAddr The address of the signer (used as the ERC-7913 signer bytes)
+    /// @param issuerContract The issuer contract address (provides the EIP-712 domain)
     /// @param identity The identity address the claim is for
     /// @param topic The claim topic
     /// @param data The claim data
-    /// @return signature The EIP-191 signature (r, s, v packed)
-    function signClaim(uint256 signerPk, address identity, uint256 topic, bytes memory data)
-        internal
-        pure
-        returns (bytes memory)
-    {
-        bytes32 dataHash = keccak256(abi.encode(identity, topic, data));
-        bytes32 ethSignedHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash));
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPk, ethSignedHash);
-        return abi.encodePacked(r, s, v);
+    /// @return signature The wrapped signature: abi.encode(signer, rawSig)
+    function signClaim(
+        uint256 signerPk,
+        address signerAddr,
+        address issuerContract,
+        address identity,
+        uint256 topic,
+        bytes memory data
+    ) internal view returns (bytes memory) {
+        bytes32 digest = Identity(payable(issuerContract)).getClaimHash(identity, topic, data);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPk, digest);
+        bytes memory rawSig = abi.encodePacked(r, s, v);
+        bytes memory signer = abi.encodePacked(signerAddr);
+        return abi.encode(signer, rawSig);
     }
 
-    /// @notice Builds a complete Claim struct with computed id and signature
+    /// @notice Builds a complete Claim struct with computed id and EIP-712 signature
     function buildClaim(
         uint256 signerPk,
+        address signerAddr,
         address identityAddr,
         address issuerAddr,
         uint256 topic,
         bytes memory data,
         string memory uri
-    ) internal pure returns (Claim memory claim) {
+    ) internal view returns (Claim memory claim) {
         claim.identity = identityAddr;
         claim.issuer = issuerAddr;
         claim.topic = topic;
@@ -63,7 +73,7 @@ library ClaimSignerHelper {
         claim.data = data;
         claim.uri = uri;
         claim.id = computeClaimId(issuerAddr, topic);
-        claim.signature = signClaim(signerPk, identityAddr, topic, data);
+        claim.signature = signClaim(signerPk, signerAddr, issuerAddr, identityAddr, topic, data);
     }
 
 }

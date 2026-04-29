@@ -58,9 +58,9 @@ interface IERC735 {
      *
      * Specification: Add or update a claim from an issuer.
      *
-     * _signature is a signed message of the following structure:
-     * `keccak256(abi.encode(address identityHolder_address, uint256 topic, bytes data))`.
-     * Claim IDs are generated using `keccak256(abi.encode(address issuer_address + uint256 topic))`.
+     * _signature is over an EIP-712 typed data hash computed by the issuer contract's `getClaimHash()`.
+     * The EIP-712 struct is: `Claim(address identity, uint256 topic, bytes data)`.
+     * Claim IDs are generated using `keccak256(abi.encode(address issuer_address, uint256 topic))`.
      */
     function addClaim(
         uint256 _topic,

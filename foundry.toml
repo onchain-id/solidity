@@ -5,10 +5,10 @@ test = "test"
 script = "scripts"
 libs = ["dependencies"]
 
-solc_version = "0.8.27"
+solc_version = "0.8.28"
 optimizer = true
 optimizer_runs = 200
-evm_version = "shanghai"
+evm_version = "cancun"
 
 [profile.default.fmt]
 sort_imports = true
@@ -27,6 +27,6 @@ remappings_regenerate = false
 
 [dependencies]
 forge-std = { version = "v1.14.0", git = "https://github.com/foundry-rs/forge-std.git", tag = "v1.14.0" }
-"@openzeppelin-contracts" = "5.2.0"
-"@openzeppelin-contracts-upgradeable" = "4.9.6"
+"@openzeppelin-contracts" = "5.6.0"
+"@openzeppelin-contracts-upgradeable" = "5.6.0"
 solady = "0.1.15"

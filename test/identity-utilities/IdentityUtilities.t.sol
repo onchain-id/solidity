@@ -885,7 +885,7 @@ contract IdentityUtilitiesTest is Test {
         vm.prank(claimIssuerOwner);
         ci.addKey(ClaimSignerHelper.addressToKey(claimIssuerOwner), KeyPurposes.CLAIM_SIGNER, KeyTypes.ECDSA);
 
-        // Add CLAIM_SIGNER key to identity for claimSigner
+        // Add CLAIM_SIGNER key to identity for claimSigner (uses addressToKey for modifier-based access)
         vm.prank(identityOwner);
         identity.addKey(ClaimSignerHelper.addressToKey(claimSigner), KeyPurposes.CLAIM_SIGNER, KeyTypes.ECDSA);
 
@@ -893,8 +893,12 @@ contract IdentityUtilitiesTest is Test {
         bytes memory claimData1 = abi.encode("verified");
         bytes memory claimData2 = abi.encode(uint8(2));
 
-        bytes memory sig1 = ClaimSignerHelper.signClaim(claimIssuerOwnerPk, address(identity), 1001, claimData1);
-        bytes memory sig2 = ClaimSignerHelper.signClaim(claimIssuerOwnerPk, address(identity), 1002, claimData2);
+        bytes memory sig1 = ClaimSignerHelper.signClaim(
+            claimIssuerOwnerPk, claimIssuerOwner, address(ci), address(identity), 1001, claimData1
+        );
+        bytes memory sig2 = ClaimSignerHelper.signClaim(
+            claimIssuerOwnerPk, claimIssuerOwner, address(ci), address(identity), 1002, claimData2
+        );
 
         // Add claims to identity via claimSigner (has CLAIM_SIGNER key)
         vm.startPrank(claimSigner);
@@ -944,13 +948,14 @@ contract IdentityUtilitiesTest is Test {
         // Deploy Identity
         Identity identity = IdentityHelper.deployIdentityWithProxy(admin);
 
-        // Add CLAIM_SIGNER key for admin on the identity
+        // Add CLAIM_SIGNER key for admin on the identity (unified key hash)
         vm.prank(admin);
         identity.addKey(ClaimSignerHelper.addressToKey(admin), KeyPurposes.CLAIM_SIGNER, KeyTypes.ECDSA);
 
         // Sign claim properly for self-attested claim
         bytes memory claimData = hex"";
-        bytes memory signature = ClaimSignerHelper.signClaim(adminPk, address(identity), 3004, claimData);
+        bytes memory signature =
+            ClaimSignerHelper.signClaim(adminPk, admin, address(identity), address(identity), 3004, claimData);
 
         // Add a self-attested claim with valid signature
         vm.prank(admin);

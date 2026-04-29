@@ -3,6 +3,9 @@ pragma solidity ^0.8.27;
 
 import { IdFactory } from "../factory/IdFactory.sol";
 import { Errors } from "../libraries/Errors.sol";
+import { KeyPurposes } from "../libraries/KeyPurposes.sol";
+import { KeyTypes } from "../libraries/KeyTypes.sol";
+import { Structs } from "../storage/Structs.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
@@ -95,7 +98,8 @@ contract Gateway is Ownable {
         require(approvedSigners[signer], Errors.UnapprovedSigner(signer));
         require(!revokedSignatures[signature], Errors.RevokedSignature(signature));
 
-        return idFactory.createIdentity(identityOwner, salt, identityType, claimAdders);
+        Structs.KeyParam[] memory keys = _buildKeysForWallet(identityOwner, claimAdders);
+        return idFactory.createIdentity(identityOwner, salt, keys, identityType);
     }
 
     /**
@@ -114,7 +118,7 @@ contract Gateway is Ownable {
     function deployIdentityWithSaltAndManagementKeys(
         address identityOwner,
         string memory salt,
-        bytes32[] calldata managementKeys,
+        address[] calldata managementKeys,
         uint256 identityType,
         address[] calldata claimAdders,
         uint256 signatureExpiry,
@@ -138,8 +142,8 @@ contract Gateway is Ownable {
         require(approvedSigners[signer], Errors.UnapprovedSigner(signer));
         require(!revokedSignatures[signature], Errors.RevokedSignature(signature));
 
-        return
-            idFactory.createIdentityWithManagementKeys(identityOwner, salt, managementKeys, identityType, claimAdders);
+        Structs.KeyParam[] memory keys = _buildKeys(managementKeys, claimAdders);
+        return idFactory.createIdentity(identityOwner, salt, keys, identityType);
     }
 
     /**
@@ -154,7 +158,8 @@ contract Gateway is Ownable {
     {
         require(identityOwner != address(0), Errors.ZeroAddress());
 
-        return idFactory.createIdentity(identityOwner, Strings.toHexString(identityOwner), identityType, claimAdders);
+        Structs.KeyParam[] memory keys = _buildKeysForWallet(identityOwner, claimAdders);
+        return idFactory.createIdentity(identityOwner, Strings.toHexString(identityOwner), keys, identityType);
     }
 
     /**
@@ -196,6 +201,52 @@ contract Gateway is Ownable {
     function callFactory(bytes memory data) external onlyOwner {
         (bool success,) = address(idFactory).call(data);
         require(success, Errors.CallToFactoryFailed());
+    }
+
+    /**
+     *  @dev Build a KeyParam array from a single wallet address (as MANAGEMENT key) and optional claim adders.
+     */
+    function _buildKeysForWallet(address wallet, address[] calldata claimAdders)
+        private
+        pure
+        returns (Structs.KeyParam[] memory)
+    {
+        address[] memory mgmtKeys = new address[](1);
+        mgmtKeys[0] = wallet;
+        return _buildKeys(mgmtKeys, claimAdders);
+    }
+
+    /**
+     *  @dev Build a KeyParam array from management key addresses and claim adder addresses.
+     *  @param managementKeys the addresses to add as MANAGEMENT keys.
+     *  @param claimAdders the addresses to add as CLAIM_ADDER keys.
+     */
+    function _buildKeys(address[] memory managementKeys, address[] calldata claimAdders)
+        private
+        pure
+        returns (Structs.KeyParam[] memory keys)
+    {
+        // clientData is empty for ECDSA keys — only needed for non-ECDSA keys (e.g. WebAuthn credentialId)
+        uint256 totalKeys = managementKeys.length + claimAdders.length;
+        keys = new Structs.KeyParam[](totalKeys);
+        for (uint256 i = 0; i < managementKeys.length; i++) {
+            keys[i] = Structs.KeyParam({
+                keyHash: keccak256(abi.encodePacked(managementKeys[i])),
+                purpose: KeyPurposes.MANAGEMENT,
+                keyType: KeyTypes.ECDSA,
+                signerData: abi.encodePacked(managementKeys[i]),
+                clientData: ""
+            });
+        }
+        for (uint256 i = 0; i < claimAdders.length; i++) {
+            keys[managementKeys.length + i] = Structs.KeyParam({
+                keyHash: keccak256(abi.encodePacked(claimAdders[i])),
+                purpose: KeyPurposes.CLAIM_ADDER,
+                keyType: KeyTypes.ECDSA,
+                signerData: abi.encodePacked(claimAdders[i]),
+                clientData: ""
+            });
+        }
     }
 
 }

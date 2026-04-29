@@ -41,7 +41,6 @@ contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
         override
         initializer
     {
-        __UUPSUpgradeable_init();
         _getClaimStorage().identityType = IdentityTypes.CLAIM_ISSUER;
         __Identity_init(initialManagementKey);
     }
@@ -73,7 +72,7 @@ contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
         bytes memory sig;
         bytes memory data;
 
-        (foundClaimTopic, scheme, issuer, sig, data,) = Identity(_identity).getClaim(_claimId);
+        (foundClaimTopic, scheme, issuer, sig, data,) = Identity(payable(_identity)).getClaim(_claimId);
 
         require(!revokedClaims[sig], Errors.ClaimAlreadyRevoked());
 
@@ -108,6 +107,7 @@ contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
 
     /**
      *  @dev See {IClaimIssuer-isClaimValid}.
+     *  @notice Extends Identity's isClaimValid with claim revocation check.
      */
     function isClaimValid(IIdentity _identity, uint256 claimTopic, bytes memory sig, bytes memory data)
         public
@@ -115,23 +115,11 @@ contract ClaimIssuer is IClaimIssuer, Identity, UUPSUpgradeable {
         override(Identity, IClaimIssuer)
         returns (bool claimValid)
     {
-        bytes32 dataHash = keccak256(abi.encode(_identity, claimTopic, data));
-        // Use abi.encodePacked to concatenate the message prefix and the message to sign.
-        bytes32 prefixedHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash));
+        // 1. Check if the claim signature has been revoked by this issuer.
+        if (isClaimRevoked(sig)) return false;
 
-        // Recover address of data signer using OpenZeppelin's ECDSA
-        (address recovered, ECDSA.RecoverError error,) = ECDSA.tryRecover(prefixedHash, sig);
-
-        // If recovery failed, return false
-        if (error != ECDSA.RecoverError.NoError) {
-            return false;
-        }
-
-        // Take hash of recovered address
-        bytes32 hashedAddr = keccak256(abi.encode(recovered));
-
-        // Check if the recovered address has CLAIM_SIGNER purpose (CLAIM_ADDER cannot sign claims)
-        return keyHasPurpose(hashedAddr, KeyPurposes.CLAIM_SIGNER) && !isClaimRevoked(sig);
+        // 2. Delegate to Identity.isClaimValid for EIP-712 digest + SignatureChecker verification.
+        return super.isClaimValid(_identity, claimTopic, sig, data);
     }
 
     /**
