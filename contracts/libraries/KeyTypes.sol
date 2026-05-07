@@ -11,4 +11,7 @@ library KeyTypes {
     /// @dev 2: RSA
     uint256 internal constant RSA = 2;
 
+    /// @dev 3: WEBAUTHN (P-256 / secp256r1 via WebAuthn ceremony, ERC-7913)
+    uint256 internal constant WEBAUTHN = 3;
+
 }

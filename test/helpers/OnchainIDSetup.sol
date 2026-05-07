@@ -12,6 +12,7 @@ import { IdentityTypes } from "contracts/libraries/IdentityTypes.sol";
 import { KeyPurposes } from "contracts/libraries/KeyPurposes.sol";
 import { KeyTypes } from "contracts/libraries/KeyTypes.sol";
 import { ImplementationAuthority } from "contracts/proxy/ImplementationAuthority.sol";
+import { Structs } from "contracts/storage/Structs.sol";
 import { Test } from "forge-std/Test.sol";
 
 /// @notice Base test contract providing full OnchainID infrastructure
@@ -68,25 +69,38 @@ contract OnchainIDSetup is Test {
         // Deploy ClaimIssuer with proxy
         claimIssuer = ClaimIssuerHelper.deployWithProxy(claimIssuerOwner);
 
-        // Add CLAIM_SIGNER key to ClaimIssuer
+        // Add CLAIM_SIGNER key to ClaimIssuer (register under unified key hash)
         vm.prank(claimIssuerOwner);
         claimIssuer.addKey(ClaimSignerHelper.addressToKey(claimIssuerOwner), KeyPurposes.CLAIM_SIGNER, KeyTypes.ECDSA);
 
         // Create alice identity via factory
         vm.prank(deployer);
-        address aliceIdentityAddr =
-            onchainidSetup.idFactory.createIdentity(alice, "alice", IdentityTypes.INDIVIDUAL, new address[](0));
-        aliceIdentity = Identity(aliceIdentityAddr);
+        Structs.KeyParam[] memory aliceKeys = new Structs.KeyParam[](1);
+        aliceKeys[0] = Structs.KeyParam({
+            keyHash: keccak256(abi.encodePacked(alice)),
+            purpose: KeyPurposes.MANAGEMENT,
+            keyType: KeyTypes.ECDSA,
+            signerData: abi.encodePacked(alice),
+            clientData: ""
+        });
+        address aliceIdentityAddr = onchainidSetup.idFactory
+            .createIdentity(alice, IdentityTypes.INDIVIDUAL, "alice", aliceKeys, new Structs.ModuleInstall[](0));
+        aliceIdentity = Identity(payable(aliceIdentityAddr));
 
         // Add carol as CLAIM_SIGNER and david as ACTION key on alice's identity
         vm.startPrank(alice);
-        aliceIdentity.addKey(ClaimSignerHelper.addressToKey(carol), KeyPurposes.CLAIM_SIGNER, KeyTypes.ECDSA);
-        aliceIdentity.addKey(ClaimSignerHelper.addressToKey(david), KeyPurposes.ACTION, KeyTypes.ECDSA);
+        aliceIdentity.addKeyWithData(
+            ClaimSignerHelper.addressToKey(carol), KeyPurposes.CLAIM_SIGNER, KeyTypes.ECDSA, abi.encodePacked(carol), ""
+        );
+        aliceIdentity.addKeyWithData(
+            ClaimSignerHelper.addressToKey(david), KeyPurposes.ACTION, KeyTypes.ECDSA, abi.encodePacked(david), ""
+        );
         vm.stopPrank();
 
         // Build and add alice's claim 666
         aliceClaim666 = ClaimSignerHelper.buildClaim(
             claimIssuerOwnerPk,
+            claimIssuerOwner,
             address(aliceIdentity),
             address(claimIssuer),
             Constants.CLAIM_TOPIC_666,
@@ -106,14 +120,30 @@ contract OnchainIDSetup is Test {
 
         // Create bob identity via factory
         vm.prank(deployer);
-        address bobIdentityAddr =
-            onchainidSetup.idFactory.createIdentity(bob, "bob", IdentityTypes.INDIVIDUAL, new address[](0));
-        bobIdentity = Identity(bobIdentityAddr);
+        Structs.KeyParam[] memory bobKeys = new Structs.KeyParam[](1);
+        bobKeys[0] = Structs.KeyParam({
+            keyHash: keccak256(abi.encodePacked(bob)),
+            purpose: KeyPurposes.MANAGEMENT,
+            keyType: KeyTypes.ECDSA,
+            signerData: abi.encodePacked(bob),
+            clientData: ""
+        });
+        address bobIdentityAddr = onchainidSetup.idFactory
+            .createIdentity(bob, IdentityTypes.INDIVIDUAL, "bob", bobKeys, new Structs.ModuleInstall[](0));
+        bobIdentity = Identity(payable(bobIdentityAddr));
 
         // Create token identity
         vm.prank(deployer);
+        Structs.KeyParam[] memory tokenKeys = new Structs.KeyParam[](1);
+        tokenKeys[0] = Structs.KeyParam({
+            keyHash: keccak256(abi.encodePacked(tokenOwner)),
+            purpose: KeyPurposes.MANAGEMENT,
+            keyType: KeyTypes.ECDSA,
+            signerData: abi.encodePacked(tokenOwner),
+            clientData: ""
+        });
         onchainidSetup.idFactory
-            .createTokenIdentity(Constants.TOKEN_ADDRESS, tokenOwner, "tokenOwner", new address[](0));
+            .createTokenIdentity(Constants.TOKEN_ADDRESS, "tokenOwner", tokenKeys, new Structs.ModuleInstall[](0));
     }
 
     // ---- Convenience getters ----

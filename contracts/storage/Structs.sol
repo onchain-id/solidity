@@ -21,6 +21,10 @@ contract Structs {
         EnumerableSet.UintSet purposes;
         uint256 keyType;
         bytes32 key;
+        /// @dev ERC-7913 signer bytes used for on-chain signature verification
+        bytes signerData;
+        /// @dev Non-cryptographic metadata for dapps (e.g. WebAuthn credentialId). Empty for ECDSA keys.
+        bytes clientData;
     }
 
     /**
@@ -73,6 +77,37 @@ contract Structs {
         bytes signature;
         bytes data;
         string uri;
+    }
+
+    /**
+     *  @dev Definition of the structure of a KeyParam, used by the factory to set up keys on a new identity.
+     *
+     *  keyHash: keccak256(signerData) for the key
+     *  purpose: Key purpose (MANAGEMENT=1, ACTION=2, CLAIM_SIGNER=3, ENCRYPTION=4, CLAIM_ADDER=5)
+     *  keyType: Key type (ECDSA=1, RSA=2, WEBAUTHN=3)
+     *  signerData: ERC-7913 signer bytes (abi.encodePacked(address) for ECDSA, etc.)
+     *  clientData: Non-cryptographic metadata (e.g. WebAuthn credentialId) — not used for on-chain verification
+     */
+    struct KeyParam {
+        bytes32 keyHash;
+        uint256 purpose;
+        uint256 keyType;
+        bytes signerData;
+        bytes clientData;
+    }
+
+    /**
+     *  @dev Definition of an ERC-7579 module to install on an identity during factory deployment.
+     *  The frontend decides which modules (validators, executors, fallback handlers) and their init data.
+     *
+     *  moduleType: ERC-7579 module type (1=VALIDATOR, 2=EXECUTOR, 3=FALLBACK, 4=HOOK)
+     *  module: Address of the module singleton
+     *  initData: Module-specific initialization data (e.g. signer address for ECDSA, keyHash+qx+qy for WebAuthn)
+     */
+    struct ModuleInstall {
+        uint256 moduleType;
+        address module;
+        bytes initData;
     }
 
 }

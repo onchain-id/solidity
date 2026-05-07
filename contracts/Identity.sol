@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import { KeyManager } from "./KeyManager.sol";
+import { SmartAccount } from "./SmartAccount.sol";
 import { IClaimIssuer } from "./interface/IClaimIssuer.sol";
 import { IERC734 } from "./interface/IERC734.sol";
 import { IERC735 } from "./interface/IERC735.sol";
@@ -11,7 +11,8 @@ import { KeyPurposes } from "./libraries/KeyPurposes.sol";
 import { Structs } from "./storage/Structs.sol";
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { MulticallUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/MulticallUpgradeable.sol";
-import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
+import { SignatureChecker } from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
@@ -34,7 +35,7 @@ import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableS
  * @custom:security This contract uses ERC-7201 storage slots to prevent storage collision attacks
  * in upgradeable contracts.
  */
-contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable {
+contract Identity is Initializable, IIdentity, SmartAccount, MulticallUpgradeable {
 
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
@@ -62,6 +63,9 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
         abi.encode(uint256(keccak256(bytes("onchainid.identity.claim.storage"))) - 1)
     ) & ~bytes32(uint256(0xff));
 
+    /// @dev EIP-712 typehash for claim signing: Claim(address identity,uint256 topic,bytes data)
+    bytes32 internal constant _CLAIM_TYPEHASH = keccak256("Claim(address identity,uint256 topic,bytes data)");
+
     // Key management functionality is inherited from KeyManager contract
 
     // ========= Modifiers =========
@@ -69,8 +73,9 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
     /// @notice requires claim key (CLAIM_SIGNER or CLAIM_ADDER) to call this function, or internal call
     modifier onlyClaimKey() {
         require(
-            msg.sender == address(this) || keyHasPurpose(keccak256(abi.encode(msg.sender)), KeyPurposes.CLAIM_SIGNER)
-                || keyHasPurpose(keccak256(abi.encode(msg.sender)), KeyPurposes.CLAIM_ADDER),
+            msg.sender == address(this)
+                || keyHasPurpose(keccak256(abi.encodePacked(msg.sender)), KeyPurposes.CLAIM_SIGNER)
+                || keyHasPurpose(keccak256(abi.encodePacked(msg.sender)), KeyPurposes.CLAIM_ADDER),
             Errors.SenderDoesNotHaveClaimSignerKey()
         );
         _;
@@ -80,7 +85,8 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
     /// @dev CLAIM_ADDER keys are excluded — they can add but not remove claims
     modifier onlyClaimSignerKey() {
         require(
-            msg.sender == address(this) || keyHasPurpose(keccak256(abi.encode(msg.sender)), KeyPurposes.CLAIM_SIGNER),
+            msg.sender == address(this)
+                || keyHasPurpose(keccak256(abi.encodePacked(msg.sender)), KeyPurposes.CLAIM_SIGNER),
             Errors.SenderDoesNotHaveClaimSignerKey()
         );
         _;
@@ -94,7 +100,7 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
      * @param _isLibrary boolean value stating if the contract is library or not
      * calls __Identity_init if contract is not library
      */
-    constructor(address initialManagementKey, bool _isLibrary) {
+    constructor(address initialManagementKey, bool _isLibrary) EIP712("OnchainID", "1") {
         if (!_isLibrary) {
             __Identity_init(initialManagementKey);
         } else {
@@ -110,7 +116,13 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
      */
     function initialize(address initialManagementKey, uint256 _identityType) external virtual initializer {
         _getClaimStorage().identityType = _identityType;
+        __AccountERC7579_init();
         __Identity_init(initialManagementKey);
+    }
+
+    /// @dev See {IERC7579AccountConfig-accountId}.
+    function accountId() public view virtual override returns (string memory) {
+        return "trex.onchainid.identity.v3.0.0";
     }
 
     /**
@@ -160,7 +172,7 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
      * Claim validation:
      * - If the issuer is not the identity itself, the claim must be validated by the issuer
      * - Self-issued claims are automatically valid
-     * - The signature must follow the structure: keccak256(abi.encode(identityHolder_address, topic, data))
+     * - The signature must be over the EIP-712 typed data hash produced by `getClaimHash(identity, topic, data)`
      *
      * Access control: Only CLAIM_SIGNER keys can add claims.
      *
@@ -277,12 +289,18 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
     }
 
     /**
-     * @dev Checks if a claim is valid. Claims issued by the identity are self-attested claims. They do not have a
-     * built-in revocation mechanism and are considered valid as long as their signature is valid and they are still
-     * stored by the identity contract.
+     * @dev Checks if a claim is valid via unified ERC-7913 signature verification.
+     *
+     * All signature schemes (ECDSA, WebAuthn, RSA, etc.) use the same format:
+     * `sig = abi.encode(signer, actualSignature)`
+     *
+     * The claim digest is an EIP-712 typed data hash, allowing EOA wallets to use
+     * `signTypedData` (readable prompts) and WebAuthn/passkey signers to use the
+     * digest as an opaque challenge — both verify against the same hash.
+     *
      * @param _identity the identity contract related to the claim
      * @param claimTopic the claim topic of the claim
-     * @param sig the signature of the claim
+     * @param sig the signature: abi.encode(signer, actualSignature)
      * @param data the data field of the claim
      * @return claimValid true if the claim is valid, false otherwise
      */
@@ -293,25 +311,43 @@ contract Identity is Initializable, IIdentity, KeyManager, MulticallUpgradeable 
         override
         returns (bool claimValid)
     {
-        // Step 1: Create the data hash that was signed
-        bytes32 dataHash = keccak256(abi.encode(_identity, claimTopic, data));
+        // 1. Build the EIP-712 struct hash. `data` is dynamic, so it must be hashed
+        //    per EIP-712 encodeData rules.
+        bytes32 structHash = keccak256(abi.encode(_CLAIM_TYPEHASH, address(_identity), claimTopic, keccak256(data)));
 
-        // Step 2: Add Ethereum signature prefix for EIP-191 compliance
-        bytes32 prefixedHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash));
+        // 2. Wrap with this contract's domain separator to produce the digest the
+        //    issuer actually signed (matches eth_signTypedData_v4 output).
+        bytes32 digest = _hashTypedDataV4(structHash);
 
-        // Step 3: Recover the signer's address from the signature using OpenZeppelin's ECDSA
-        (address recovered, ECDSA.RecoverError error,) = ECDSA.tryRecover(prefixedHash, sig);
+        // 3. Decode the unified ERC-7913 signature format.
+        (bytes memory signer, bytes memory actualSig) = abi.decode(sig, (bytes, bytes));
 
-        // If recovery failed, return false
-        if (error != ECDSA.RecoverError.NoError) {
+        // 4. Verify the signer is registered as a CLAIM_SIGNER on this identity.
+        if (!keyHasPurpose(keccak256(signer), KeyPurposes.CLAIM_SIGNER)) {
             return false;
         }
 
-        // Step 4: Hash the recovered address for key lookup
-        bytes32 hashedAddr = keccak256(abi.encode(recovered));
+        // 5. Dispatch through SignatureChecker:
+        //    - 20-byte signer -> ECDSA recover (EIP-712 prompt in MetaMask) or ERC-1271
+        //    - >20-byte signer -> ERC-7913 verifier (WebAuthn / RSA / etc.)
+        return SignatureChecker.isValidSignatureNow(signer, digest, actualSig);
+    }
 
-        // Step 5: Check if the recovered address has CLAIM_SIGNER purpose (CLAIM_ADDER cannot sign claims)
-        return keyHasPurpose(hashedAddr, KeyPurposes.CLAIM_SIGNER);
+    /**
+     * @dev Computes the EIP-712 claim digest for off-chain signing.
+     *
+     * Frontend computes the same hash using `signTypedData` (EOA) or passes it as the
+     * WebAuthn challenge (passkey). Mirrors the pattern of `getOperationHash` in SmartAccount.
+     *
+     * @param _identity The identity address the claim is for
+     * @param _topic The claim topic
+     * @param _data The claim data
+     * @return The EIP-712 typed data hash
+     */
+    function getClaimHash(address _identity, uint256 _topic, bytes memory _data) public view returns (bytes32) {
+        // EIP-712 struct hash: dynamic `_data` is hashed per encodeData rules.
+        bytes32 structHash = keccak256(abi.encode(_CLAIM_TYPEHASH, _identity, _topic, keccak256(_data)));
+        return _hashTypedDataV4(structHash);
     }
 
     /**
