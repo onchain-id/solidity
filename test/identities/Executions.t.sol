@@ -21,13 +21,15 @@ contract ExecutionsTest is OnchainIDSetup {
     function test_getCurrentNonce_incrementsAfterExecutions() public {
         vm.deal(alice, 1 ether);
 
+        uint256 startNonce = aliceIdentity.getCurrentNonce();
+
         vm.prank(alice);
         aliceIdentity.execute{ value: 10 }(carol, 10, hex"");
-        assertEq(aliceIdentity.getCurrentNonce(), 1);
+        assertEq(aliceIdentity.getCurrentNonce(), startNonce + 1);
 
         vm.prank(alice);
         aliceIdentity.execute{ value: 5 }(carol, 5, hex"");
-        assertEq(aliceIdentity.getCurrentNonce(), 2);
+        assertEq(aliceIdentity.getCurrentNonce(), startNonce + 2);
     }
 
     function test_getExecutionData_validExecutionId() public {
@@ -130,18 +132,21 @@ contract ExecutionsTest is OnchainIDSetup {
         // Encode outer action: execute inner on aliceIdentity from claimIssuer
         bytes memory outerData = abi.encodeCall(KeyManager.execute, (address(aliceIdentity), 0, innerData));
 
+        // Track the nonce before creating the pending request
+        uint256 pendingId = aliceIdentity.getCurrentNonce();
+
         // ClaimIssuer owner executes outer on claimIssuer
         vm.prank(claimIssuerOwner);
         claimIssuer.execute(address(aliceIdentity), 0, outerData);
 
-        // Inner execution creates pending request on aliceIdentity (executionId = 0)
-        Structs.Execution memory exec = aliceIdentity.getExecutionData(0);
+        // Inner execution creates pending request on aliceIdentity
+        Structs.Execution memory exec = aliceIdentity.getExecutionData(pendingId);
         assertFalse(exec.approved);
         assertFalse(exec.executed);
 
         // Alice approves the pending execution
         vm.prank(alice);
-        aliceIdentity.approve(0, true);
+        aliceIdentity.approve(pendingId, true);
 
         // Verify claim was added
         bytes32 claimId = keccak256(abi.encode(claim.issuer, claim.topic));
@@ -204,11 +209,12 @@ contract ExecutionsTest is OnchainIDSetup {
         bytes32 aliceKeyHash = keccak256(abi.encodePacked(alice));
         bytes memory addKeyData = abi.encodeCall(KeyManager.addKey, (aliceKeyHash, KeyPurposes.ACTION, KeyTypes.ECDSA));
 
+        uint256 execId = aliceIdentity.getCurrentNonce();
         vm.prank(actionOnly);
         aliceIdentity.execute(address(aliceIdentity), 0, addKeyData);
 
         // Verify execution is pending (ACTION key targeting identity = not auto-approved)
-        Structs.Execution memory exec = aliceIdentity.getExecutionData(0);
+        Structs.Execution memory exec = aliceIdentity.getExecutionData(execId);
         assertFalse(exec.approved);
         assertFalse(exec.executed);
     }
@@ -253,37 +259,41 @@ contract ExecutionsTest is OnchainIDSetup {
         vm.deal(bob, 1 ether);
         uint256 carolBalanceBefore = carol.balance;
 
+        uint256 execId = aliceIdentity.getCurrentNonce();
         // bob has no keys on aliceIdentity
         vm.prank(bob);
         aliceIdentity.execute{ value: 10 }(carol, 10, hex"");
 
         // Verify execution is pending and carol balance unchanged
-        Structs.Execution memory exec = aliceIdentity.getExecutionData(0);
+        Structs.Execution memory exec = aliceIdentity.getExecutionData(execId);
         assertFalse(exec.approved);
         assertFalse(exec.executed);
         assertEq(carol.balance, carolBalanceBefore);
     }
 
     function test_approveNonExistingExecution() public {
+        uint256 nonExistentId = aliceIdentity.getCurrentNonce() + 100;
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(Errors.InvalidRequestId.selector, 2));
-        aliceIdentity.approve(2, true);
+        vm.expectRevert(abi.encodeWithSelector(Errors.InvalidRequestId.selector, nonExistentId));
+        aliceIdentity.approve(nonExistentId, true);
     }
 
     function test_approveAlreadyExecuted() public {
         vm.deal(alice, 1 ether);
 
+        uint256 execId = aliceIdentity.getCurrentNonce();
         vm.prank(alice);
         aliceIdentity.execute{ value: 10 }(bob, 10, hex"");
 
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(Errors.RequestAlreadyExecuted.selector, 0));
-        aliceIdentity.approve(0, true);
+        vm.expectRevert(abi.encodeWithSelector(Errors.RequestAlreadyExecuted.selector, execId));
+        aliceIdentity.approve(execId, true);
     }
 
     function test_approveAsNonActionKey_forExternalTarget() public {
         vm.deal(bob, 1 ether);
 
+        uint256 execId = aliceIdentity.getCurrentNonce();
         // bob creates pending execution
         vm.prank(bob);
         aliceIdentity.execute{ value: 10 }(carol, 10, hex"");
@@ -291,7 +301,7 @@ contract ExecutionsTest is OnchainIDSetup {
         // bob tries to approve (bob has no ACTION key)
         vm.prank(bob);
         vm.expectRevert(abi.encodeWithSelector(Errors.SenderDoesNotHaveActionKey.selector, bob));
-        aliceIdentity.approve(0, true);
+        aliceIdentity.approve(execId, true);
     }
 
     function test_approveAsNonManagementKey_forIdentityTarget() public {
@@ -300,6 +310,7 @@ contract ExecutionsTest is OnchainIDSetup {
             KeyManager.addKey, (keccak256(abi.encodePacked(makeAddr("newKey"))), KeyPurposes.ACTION, KeyTypes.ECDSA)
         );
 
+        uint256 execId = aliceIdentity.getCurrentNonce();
         vm.deal(bob, 1 ether);
         vm.prank(bob);
         aliceIdentity.execute{ value: 10 }(address(aliceIdentity), 10, addKeyData);
@@ -307,20 +318,21 @@ contract ExecutionsTest is OnchainIDSetup {
         // david tries to approve (david has ACTION key but not MANAGEMENT)
         vm.prank(david);
         vm.expectRevert(abi.encodeWithSelector(Errors.SenderDoesNotHaveManagementKey.selector, david));
-        aliceIdentity.approve(0, true);
+        aliceIdentity.approve(execId, true);
     }
 
     function test_approveAsManagement_executesPending() public {
         vm.deal(bob, 1 ether);
         uint256 carolBalanceBefore = carol.balance;
 
+        uint256 execId = aliceIdentity.getCurrentNonce();
         // bob creates pending execution
         vm.prank(bob);
         aliceIdentity.execute{ value: 10 }(carol, 10, hex"");
 
         // alice approves
         vm.prank(alice);
-        aliceIdentity.approve(0, true);
+        aliceIdentity.approve(execId, true);
 
         assertEq(carol.balance, carolBalanceBefore + 10);
     }
@@ -329,18 +341,19 @@ contract ExecutionsTest is OnchainIDSetup {
         vm.deal(bob, 1 ether);
         uint256 carolBalanceBefore = carol.balance;
 
+        uint256 execId = aliceIdentity.getCurrentNonce();
         // bob creates pending execution
         vm.prank(bob);
         aliceIdentity.execute{ value: 10 }(carol, 10, hex"");
 
         // alice approves with false
         vm.prank(alice);
-        aliceIdentity.approve(0, false);
+        aliceIdentity.approve(execId, false);
 
         assertEq(carol.balance, carolBalanceBefore);
 
         // Verify execution is finalized (not approved, but marked executed to prevent replay)
-        Structs.Execution memory exec = aliceIdentity.getExecutionData(0);
+        Structs.Execution memory exec = aliceIdentity.getExecutionData(execId);
         assertFalse(exec.approved);
         assertTrue(exec.executed);
     }
@@ -422,12 +435,13 @@ contract ExecutionsTest is OnchainIDSetup {
         // Encode removeClaim call for the existing aliceClaim666
         bytes memory removeClaimData = abi.encodeCall(Identity.removeClaim, (aliceClaim666.id));
 
+        uint256 execId = aliceIdentity.getCurrentNonce();
         // Bob (CLAIM_ADDER) executes removeClaim — should NOT auto-approve
         vm.prank(bob);
         aliceIdentity.execute(address(aliceIdentity), 0, removeClaimData);
 
         // Verify execution is pending (not auto-approved)
-        Structs.Execution memory exec = aliceIdentity.getExecutionData(0);
+        Structs.Execution memory exec = aliceIdentity.getExecutionData(execId);
         assertFalse(exec.approved);
         assertFalse(exec.executed);
 

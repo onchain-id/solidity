@@ -3,11 +3,13 @@ pragma solidity ^0.8.27;
 
 import { Account as OZAccount } from "@openzeppelin/contracts/account/Account.sol";
 import { PackedUserOperation } from "@openzeppelin/contracts/interfaces/draft-IERC4337.sol";
+import { MODULE_TYPE_VALIDATOR } from "@openzeppelin/contracts/interfaces/draft-IERC7579.sol";
 
 import { Identity } from "contracts/Identity.sol";
 import { Errors } from "contracts/libraries/Errors.sol";
 import { KeyPurposes } from "contracts/libraries/KeyPurposes.sol";
 import { KeyTypes } from "contracts/libraries/KeyTypes.sol";
+import { ECDSAValidator } from "contracts/modules/validators/ECDSAValidator.sol";
 import { Structs } from "contracts/storage/Structs.sol";
 
 import { ClaimSignerHelper } from "./helpers/ClaimSignerHelper.sol";
@@ -57,9 +59,19 @@ contract SmartAccountTest is OnchainIDSetup {
             ClaimSignerHelper.addressToKey(alice), KeyPurposes.ACTION, KeyTypes.ECDSA, abi.encodePacked(alice), ""
         );
         vm.stopPrank();
+
+        // Install ECDSA validator module (stateless — no signers to register)
+        vm.prank(alice);
+        aliceIdentity.execute(
+            address(aliceIdentity),
+            0,
+            abi.encodeCall(
+                aliceIdentity.installModule, (MODULE_TYPE_VALIDATOR, address(onchainidSetup.ecdsaValidator), "")
+            )
+        );
     }
 
-    // ========= execute() with signature =========
+    // ========= execute() with signature (application-level, unchanged) =========
 
     function test_executeWithSignature_actionKey() public {
         bytes memory callData = abi.encodeCall(Counter.increment, ());
@@ -85,7 +97,6 @@ contract SmartAccountTest is OnchainIDSetup {
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePk, opHash);
         bytes memory sig = abi.encodePacked(r, s, v);
-
         bytes32 keyHash = keccak256(abi.encodePacked(alice));
 
         aliceIdentity.execute(address(counter), 0, callData, keyHash, sig);
@@ -103,7 +114,6 @@ contract SmartAccountTest is OnchainIDSetup {
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePk, opHash);
         bytes memory sig = abi.encodePacked(r, s, v);
-
         bytes32 keyHash = keccak256(abi.encodePacked(alice));
 
         aliceIdentity.execute(address(aliceIdentity), 0, callData, keyHash, sig);
@@ -140,14 +150,12 @@ contract SmartAccountTest is OnchainIDSetup {
         bytes memory callData = abi.encodeCall(Counter.increment, ());
         uint256 nonce = aliceIdentity.getCurrentNonce();
 
-        // Sign with wrong key (bob doesn't have a key on alice's identity)
         bytes32 opHash = aliceIdentity.getOperationHash(address(counter), 0, callData, nonce);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(davidPk, opHash);
-        bytes memory sig = abi.encodePacked(r, s, v);
 
         // Use david's keyHash but tamper with signature
-        bytes32 keyHash = ClaimSignerHelper.addressToKey(david);
         bytes memory badSig = abi.encodePacked(s, r, v); // swapped r and s
+        bytes32 keyHash = ClaimSignerHelper.addressToKey(david);
 
         vm.expectRevert(Errors.InvalidSignature.selector);
         aliceIdentity.execute(address(counter), 0, callData, keyHash, badSig);
@@ -161,7 +169,7 @@ contract SmartAccountTest is OnchainIDSetup {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(bobPk, opHash);
         bytes memory sig = abi.encodePacked(r, s, v);
 
-        // bob's key is not registered on alice's identity as an addressToKey
+        // bob's key is not registered on alice's identity
         bytes32 keyHash = keccak256(abi.encodePacked(bob));
 
         vm.expectRevert(abi.encodeWithSelector(Errors.KeyNotRegistered.selector, keyHash));
@@ -175,6 +183,7 @@ contract SmartAccountTest is OnchainIDSetup {
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(davidPk, opHash);
         bytes memory sig = abi.encodePacked(r, s, v);
+
         bytes32 keyHash = ClaimSignerHelper.addressToKey(david);
 
         // First execution succeeds
@@ -262,60 +271,48 @@ contract SmartAccountTest is OnchainIDSetup {
         assertTrue(hash1 != hash2, "Different targets should produce different hashes");
     }
 
-    // ========= isValidSignature (ERC-1271) =========
+    // ========= isValidSignature (ERC-1271 via modules) =========
 
     function test_isValidSignature_validActionKey() public view {
         bytes32 hash = keccak256("test message");
-
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(davidPk, hash);
-        bytes memory rawSig = abi.encodePacked(r, s, v);
 
-        bytes32 keyHash = ClaimSignerHelper.addressToKey(david);
-        bytes memory wrappedSig = abi.encode(keyHash, rawSig);
+        // Same format as isClaimValid: abi.encode(signer, actualSig)
+        bytes memory innerSig = abi.encode(abi.encodePacked(david), abi.encodePacked(r, s, v));
+        bytes memory wrappedSig = abi.encodePacked(address(onchainidSetup.ecdsaValidator), innerSig);
 
         bytes4 result = aliceIdentity.isValidSignature(hash, wrappedSig);
         assertEq(result, bytes4(0x1626ba7e), "Should return ERC-1271 magic value");
     }
 
     function test_isValidSignature_managementKeyAlsoWorks() public view {
-        // Management keys have universal permissions, so ACTION check should pass
         bytes32 hash = keccak256("test message");
-
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePk, hash);
-        bytes memory rawSig = abi.encodePacked(r, s, v);
 
-        bytes32 keyHash = keccak256(abi.encodePacked(alice));
-        bytes memory wrappedSig = abi.encode(keyHash, rawSig);
+        bytes memory innerSig = abi.encode(abi.encodePacked(alice), abi.encodePacked(r, s, v));
+        bytes memory wrappedSig = abi.encodePacked(address(onchainidSetup.ecdsaValidator), innerSig);
 
         bytes4 result = aliceIdentity.isValidSignature(hash, wrappedSig);
         assertEq(result, bytes4(0x1626ba7e), "Management key should pass ACTION check");
     }
 
     function test_isValidSignature_claimSignerKeyFails() public view {
-        // CLAIM_SIGNER key should NOT pass ACTION check
         bytes32 hash = keccak256("test message");
-
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(carolPk, hash);
-        bytes memory rawSig = abi.encodePacked(r, s, v);
 
-        // carol has CLAIM_SIGNER purpose via addressToKey
-        bytes32 keyHash = ClaimSignerHelper.addressToKey(carol);
-        bytes memory wrappedSig = abi.encode(keyHash, rawSig);
+        bytes memory innerSig = abi.encode(abi.encodePacked(carol), abi.encodePacked(r, s, v));
+        bytes memory wrappedSig = abi.encodePacked(address(onchainidSetup.ecdsaValidator), innerSig);
 
-        // Need to set keyData for carol first — but we can't in a view test
-        // So the result will be failure because keyData is not set (signer.length < 20)
         bytes4 result = aliceIdentity.isValidSignature(hash, wrappedSig);
         assertEq(result, bytes4(0xffffffff), "CLAIM_SIGNER key should return failure");
     }
 
-    function test_isValidSignature_claimSignerKeyFails_withKeyData() public {
-        // carol's signerData is already set via OnchainIDSetup, verify CLAIM_SIGNER still fails ACTION check
+    function test_isValidSignature_claimSignerKeyFails_withKeyData() public view {
         bytes32 hash = keccak256("test message");
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(carolPk, hash);
-        bytes memory rawSig = abi.encodePacked(r, s, v);
 
-        bytes32 keyHash = ClaimSignerHelper.addressToKey(carol);
-        bytes memory wrappedSig = abi.encode(keyHash, rawSig);
+        bytes memory innerSig = abi.encode(abi.encodePacked(carol), abi.encodePacked(r, s, v));
+        bytes memory wrappedSig = abi.encodePacked(address(onchainidSetup.ecdsaValidator), innerSig);
 
         bytes4 result = aliceIdentity.isValidSignature(hash, wrappedSig);
         assertEq(result, bytes4(0xffffffff), "CLAIM_SIGNER key should return failure for ACTION check");
@@ -323,13 +320,10 @@ contract SmartAccountTest is OnchainIDSetup {
 
     function test_isValidSignature_invalidSignature() public view {
         bytes32 hash = keccak256("test message");
-
-        // Sign a different hash
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(davidPk, keccak256("wrong message"));
-        bytes memory rawSig = abi.encodePacked(r, s, v);
 
-        bytes32 keyHash = ClaimSignerHelper.addressToKey(david);
-        bytes memory wrappedSig = abi.encode(keyHash, rawSig);
+        bytes memory innerSig = abi.encode(abi.encodePacked(david), abi.encodePacked(r, s, v));
+        bytes memory wrappedSig = abi.encodePacked(address(onchainidSetup.ecdsaValidator), innerSig);
 
         bytes4 result = aliceIdentity.isValidSignature(hash, wrappedSig);
         assertEq(result, bytes4(0xffffffff), "Invalid signature should return failure");
@@ -338,20 +332,46 @@ contract SmartAccountTest is OnchainIDSetup {
     function test_isValidSignature_unregisteredKey() public view {
         bytes32 hash = keccak256("test message");
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(bobPk, hash);
-        bytes memory rawSig = abi.encodePacked(r, s, v);
 
-        // Use a random keyHash that doesn't exist
-        bytes32 keyHash = keccak256("nonexistent");
-        bytes memory wrappedSig = abi.encode(keyHash, rawSig);
+        // Use a nonexistent signer
+        bytes memory innerSig = abi.encode(abi.encodePacked(bob), abi.encodePacked(r, s, v));
+        bytes memory wrappedSig = abi.encodePacked(address(onchainidSetup.ecdsaValidator), innerSig);
 
         bytes4 result = aliceIdentity.isValidSignature(hash, wrappedSig);
         assertEq(result, bytes4(0xffffffff), "Unregistered key should return failure");
     }
 
+    // ========= isValidSignature with ERC-1271 contract signer =========
+
+    function test_isValidSignature_erc1271ContractSigner() public {
+        // Deploy mock ERC-1271 signer
+        MockERC1271Signer mockSigner = new MockERC1271Signer();
+
+        // Register the mock contract as an ACTION key
+        bytes32 keyHash = keccak256(abi.encodePacked(address(mockSigner)));
+
+        vm.startPrank(alice);
+        aliceIdentity.addKeyWithData(
+            keyHash, KeyPurposes.ACTION, KeyTypes.ECDSA, abi.encodePacked(address(mockSigner)), ""
+        );
+        vm.stopPrank();
+
+        // The ECDSA module uses ecrecover — a contract address cannot produce a valid ECDSA signature.
+        // So this test verifies that the module correctly rejects non-ECDSA signers.
+        bytes32 hash = keccak256("test message");
+        bytes memory dummySig =
+            hex"deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefde";
+        bytes memory wrappedSig = abi.encodePacked(
+            address(onchainidSetup.ecdsaValidator), abi.encode(abi.encodePacked(address(mockSigner)), dummySig)
+        );
+
+        bytes4 result = aliceIdentity.isValidSignature(hash, wrappedSig);
+        assertEq(result, bytes4(0xffffffff), "Invalid ECDSA sig should return failure");
+    }
+
     // ========= setKeyData =========
 
     function test_setKeyData_storesAndRetrieves() public {
-        // Register a new key, then set its keyData
         address newAddr = makeAddr("newKey");
         bytes32 newKeyHash = keccak256(abi.encodePacked(newAddr));
         bytes memory signerData = abi.encodePacked(newAddr);
@@ -366,20 +386,26 @@ contract SmartAccountTest is OnchainIDSetup {
 
     function test_addKeyWithData_revertNonManager() public {
         bytes32 keyHash = ClaimSignerHelper.addressToKey(david);
-
         vm.prank(david); // david has ACTION, not MANAGEMENT
         vm.expectRevert(Errors.SenderDoesNotHaveManagementKey.selector);
         aliceIdentity.addKeyWithData(keyHash, KeyPurposes.ACTION, KeyTypes.ECDSA, abi.encodePacked(david), "");
     }
 
-    // ========= validateUserOp (ERC-4337) =========
+    // ========= validateUserOp (ERC-4337 via modules) =========
 
     address internal constant ENTRY_POINT = 0x433709009B8330FDa32311DF1C2AFA402eD8D009;
 
-    function _buildUserOp(address sender, bytes memory signature) internal pure returns (PackedUserOperation memory) {
+    /// @dev Build a UserOp with nonce encoding the validator module address
+    function _buildUserOp(address sender, address validatorModule, bytes memory signature)
+        internal
+        pure
+        returns (PackedUserOperation memory)
+    {
+        // ERC-7579 nonce: upper 160 bits = validator address
+        uint256 nonce = (uint256(uint160(validatorModule)) << 96);
         return PackedUserOperation({
             sender: sender,
-            nonce: 0,
+            nonce: nonce,
             initCode: "",
             callData: "",
             accountGasLimits: bytes32(0),
@@ -391,13 +417,17 @@ contract SmartAccountTest is OnchainIDSetup {
     }
 
     function test_validateUserOp_validSignature() public {
-        bytes32 keyHash = ClaimSignerHelper.addressToKey(david);
         bytes32 userOpHash = keccak256("test user op hash");
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(davidPk, userOpHash);
         bytes memory ecdsaSig = abi.encodePacked(r, s, v);
 
-        PackedUserOperation memory userOp = _buildUserOp(address(aliceIdentity), abi.encode(keyHash, ecdsaSig));
+        PackedUserOperation memory userOp = _buildUserOp(
+            address(aliceIdentity),
+            address(onchainidSetup.ecdsaValidator),
+            abi.encode(abi.encodePacked(david), ecdsaSig)
+        );
+        userOp.callData = abi.encodeCall(aliceIdentity.executeFromEntryPoint, (address(0), 0, ""));
 
         vm.prank(ENTRY_POINT);
         uint256 result = aliceIdentity.validateUserOp(userOp, userOpHash, 0);
@@ -405,45 +435,52 @@ contract SmartAccountTest is OnchainIDSetup {
     }
 
     function test_validateUserOp_notEntryPoint_shouldRevert() public {
-        bytes32 keyHash = ClaimSignerHelper.addressToKey(david);
         bytes32 userOpHash = keccak256("test user op hash");
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(davidPk, userOpHash);
         bytes memory ecdsaSig = abi.encodePacked(r, s, v);
 
-        PackedUserOperation memory userOp = _buildUserOp(address(aliceIdentity), abi.encode(keyHash, ecdsaSig));
+        PackedUserOperation memory userOp = _buildUserOp(
+            address(aliceIdentity),
+            address(onchainidSetup.ecdsaValidator),
+            abi.encode(abi.encodePacked(david), ecdsaSig)
+        );
+        userOp.callData = abi.encodeCall(aliceIdentity.executeFromEntryPoint, (address(0), 0, ""));
 
         vm.expectRevert(abi.encodeWithSelector(OZAccount.AccountUnauthorized.selector, address(this)));
         aliceIdentity.validateUserOp(userOp, userOpHash, 0);
     }
 
     function test_validateUserOp_invalidSignature_returnsFailure() public {
-        bytes32 keyHash = ClaimSignerHelper.addressToKey(david);
         bytes32 userOpHash = keccak256("test user op hash");
 
-        // Sign a different hash to produce an invalid signature
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(davidPk, keccak256("wrong hash"));
         bytes memory ecdsaSig = abi.encodePacked(r, s, v);
 
-        PackedUserOperation memory userOp = _buildUserOp(address(aliceIdentity), abi.encode(keyHash, ecdsaSig));
+        PackedUserOperation memory userOp = _buildUserOp(
+            address(aliceIdentity),
+            address(onchainidSetup.ecdsaValidator),
+            abi.encode(abi.encodePacked(david), ecdsaSig)
+        );
+        userOp.callData = abi.encodeCall(aliceIdentity.executeFromEntryPoint, (address(0), 0, ""));
 
-        // Per ERC-4337 spec: returns SIG_VALIDATION_FAILED (1), not revert
         vm.prank(ENTRY_POINT);
         uint256 result = aliceIdentity.validateUserOp(userOp, userOpHash, 0);
         assertEq(result, 1, "Should return SIG_VALIDATION_FAILED");
     }
 
     function test_validateUserOp_anyRegisteredKey_succeeds() public {
-        // Carol has CLAIM_SIGNER purpose — validateUserOp accepts any registered key
-        // Purpose routing happens in executeFromEntryPoint, not validateUserOp
-        // carol's signerData is already set via OnchainIDSetup
-        bytes32 keyHash = ClaimSignerHelper.addressToKey(carol);
         bytes32 userOpHash = keccak256("test user op hash");
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(carolPk, userOpHash);
         bytes memory ecdsaSig = abi.encodePacked(r, s, v);
 
-        PackedUserOperation memory userOp = _buildUserOp(address(aliceIdentity), abi.encode(keyHash, ecdsaSig));
+        PackedUserOperation memory userOp = _buildUserOp(
+            address(aliceIdentity),
+            address(onchainidSetup.ecdsaValidator),
+            abi.encode(abi.encodePacked(carol), ecdsaSig)
+        );
+        userOp.callData = abi.encodeCall(aliceIdentity.executeFromEntryPoint, (address(0), 0, ""));
 
         vm.prank(ENTRY_POINT);
         uint256 result = aliceIdentity.validateUserOp(userOp, userOpHash, 0);
@@ -451,18 +488,20 @@ contract SmartAccountTest is OnchainIDSetup {
     }
 
     function test_validateUserOp_paysPrefund() public {
-        // Fund the identity with ETH
         vm.deal(address(aliceIdentity), 1 ether);
 
-        bytes32 keyHash = ClaimSignerHelper.addressToKey(david);
         bytes32 userOpHash = keccak256("test user op hash");
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(davidPk, userOpHash);
         bytes memory ecdsaSig = abi.encodePacked(r, s, v);
 
-        PackedUserOperation memory userOp = _buildUserOp(address(aliceIdentity), abi.encode(keyHash, ecdsaSig));
+        PackedUserOperation memory userOp = _buildUserOp(
+            address(aliceIdentity),
+            address(onchainidSetup.ecdsaValidator),
+            abi.encode(abi.encodePacked(david), ecdsaSig)
+        );
+        userOp.callData = abi.encodeCall(aliceIdentity.executeFromEntryPoint, (address(0), 0, ""));
 
-        // Put code at EntryPoint so it can receive ETH
         vm.etch(ENTRY_POINT, hex"00");
         vm.deal(ENTRY_POINT, 0);
 
@@ -477,27 +516,26 @@ contract SmartAccountTest is OnchainIDSetup {
 
     // ========= executeFromEntryPoint =========
 
-    function _validateAndExecute(uint256 signerPk, bytes32 signerKeyHash, address to, uint256 value, bytes memory data)
+    function _validateAndExecute(uint256 signerPk, address signerAddr, address to, uint256 value, bytes memory data)
         internal
         returns (uint256 executionId)
     {
-        // Build callData for executeFromEntryPoint
-        bytes memory callData = abi.encodeCall(aliceIdentity.executeFromEntryPoint, (to, value, data));
-
-        // Build and sign UserOp
         bytes32 userOpHash = keccak256("test-userop");
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPk, userOpHash);
-        bytes memory sig = abi.encodePacked(r, s, v);
 
-        PackedUserOperation memory userOp = _buildUserOp(address(aliceIdentity), abi.encode(signerKeyHash, sig));
-        userOp.callData = callData;
+        {
+            (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPk, userOpHash);
 
-        // Step 1: validateUserOp (sets transient _validatedKeyHash)
-        vm.prank(ENTRY_POINT);
-        uint256 validationResult = aliceIdentity.validateUserOp(userOp, userOpHash, 0);
-        assertEq(validationResult, 0, "Validation should pass");
+            PackedUserOperation memory userOp = _buildUserOp(
+                address(aliceIdentity),
+                address(onchainidSetup.ecdsaValidator),
+                abi.encode(abi.encodePacked(signerAddr), abi.encodePacked(r, s, v))
+            );
+            userOp.callData = abi.encodeCall(aliceIdentity.executeFromEntryPoint, (to, value, data));
 
-        // Step 2: executeFromEntryPoint (reads keyHash from transient storage)
+            vm.prank(ENTRY_POINT);
+            assertEq(aliceIdentity.validateUserOp(userOp, userOpHash, 0), 0, "Validation should pass");
+        }
+
         vm.prank(ENTRY_POINT);
         return aliceIdentity.executeFromEntryPoint(to, value, data);
     }
@@ -506,7 +544,7 @@ contract SmartAccountTest is OnchainIDSetup {
         vm.deal(address(aliceIdentity), 1 ether);
         address target = makeAddr("target");
 
-        _validateAndExecute(davidPk, ClaimSignerHelper.addressToKey(david), target, 0.5 ether, "");
+        _validateAndExecute(davidPk, david, target, 0.5 ether, "");
 
         assertEq(target.balance, 0.5 ether);
     }
@@ -516,18 +554,16 @@ contract SmartAccountTest is OnchainIDSetup {
         bytes32 newKeyHash = keccak256(abi.encodePacked(newAddr));
         bytes memory callData = abi.encodeCall(aliceIdentity.addKey, (newKeyHash, KeyPurposes.ACTION, KeyTypes.ECDSA));
 
-        _validateAndExecute(alicePk, ClaimSignerHelper.addressToKey(alice), address(aliceIdentity), 0, callData);
+        _validateAndExecute(alicePk, alice, address(aliceIdentity), 0, callData);
 
         assertTrue(aliceIdentity.keyHasPurpose(newKeyHash, KeyPurposes.ACTION), "New key should be added");
     }
 
     function test_executeFromEntryPoint_actionKey_selfCall_queued() public {
-        bytes memory callData = abi.encodeCall(
-            aliceIdentity.addKey, (keccak256(abi.encodePacked(makeAddr("x"))), KeyPurposes.ACTION, KeyTypes.ECDSA)
-        );
+        bytes32 newKeyHash = keccak256(abi.encodePacked(makeAddr("x")));
+        bytes memory callData = abi.encodeCall(aliceIdentity.addKey, (newKeyHash, KeyPurposes.ACTION, KeyTypes.ECDSA));
 
-        uint256 execId =
-            _validateAndExecute(davidPk, ClaimSignerHelper.addressToKey(david), address(aliceIdentity), 0, callData);
+        uint256 execId = _validateAndExecute(davidPk, david, address(aliceIdentity), 0, callData);
 
         Structs.Execution memory exec = aliceIdentity.getExecutionData(execId);
         assertFalse(exec.executed, "ACTION key self-call should be queued, not auto-executed");
@@ -539,8 +575,6 @@ contract SmartAccountTest is OnchainIDSetup {
     }
 
     function test_executeFromEntryPoint_withoutValidation_shouldRevert() public {
-        // Calling executeFromEntryPoint without prior validateUserOp should fail
-        // because _validatedKeyHash is bytes32(0)
         vm.prank(ENTRY_POINT);
         vm.expectRevert(Errors.InvalidSignature.selector);
         aliceIdentity.executeFromEntryPoint(makeAddr("target"), 0, "");
@@ -556,42 +590,16 @@ contract SmartAccountTest is OnchainIDSetup {
         assertEq(address(aliceIdentity).balance, 0.5 ether);
     }
 
-    // ========= isValidSignature with ERC-1271 contract signer =========
-
-    function test_isValidSignature_erc1271ContractSigner() public {
-        // Deploy mock ERC-1271 signer
-        MockERC1271Signer mockSigner = new MockERC1271Signer();
-
-        // Register the mock contract as an ACTION key with ERC1271 key type
-        bytes32 keyHash = keccak256(abi.encodePacked(address(mockSigner)));
-
-        vm.startPrank(alice);
-        aliceIdentity.addKeyWithData(
-            keyHash, KeyPurposes.ACTION, KeyTypes.ECDSA, abi.encodePacked(address(mockSigner)), ""
-        );
-        vm.stopPrank();
-
-        // Call isValidSignature — should delegate to MockERC1271Signer
-        bytes32 hash = keccak256("test message");
-        bytes memory dummySig = hex"deadbeef";
-        bytes memory wrappedSig = abi.encode(keyHash, dummySig);
-
-        bytes4 result = aliceIdentity.isValidSignature(hash, wrappedSig);
-        assertEq(result, bytes4(0x1626ba7e), "ERC-1271 contract signer should return magic value");
-    }
-
     // ========= Helpers =========
 
     bytes32 internal constant _APPROVE_TYPEHASH = keccak256("Approve(uint256 id,bool shouldApprove)");
 
-    /// @dev Computes the EIP-712 approve hash manually (mirrors SmartAccount._hashTypedDataV4)
     function _computeApproveHash(address identity, uint256 id, bool shouldApprove) internal view returns (bytes32) {
         bytes32 structHash = keccak256(abi.encode(_APPROVE_TYPEHASH, id, shouldApprove));
         bytes32 domainSeparator = _computeDomainSeparator(identity);
         return keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
     }
 
-    /// @dev Computes the EIP-712 domain separator for an identity contract
     function _computeDomainSeparator(address identity) internal view returns (bytes32) {
         return keccak256(
             abi.encode(

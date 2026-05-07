@@ -116,7 +116,13 @@ contract Identity is Initializable, IIdentity, SmartAccount, MulticallUpgradeabl
      */
     function initialize(address initialManagementKey, uint256 _identityType) external virtual initializer {
         _getClaimStorage().identityType = _identityType;
+        __AccountERC7579_init();
         __Identity_init(initialManagementKey);
+    }
+
+    /// @dev See {IERC7579AccountConfig-accountId}.
+    function accountId() public view virtual override returns (string memory) {
+        return "trex.onchainid.identity.v3.0.0";
     }
 
     /**
@@ -317,11 +323,13 @@ contract Identity is Initializable, IIdentity, SmartAccount, MulticallUpgradeabl
         (bytes memory signer, bytes memory actualSig) = abi.decode(sig, (bytes, bytes));
 
         // 4. Verify the signer is registered as a CLAIM_SIGNER on this identity.
-        if (!keyHasPurpose(keccak256(signer), KeyPurposes.CLAIM_SIGNER)) return false;
+        if (!keyHasPurpose(keccak256(signer), KeyPurposes.CLAIM_SIGNER)) {
+            return false;
+        }
 
         // 5. Dispatch through SignatureChecker:
-        //    - 20-byte signer → ECDSA recover (EIP-712 prompt in MetaMask) or ERC-1271
-        //    - >20-byte signer → ERC-7913 verifier (WebAuthn / RSA / etc.)
+        //    - 20-byte signer -> ECDSA recover (EIP-712 prompt in MetaMask) or ERC-1271
+        //    - >20-byte signer -> ERC-7913 verifier (WebAuthn / RSA / etc.)
         return SignatureChecker.isValidSignatureNow(signer, digest, actualSig);
     }
 

@@ -96,4 +96,18 @@ contract Structs {
         bytes clientData;
     }
 
+    /**
+     *  @dev Definition of an ERC-7579 module to install on an identity during factory deployment.
+     *  The frontend decides which modules (validators, executors, fallback handlers) and their init data.
+     *
+     *  moduleType: ERC-7579 module type (1=VALIDATOR, 2=EXECUTOR, 3=FALLBACK, 4=HOOK)
+     *  module: Address of the module singleton
+     *  initData: Module-specific initialization data (e.g. signer address for ECDSA, keyHash+qx+qy for WebAuthn)
+     */
+    struct ModuleInstall {
+        uint256 moduleType;
+        address module;
+        bytes initData;
+    }
+
 }

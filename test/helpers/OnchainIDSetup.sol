@@ -83,8 +83,8 @@ contract OnchainIDSetup is Test {
             signerData: abi.encodePacked(alice),
             clientData: ""
         });
-        address aliceIdentityAddr =
-            onchainidSetup.idFactory.createIdentity(alice, "alice", aliceKeys, IdentityTypes.INDIVIDUAL);
+        address aliceIdentityAddr = onchainidSetup.idFactory
+            .createIdentity(alice, IdentityTypes.INDIVIDUAL, "alice", aliceKeys, new Structs.ModuleInstall[](0));
         aliceIdentity = Identity(payable(aliceIdentityAddr));
 
         // Add carol as CLAIM_SIGNER and david as ACTION key on alice's identity
@@ -128,13 +128,22 @@ contract OnchainIDSetup is Test {
             signerData: abi.encodePacked(bob),
             clientData: ""
         });
-        address bobIdentityAddr = onchainidSetup.idFactory.createIdentity(bob, "bob", bobKeys, IdentityTypes.INDIVIDUAL);
+        address bobIdentityAddr = onchainidSetup.idFactory
+            .createIdentity(bob, IdentityTypes.INDIVIDUAL, "bob", bobKeys, new Structs.ModuleInstall[](0));
         bobIdentity = Identity(payable(bobIdentityAddr));
 
         // Create token identity
         vm.prank(deployer);
+        Structs.KeyParam[] memory tokenKeys = new Structs.KeyParam[](1);
+        tokenKeys[0] = Structs.KeyParam({
+            keyHash: keccak256(abi.encodePacked(tokenOwner)),
+            purpose: KeyPurposes.MANAGEMENT,
+            keyType: KeyTypes.ECDSA,
+            signerData: abi.encodePacked(tokenOwner),
+            clientData: ""
+        });
         onchainidSetup.idFactory
-            .createTokenIdentity(Constants.TOKEN_ADDRESS, tokenOwner, "tokenOwner", new address[](0));
+            .createTokenIdentity(Constants.TOKEN_ADDRESS, "tokenOwner", tokenKeys, new Structs.ModuleInstall[](0));
     }
 
     // ---- Convenience getters ----

@@ -42,17 +42,18 @@ interface IIdFactory {
      */
     function createIdentity(
         address _wallet,
+        uint256 _identityType,
         string memory _salt,
         Structs.KeyParam[] memory _keys,
-        uint256 _identityType
+        Structs.ModuleInstall[] memory _modules
     ) external returns (address);
 
     /**
      *  @dev function used to create a new Token Identity proxy from the factory
      *  @param _token the address of the token contract
-     *  @param _tokenOwner the owner address of the token
      *  @param _salt the salt used by create2 to issue the contract
-     *  @param _claimAdders the list of addresses to add as CLAIM_ADDER keys on the identity
+     *  @param _keys the list of keys to add to the identity (must contain at least one key)
+     *  @param _modules the ERC-7579 modules to install during creation
      *  requires a new salt for each deployment
      *  _token cannot be linked to another ONCHAINID
      *  only Token factory or owner can call (owner should only use its privilege
@@ -60,9 +61,9 @@ interface IIdFactory {
      */
     function createTokenIdentity(
         address _token,
-        address _tokenOwner,
         string memory _salt,
-        address[] memory _claimAdders
+        Structs.KeyParam[] memory _keys,
+        Structs.ModuleInstall[] memory _modules
     ) external returns (address);
 
     /**

@@ -12,6 +12,8 @@ import { IdentityUtilities } from "contracts/IdentityUtilities.sol";
 import { ClaimIssuerFactory } from "contracts/factory/ClaimIssuerFactory.sol";
 import { IdFactory } from "contracts/factory/IdFactory.sol";
 import { Gateway } from "contracts/gateway/Gateway.sol";
+import { ECDSAValidator } from "contracts/modules/validators/ECDSAValidator.sol";
+import { WebAuthnValidator } from "contracts/modules/validators/WebAuthnValidator.sol";
 import { IdentityUtilitiesProxy } from "contracts/proxy/IdentityUtilitiesProxy.sol";
 import { ImplementationAuthority } from "contracts/proxy/ImplementationAuthority.sol";
 
@@ -47,11 +49,17 @@ contract DeployOnchainID is Script {
 
         // ===== Phase 1: Implementation contracts =====
 
-        // 1. Identity implementation (library mode — prevents direct initialization)
+        // 1. Validator module singletons
+        ECDSAValidator ecdsaValidator = new ECDSAValidator();
+        WebAuthnValidator webauthnValidator = new WebAuthnValidator();
+        console.log("ECDSA Validator:", address(ecdsaValidator));
+        console.log("WebAuthn Validator:", address(webauthnValidator));
+
+        // 2. Identity implementation (library mode — prevents direct initialization)
         Identity identityImpl = new Identity(deployer, true);
         console.log("Identity implementation:", address(identityImpl));
 
-        // 2. ClaimIssuer implementation
+        // 3. ClaimIssuer implementation
         ClaimIssuer claimIssuerImpl = new ClaimIssuer(deployer);
         console.log("ClaimIssuer implementation:", address(claimIssuerImpl));
 

@@ -45,42 +45,67 @@ contract IdFactoryTest is OnchainIDSetup {
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(Errors.OwnableUnauthorizedAccount.selector, alice));
         onchainidSetup.idFactory
-            .createIdentity(address(0), "salt1", _makeSingleMgmtKeys(address(0)), IdentityTypes.INDIVIDUAL);
+            .createIdentity(
+                address(0),
+                IdentityTypes.INDIVIDUAL,
+                "salt1",
+                _makeSingleMgmtKeys(address(0)),
+                new Structs.ModuleInstall[](0)
+            );
     }
 
     function test_revertBecauseWalletCannotBeZeroAddress() public {
         vm.prank(deployer);
         vm.expectRevert(Errors.ZeroAddress.selector);
         onchainidSetup.idFactory
-            .createIdentity(address(0), "salt1", _makeSingleMgmtKeys(address(0)), IdentityTypes.INDIVIDUAL);
+            .createIdentity(
+                address(0),
+                IdentityTypes.INDIVIDUAL,
+                "salt1",
+                _makeSingleMgmtKeys(address(0)),
+                new Structs.ModuleInstall[](0)
+            );
     }
 
     function test_revertBecauseSaltCannotBeEmpty() public {
         vm.prank(deployer);
         vm.expectRevert(Errors.EmptyString.selector);
-        onchainidSetup.idFactory.createIdentity(david, "", _makeSingleMgmtKeys(david), IdentityTypes.INDIVIDUAL);
+        onchainidSetup.idFactory
+            .createIdentity(
+                david, IdentityTypes.INDIVIDUAL, "", _makeSingleMgmtKeys(david), new Structs.ModuleInstall[](0)
+            );
     }
 
     function test_revertBecauseSaltAlreadyUsed() public {
         vm.prank(deployer);
-        onchainidSetup.idFactory.createIdentity(carol, "saltUsed", _makeSingleMgmtKeys(carol), IdentityTypes.INDIVIDUAL);
+        onchainidSetup.idFactory
+            .createIdentity(
+                carol, IdentityTypes.INDIVIDUAL, "saltUsed", _makeSingleMgmtKeys(carol), new Structs.ModuleInstall[](0)
+            );
 
         vm.prank(deployer);
         vm.expectRevert(abi.encodeWithSelector(Errors.SaltTaken.selector, "OIDsaltUsed"));
-        onchainidSetup.idFactory.createIdentity(david, "saltUsed", _makeSingleMgmtKeys(david), IdentityTypes.INDIVIDUAL);
+        onchainidSetup.idFactory
+            .createIdentity(
+                david, IdentityTypes.INDIVIDUAL, "saltUsed", _makeSingleMgmtKeys(david), new Structs.ModuleInstall[](0)
+            );
     }
 
     function test_revertBecauseWalletAlreadyLinked() public {
         vm.prank(deployer);
         vm.expectRevert(abi.encodeWithSelector(Errors.WalletAlreadyLinkedToIdentity.selector, alice));
-        onchainidSetup.idFactory.createIdentity(alice, "newSalt", _makeSingleMgmtKeys(alice), IdentityTypes.INDIVIDUAL);
+        onchainidSetup.idFactory
+            .createIdentity(
+                alice, IdentityTypes.INDIVIDUAL, "newSalt", _makeSingleMgmtKeys(alice), new Structs.ModuleInstall[](0)
+            );
     }
 
     function test_revertBecauseEmptyKeys() public {
         Structs.KeyParam[] memory emptyKeys = new Structs.KeyParam[](0);
         vm.prank(deployer);
         vm.expectRevert(Errors.EmptyListOfKeys.selector);
-        onchainidSetup.idFactory.createIdentity(david, "salt1", emptyKeys, IdentityTypes.INDIVIDUAL);
+        onchainidSetup.idFactory
+            .createIdentity(david, IdentityTypes.INDIVIDUAL, "salt1", emptyKeys, new Structs.ModuleInstall[](0));
     }
 
     function test_revertBecauseNoManagementKey() public {
@@ -89,7 +114,8 @@ contract IdFactoryTest is OnchainIDSetup {
         keys[0] = _makeECDSAKey(david, KeyPurposes.ACTION);
         vm.prank(deployer);
         vm.expectRevert(Errors.NoManagementKeyInKeys.selector);
-        onchainidSetup.idFactory.createIdentity(david, "salt1", keys, IdentityTypes.INDIVIDUAL);
+        onchainidSetup.idFactory
+            .createIdentity(david, IdentityTypes.INDIVIDUAL, "salt1", keys, new Structs.ModuleInstall[](0));
     }
 
     // ============ linkWallet ============
@@ -227,7 +253,8 @@ contract IdFactoryTest is OnchainIDSetup {
 
         vm.prank(deployer);
         vm.expectRevert(Errors.ZeroAddress.selector);
-        onchainidSetup.idFactory.createIdentity(address(0), "salt1", keys, IdentityTypes.INDIVIDUAL);
+        onchainidSetup.idFactory
+            .createIdentity(address(0), IdentityTypes.INDIVIDUAL, "salt1", keys, new Structs.ModuleInstall[](0));
     }
 
     function test_createIdentity_withNonWalletManagementKeys_revertEmptySalt() public {
@@ -236,7 +263,8 @@ contract IdFactoryTest is OnchainIDSetup {
 
         vm.prank(deployer);
         vm.expectRevert(Errors.EmptyString.selector);
-        onchainidSetup.idFactory.createIdentity(david, "", keys, IdentityTypes.INDIVIDUAL);
+        onchainidSetup.idFactory
+            .createIdentity(david, IdentityTypes.INDIVIDUAL, "", keys, new Structs.ModuleInstall[](0));
     }
 
     function test_createIdentity_withNonWalletManagementKeys_revertSaltTaken() public {
@@ -244,12 +272,14 @@ contract IdFactoryTest is OnchainIDSetup {
         keys[0] = _makeECDSAKey(alice, KeyPurposes.MANAGEMENT);
 
         vm.prank(deployer);
-        onchainidSetup.idFactory.createIdentity(david, "sharedSalt", keys, IdentityTypes.INDIVIDUAL);
+        onchainidSetup.idFactory
+            .createIdentity(david, IdentityTypes.INDIVIDUAL, "sharedSalt", keys, new Structs.ModuleInstall[](0));
 
         address anotherWallet = makeAddr("anotherWallet");
         vm.prank(deployer);
         vm.expectRevert(abi.encodeWithSelector(Errors.SaltTaken.selector, "OIDsharedSalt"));
-        onchainidSetup.idFactory.createIdentity(anotherWallet, "sharedSalt", keys, IdentityTypes.INDIVIDUAL);
+        onchainidSetup.idFactory
+            .createIdentity(anotherWallet, IdentityTypes.INDIVIDUAL, "sharedSalt", keys, new Structs.ModuleInstall[](0));
     }
 
     function test_createIdentity_withNonWalletManagementKeys_revertWalletAlreadyLinked() public {
@@ -258,7 +288,8 @@ contract IdFactoryTest is OnchainIDSetup {
 
         vm.prank(deployer);
         vm.expectRevert(abi.encodeWithSelector(Errors.WalletAlreadyLinkedToIdentity.selector, alice));
-        onchainidSetup.idFactory.createIdentity(alice, "uniqueSalt", keys, IdentityTypes.INDIVIDUAL);
+        onchainidSetup.idFactory
+            .createIdentity(alice, IdentityTypes.INDIVIDUAL, "uniqueSalt", keys, new Structs.ModuleInstall[](0));
     }
 
     function test_createIdentity_withNonWalletManagementKeys_shouldDeployAndSetKeys() public {
@@ -266,7 +297,8 @@ contract IdFactoryTest is OnchainIDSetup {
         keys[0] = _makeECDSAKey(alice, KeyPurposes.MANAGEMENT);
 
         vm.prank(deployer);
-        address identityAddr = onchainidSetup.idFactory.createIdentity(david, "salt1", keys, IdentityTypes.INDIVIDUAL);
+        address identityAddr = onchainidSetup.idFactory
+            .createIdentity(david, IdentityTypes.INDIVIDUAL, "salt1", keys, new Structs.ModuleInstall[](0));
 
         Identity identity = Identity(payable(identityAddr));
 
@@ -294,8 +326,8 @@ contract IdFactoryTest is OnchainIDSetup {
         keys[2] = _makeECDSAKey(claimAdder2, KeyPurposes.CLAIM_ADDER);
 
         vm.prank(deployer);
-        address identityAddr =
-            onchainidSetup.idFactory.createIdentity(david, "saltWithAdders", keys, IdentityTypes.INDIVIDUAL);
+        address identityAddr = onchainidSetup.idFactory
+            .createIdentity(david, IdentityTypes.INDIVIDUAL, "saltWithAdders", keys, new Structs.ModuleInstall[](0));
 
         Identity identity = Identity(payable(identityAddr));
 
@@ -325,8 +357,8 @@ contract IdFactoryTest is OnchainIDSetup {
         keys[1] = _makeECDSAKey(claimAdder, KeyPurposes.CLAIM_ADDER);
 
         vm.prank(deployer);
-        address identityAddr =
-            onchainidSetup.idFactory.createIdentity(david, "saltMgmtAdders", keys, IdentityTypes.INDIVIDUAL);
+        address identityAddr = onchainidSetup.idFactory
+            .createIdentity(david, IdentityTypes.INDIVIDUAL, "saltMgmtAdders", keys, new Structs.ModuleInstall[](0));
 
         Identity identity = Identity(payable(identityAddr));
 
@@ -347,7 +379,13 @@ contract IdFactoryTest is OnchainIDSetup {
     function test_createIdentity_factoryKeyRemoved() public {
         vm.prank(deployer);
         address identityAddr = onchainidSetup.idFactory
-            .createIdentity(david, "saltFactoryKey", _makeSingleMgmtKeys(david), IdentityTypes.INDIVIDUAL);
+            .createIdentity(
+                david,
+                IdentityTypes.INDIVIDUAL,
+                "saltFactoryKey",
+                _makeSingleMgmtKeys(david),
+                new Structs.ModuleInstall[](0)
+            );
 
         Identity identity = Identity(payable(identityAddr));
 
@@ -366,7 +404,13 @@ contract IdFactoryTest is OnchainIDSetup {
     function test_createIdentity_smartContractType_shouldSetType() public {
         vm.prank(deployer);
         address identityAddr = onchainidSetup.idFactory
-            .createIdentity(david, "saltSmartContract", _makeSingleMgmtKeys(david), IdentityTypes.SMART_CONTRACT);
+            .createIdentity(
+                david,
+                IdentityTypes.SMART_CONTRACT,
+                "saltSmartContract",
+                _makeSingleMgmtKeys(david),
+                new Structs.ModuleInstall[](0)
+            );
 
         Identity identity = Identity(payable(identityAddr));
         assertEq(identity.getIdentityType(), IdentityTypes.SMART_CONTRACT, "Identity type should be SMART_CONTRACT");
@@ -376,7 +420,13 @@ contract IdFactoryTest is OnchainIDSetup {
     function test_createIdentity_publicAuthorityType_shouldSetType() public {
         vm.prank(deployer);
         address identityAddr = onchainidSetup.idFactory
-            .createIdentity(david, "saltPublicAuth", _makeSingleMgmtKeys(david), IdentityTypes.PUBLIC_AUTHORITY);
+            .createIdentity(
+                david,
+                IdentityTypes.PUBLIC_AUTHORITY,
+                "saltPublicAuth",
+                _makeSingleMgmtKeys(david),
+                new Structs.ModuleInstall[](0)
+            );
 
         Identity identity = Identity(payable(identityAddr));
         assertEq(identity.getIdentityType(), IdentityTypes.PUBLIC_AUTHORITY, "Identity type should be PUBLIC_AUTHORITY");
@@ -395,7 +445,9 @@ contract IdFactoryTest is OnchainIDSetup {
         // delegatecalls initialize() on RevertingIdentity, which reverts,
         // causing CREATE2 to return address(0) and triggering assembly revert
         vm.expectRevert();
-        badFactory.createIdentity(david, "salt1", _makeSingleMgmtKeys(david), IdentityTypes.INDIVIDUAL);
+        badFactory.createIdentity(
+            david, IdentityTypes.INDIVIDUAL, "salt1", _makeSingleMgmtKeys(david), new Structs.ModuleInstall[](0)
+        );
     }
 
 }

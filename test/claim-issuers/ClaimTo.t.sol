@@ -105,10 +105,10 @@ contract ClaimToTest is OnchainIDSetup {
         (uint256 retTopic,,,,,) = aliceIdentity.getClaim(claimId);
         assertEq(retTopic, 0);
 
-        // Nonce was 0 before addClaimTo, so executionId = 0
-        // Alice approves the pending execution
+        // Approve the pending execution (nonce - 1 = the execution just created)
+        uint256 execId = aliceIdentity.getCurrentNonce() - 1;
         vm.prank(alice);
-        aliceIdentity.approve(0, true);
+        aliceIdentity.approve(execId, true);
 
         // Verify claim is now added
         (retTopic,,,,,) = aliceIdentity.getClaim(claimId);
@@ -132,9 +132,10 @@ contract ClaimToTest is OnchainIDSetup {
         (uint256 retTopic,,,,,) = aliceIdentity.getClaim(claimId);
         assertEq(retTopic, 0);
 
-        // Approve execution ID 0
+        // Approve the pending execution
+        uint256 execId = aliceIdentity.getCurrentNonce() - 1;
         vm.prank(alice);
-        aliceIdentity.approve(0, true);
+        aliceIdentity.approve(execId, true);
 
         // Verify all claim fields after approval
         (uint256 t, uint256 s, address iss, bytes memory sig, bytes memory d, string memory u) =
