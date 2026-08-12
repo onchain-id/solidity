@@ -556,8 +556,17 @@ contract Identity is Storage, IIdentity, Version {
             va := byte(0, mload(add(sig, 96)))
         }
 
-        if (va < 27) {
-            va += 27;
+        // Reject non-canonical v values instead of normalizing them: accepting
+        // v in {0, 1} lets the same signature be re-encoded with different bytes.
+        if (va != 27 && va != 28) {
+            return address(0);
+        }
+
+        // Reject malleable signatures: s must be in the lower half of the curve
+        // order (EIP-2), otherwise (r, n - s, v ^ 1) is a second valid signature
+        // for the same signer and message.
+        if (uint256(sa) > uint256(0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0)) {
+            return address(0);
         }
 
         address recoveredAddress = ecrecover(dataHash, va, ra, sa);
